@@ -1,0 +1,31 @@
+# ── Frontend ──────────────────────────────
+front/node_modules/
+front/dist/
+front/.env
+front/.env.local
+front/.env*.local
+
+# ── Backend ───────────────────────────────
+back/banking-api/target/
+back/banking-api/.env
+back/banking-api/src/main/resources/application-secret.yml
+
+# ── IDE ───────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.classpath
+*.project
+.settings/
+
+# ── OS ────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ──────────────────────────────────
+*.log
+logs/
+
+# ── Docker local override ─────────────────
+docker-compose.override.yml

@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --bg: 250 240 230;
+  --text: 45 45 45;
+  --surface: 255 255 255;
+  --surface-2: 253 248 243;
+  --muted: 107 114 128;
+  --border: 245 224 204;
+  --scrollbar-track: 250 240 230;
+  --scrollbar-thumb: 255 208 170;
+  --cream-50: 253 248 243;
+  --cream-100: 250 240 230;
+  --cream-200: 245 224 204;
+  --dark-800: 45 45 45;
+  --dark-700: 61 61 61;
+  --dark-600: 77 77 77;
+  --auth-bg: 250 240 230;
+  --auth-left-bg: 15 13 11;
+  --auth-right-bg: 250 240 230;
+  --auth-text: 26 18 8;
+  --auth-muted: 156 122 90;
+  --auth-panel: 255 255 255;
+  --auth-panel-border: 245 224 204;
+  --auth-input-bg: 255 255 255;
+  --auth-input-border: 225 208 190;
+  --auth-input-text: 26 18 8;
+}
+
+[data-theme='dark'] {
+  --bg: 9 9 11;
+  --text: 243 244 246;
+  --surface: 24 24 27;
+  --surface-2: 31 41 55;
+  --muted: 156 163 175;
+  --border: 63 63 70;
+  --scrollbar-track: 9 9 11;
+  --scrollbar-thumb: 75 85 99;
+  --cream-50: 24 24 27;
+  --cream-100: 31 41 55;
+  --cream-200: 55 65 81;
+  --dark-800: 243 244 246;
+  --dark-700: 209 213 219;
+  --dark-600: 156 163 175;
+  --auth-bg: 9 9 11;
+  --auth-left-bg: 24 24 27;
+  --auth-right-bg: 17 24 39;
+  --auth-text: 243 244 246;
+  --auth-muted: 161 161 170;
+  --auth-panel: 24 24 27;
+  --auth-panel-border: 63 63 70;
+  --auth-input-bg: 17 24 39;
+  --auth-input-border: 63 63 70;
+  --auth-input-text: 243 244 246;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: rgb(var(--bg));
+  color: rgb(var(--text));
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--scrollbar-track));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--scrollbar-thumb));
+  border-radius: 3px;
+}
+
+.card {
+  background: rgb(var(--surface));
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(232, 97, 26, 0.15);
+}
