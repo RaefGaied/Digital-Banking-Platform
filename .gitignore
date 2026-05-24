@@ -27,5 +27,10 @@ desktop.ini
 *.log
 logs/
 
+# ── Generated artifacts ───────────────────
+app.jar
+newman-report.json
+front/test-results/
+
 # ── Docker local override ─────────────────
 docker-compose.override.yml
