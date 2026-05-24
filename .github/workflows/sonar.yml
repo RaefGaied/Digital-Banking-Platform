@@ -35,6 +35,15 @@ jobs:
       - name: Run SonarQube scan
         working-directory: back/banking-api
         env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: github-actions
         run: |
-          mvn -B -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.login=$SONAR_TOKEN org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar
+          sonarArgs=(-Dsonar.token="$SONAR_TOKEN")
+          if [ -n "$SONAR_HOST_URL" ]; then
+            sonarArgs+=(-Dsonar.host.url="$SONAR_HOST_URL")
+          fi
+          if [ -n "$SONAR_ORGANIZATION" ]; then
+            sonarArgs+=(-Dsonar.organization="$SONAR_ORGANIZATION")
+          fi
+          mvn -B "${sonarArgs[@]}" org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar
