@@ -19,6 +19,7 @@ import InvestPage from './pages/InvestPage';
 import HelpPage from './pages/HelpPage';
 import { I18nProvider } from './i18n/I18nContext';
 import { ThemeProvider } from './theme/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
 
 
 const queryClient = new QueryClient({
@@ -37,31 +38,33 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <I18nProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path='/login' element={<LoginPage />} />
-              <Route path='/register' element={<RegisterPage />} />
-              <Route path='/' element={<AppLayout />}>
-                <Route index element={<Navigate to='/dashboard' replace />} />
-                <Route path='dashboard' element={<RequireRole allowedRoles={["USER"]}><DashboardPage /></RequireRole>} />
-                <Route path='admin' element={<RequireRole allowedRoles={["ADMIN"]}><AdminPage /></RequireRole>}>
-                  <Route index element={<Navigate to='dashboard' replace />} />
-                  <Route path='dashboard' element={<AdminDashboardPage />} />
-                  <Route path='tasks' element={<AdminTasksPage />} />
-                  <Route path='users' element={<AdminUsersPage />} />
-                  <Route path='audit' element={<AdminAuditPage />} />
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path='/login' element={<LoginPage />} />
+                <Route path='/register' element={<RegisterPage />} />
+                <Route path='/' element={<AppLayout />}>
+                  <Route index element={<Navigate to='/dashboard' replace />} />
+                  <Route path='dashboard' element={<RequireRole allowedRoles={["USER"]}><DashboardPage /></RequireRole>} />
+                  <Route path='admin' element={<RequireRole allowedRoles={["ADMIN"]}><AdminPage /></RequireRole>}>
+                    <Route index element={<Navigate to='dashboard' replace />} />
+                    <Route path='dashboard' element={<AdminDashboardPage />} />
+                    <Route path='tasks' element={<AdminTasksPage />} />
+                    <Route path='users' element={<AdminUsersPage />} />
+                    <Route path='audit' element={<AdminAuditPage />} />
+                  </Route>
+                  <Route path='transactions' element={<RequireRole allowedRoles={["USER"]}><TransactionsPage /></RequireRole>} />
+                  <Route path='history' element={<RequireRole allowedRoles={["USER"]}><HistoryPage /></RequireRole>} />
+                  <Route path='cards' element={<RequireRole allowedRoles={["USER"]}><CardsPage /></RequireRole>} />
+                  <Route path='invest' element={<RequireRole allowedRoles={["USER"]}><InvestPage /></RequireRole>} />
+                  <Route path='analytics' element={<RequireRole allowedRoles={["USER"]}><AnalyticsPage /></RequireRole>} />
+                  <Route path='profile' element={<RequireRole allowedRoles={["USER"]}><ProfilePage /></RequireRole>} />
+                  <Route path='help' element={<HelpPage />} />
                 </Route>
-                <Route path='transactions' element={<RequireRole allowedRoles={["USER"]}><TransactionsPage /></RequireRole>} />
-                <Route path='history' element={<RequireRole allowedRoles={["USER"]}><HistoryPage /></RequireRole>} />
-                <Route path='cards' element={<RequireRole allowedRoles={["USER"]}><CardsPage /></RequireRole>} />
-                <Route path='invest' element={<RequireRole allowedRoles={["USER"]}><InvestPage /></RequireRole>} />
-                <Route path='analytics' element={<RequireRole allowedRoles={["USER"]}><AnalyticsPage /></RequireRole>} />
-                <Route path='profile' element={<RequireRole allowedRoles={["USER"]}><ProfilePage /></RequireRole>} />
-                <Route path='help' element={<HelpPage />} />
-              </Route>
-              <Route path='*' element={<Navigate to='/login' replace />} />
-            </Routes>
-          </BrowserRouter>
+                <Route path='*' element={<Navigate to='/login' replace />} />
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
         </I18nProvider>
       </ThemeProvider>
     </QueryClientProvider>
