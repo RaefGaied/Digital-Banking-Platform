@@ -7,7 +7,7 @@ import { useI18n } from '../../i18n/I18nContext';
 import ThemeToggle from '../ui/ThemeToggle';
 
 export default function AppLayout() {
-  const { isAuthenticated, userName } = useAuth();
+  const { isAuthenticated, userName, userRole } = useAuth();
   const { locale, setLocale, t } = useI18n();
   const navigate = useNavigate();
 
@@ -41,7 +41,7 @@ export default function AppLayout() {
               </select>
             </div>
             <ThemeToggle />
-            <Notifications />
+            {userRole !== 'ADMIN' && <Notifications />}
             <button
               onClick={() => navigate('/profile')}
               className='w-10 h-10 rounded-full bg-cream-50 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow'
