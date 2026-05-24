@@ -37,4 +37,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn -B -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.login=$SONAR_TOKEN sonar:sonar
+          mvn -B -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.login=$SONAR_TOKEN org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar
