@@ -294,9 +294,9 @@ export default function ProfilePage() {
                 { label: 'New Password',     key: 'newPassword',     show: showNew,     toggle: () => setShowNew(!showNew) },
               ].map(({ label, key, show, toggle }) => (
                 <div key={key}>
-                  <label className='block text-xs font-medium text-dark-800 mb-2'>{label}</label>
+                  <label htmlFor={`pwd-${key}`} className='block text-xs font-medium text-dark-800 mb-2'>{label}</label>
                   <div className='relative'>
-                    <input type={show ? 'text' : 'password'}
+                    <input id={`pwd-${key}`} name={key} type={show ? 'text' : 'password'}
                       value={(passwordForm as any)[key]}
                       onChange={e => setPasswordForm({ ...passwordForm, [key]: e.target.value })}
                       className='w-full bg-cream-100 border border-cream-200 rounded-xl px-4 py-3 text-dark-800 focus:outline-none focus:border-primary-500 pr-12'
@@ -310,8 +310,8 @@ export default function ProfilePage() {
               ))}
 
               <div>
-                <label className='block text-xs font-medium text-dark-800 mb-2'>Confirm New Password</label>
-                <input type='password'
+                <label htmlFor='pwd-confirmPassword' className='block text-xs font-medium text-dark-800 mb-2'>Confirm New Password</label>
+                <input id='pwd-confirmPassword' name='confirmPassword' type='password'
                   value={passwordForm.confirmPassword}
                   onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                   className='w-full bg-cream-100 border border-cream-200 rounded-xl px-4 py-3 text-dark-800 focus:outline-none focus:border-primary-500'

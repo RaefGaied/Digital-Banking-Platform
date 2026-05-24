@@ -3,10 +3,9 @@ package com.fintech.banking.service.impl;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.dto.request.LoginRequest;
 import com.fintech.banking.dto.response.LoginResponse;
-import com.fintech.banking.dto.response.TokenResponse;
+import com.fintech.banking.dto.response.ClientResponse;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.security.service.JwtService;
-import com.fintech.banking.util.TotpUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,7 +110,7 @@ class AuthServiceImplTest {
         when(jwtService.generateToken(testUser)).thenReturn("fakeAccessToken");
 
         // Act - test with the known value at time 0
-        TokenResponse response = authService.verify2fa(tempToken, 12345); // Note: leading zero is dropped in int representation
+        ClientResponse response = authService.verify2fa(tempToken, 12345); // Note: leading zero is dropped in int representation
 
         // Assert
         assertNotNull(response);

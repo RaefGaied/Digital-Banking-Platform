@@ -4,11 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.UUID;
+
 @Data
 public class CreateMessageRequest {
 
-    @NotNull(message = "Support ticket ID is required")
-    private Long supportTicketId;
+    @NotNull(message = "Session ID is required")
+    private UUID sessionId;
 
     @NotBlank(message = "Content is required")
     private String content;

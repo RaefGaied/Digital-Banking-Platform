@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -15,8 +16,8 @@ import java.time.LocalDateTime;
 public class MessageResponse {
 
     private Long id;
-    private Long supportTicketId;
-    private Long senderId;
+    private UUID sessionId;
+    private UUID senderId;
     private SenderType senderType;
     private String content;
     private Boolean isInternal;

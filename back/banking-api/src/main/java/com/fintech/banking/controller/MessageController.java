@@ -1,7 +1,9 @@
 package com.fintech.banking.controller;
 
 import com.fintech.banking.domain.entity.Message;
+import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.SenderType;
+import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.MessageService;
 import com.fintech.banking.service.IntentDetectionService;
 import com.fintech.banking.domain.vo.IntentResult;
@@ -23,25 +25,32 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/sessions/{sessionId}/messages")
+@RequestMapping("/sessions/{sessionId}/messages")
 @RequiredArgsConstructor
 @Slf4j
 public class MessageController {
 
     private final MessageService messageService;
     private final IntentDetectionService intentDetectionService;
+    private final UserRepository userRepository;
+
+    private UUID resolveAuthenticatedUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .map(user -> user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+    }
 
     /**
      * Create a new message in a session
      */
     @PostMapping
     public ResponseEntity<?> createMessage(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             @RequestBody CreateMessageRequest request,
             Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
-
+            UUID userId = resolveAuthenticatedUserId(authentication);
 
             // Validation
             if (request.getContent() == null || request.getContent().isEmpty()) {
@@ -70,24 +79,23 @@ public class MessageController {
             }
 
             Message message = messageService.createMessage(
-                sessionId,
-                userId,
-                request.getSenderType() != null ? request.getSenderType() : SenderType.USER,
-                request.getContent(),
-                request.getIsInternal(),
-                intentToSave,
-                paramsToSave
-            );
+                    sessionId,
+                    userId,
+                    request.getSenderType() != null ? request.getSenderType() : SenderType.USER,
+                    request.getContent(),
+                    request.getIsInternal(),
+                    intentToSave,
+                    paramsToSave);
 
             log.info("Message created in session: {}", sessionId);
 
             return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new SuccessResponse("Message created", new MessageResponse(message)));
+                    .body(new SuccessResponse("Message created", new MessageResponse(message)));
 
         } catch (Exception e) {
             log.error("Failed to create message", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to create message: " + e.getMessage()));
+                    .body(new ErrorResponse("Failed to create message: " + e.getMessage()));
         }
     }
 
@@ -96,7 +104,7 @@ public class MessageController {
      */
     @GetMapping
     public ResponseEntity<?> getMessages(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication) {
@@ -104,11 +112,21 @@ public class MessageController {
             Pageable pageable = PageRequest.of(page, size);
             Page<Message> messages = messageService.getSessionMessages(sessionId, pageable);
 
-            return ResponseEntity.ok(new SuccessResponse("Messages retrieved", messages));
+            var responses = messages.getContent().stream().map(MessageResponse::new)
+                    .collect(java.util.stream.Collectors.toList());
+            var pageResp = new com.fintech.banking.dto.response.PageResponse<>(
+                    responses,
+                    messages.getNumber(),
+                    messages.getSize(),
+                    messages.getTotalElements(),
+                    messages.getTotalPages(),
+                    messages.isLast());
+
+            return ResponseEntity.ok(new SuccessResponse("Messages retrieved", pageResp));
         } catch (Exception e) {
             log.error("Failed to retrieve messages", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve messages"));
+                    .body(new ErrorResponse("Failed to retrieve messages"));
         }
     }
 
@@ -117,19 +135,19 @@ public class MessageController {
      */
     @GetMapping("/conversation")
     public ResponseEntity<?> getConversation(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             Authentication authentication) {
         try {
             List<Message> messages = messageService.getSessionMessagesList(sessionId);
             List<MessageResponse> responses = messages.stream()
-                .map(MessageResponse::new)
-                .collect(Collectors.toList());
+                    .map(MessageResponse::new)
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(new SuccessResponse("Conversation retrieved", responses));
         } catch (Exception e) {
             log.error("Failed to retrieve conversation", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve conversation"));
+                    .body(new ErrorResponse("Failed to retrieve conversation"));
         }
     }
 
@@ -138,12 +156,12 @@ public class MessageController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<?> getMessage(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             @PathVariable Long id,
             Authentication authentication) {
         try {
             Message message = messageService.getMessageById(id)
-                .orElse(null);
+                    .orElse(null);
 
             if (message == null) {
                 return ResponseEntity.notFound().build();
@@ -153,7 +171,7 @@ public class MessageController {
         } catch (Exception e) {
             log.error("Failed to retrieve message", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve message"));
+                    .body(new ErrorResponse("Failed to retrieve message"));
         }
     }
 
@@ -162,17 +180,17 @@ public class MessageController {
      */
     @GetMapping("/count")
     public ResponseEntity<?> getMessageCount(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             Authentication authentication) {
         try {
             long count = messageService.getMessageCount(sessionId);
 
-            return ResponseEntity.ok(new SuccessResponse("Message count retrieved", 
-                new MessageCountResponse(count)));
+            return ResponseEntity.ok(new SuccessResponse("Message count retrieved",
+                    new MessageCountResponse(count)));
         } catch (Exception e) {
             log.error("Failed to retrieve message count", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve message count"));
+                    .body(new ErrorResponse("Failed to retrieve message count"));
         }
     }
 
@@ -181,21 +199,21 @@ public class MessageController {
      */
     @GetMapping("/sender-type/{senderType}")
     public ResponseEntity<?> getMessagesBySenderType(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             @PathVariable String senderType,
             Authentication authentication) {
         try {
             SenderType type = SenderType.valueOf(senderType.toUpperCase());
             List<Message> messages = messageService.getMessagesBySenderType(sessionId, type);
             List<MessageResponse> responses = messages.stream()
-                .map(MessageResponse::new)
-                .collect(Collectors.toList());
+                    .map(MessageResponse::new)
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(new SuccessResponse("Messages retrieved", responses));
         } catch (Exception e) {
             log.error("Failed to retrieve messages by sender type", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Invalid sender type or retrieval failed"));
+                    .body(new ErrorResponse("Invalid sender type or retrieval failed"));
         }
     }
 
@@ -204,19 +222,19 @@ public class MessageController {
      */
     @GetMapping("/internal")
     public ResponseEntity<?> getInternalMessages(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             Authentication authentication) {
         try {
             List<Message> messages = messageService.getInternalMessages(sessionId);
             List<MessageResponse> responses = messages.stream()
-                .map(MessageResponse::new)
-                .collect(Collectors.toList());
+                    .map(MessageResponse::new)
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(new SuccessResponse("Internal messages retrieved", responses));
         } catch (Exception e) {
             log.error("Failed to retrieve internal messages", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve internal messages"));
+                    .body(new ErrorResponse("Failed to retrieve internal messages"));
         }
     }
 
@@ -225,19 +243,19 @@ public class MessageController {
      */
     @GetMapping("/public")
     public ResponseEntity<?> getPublicMessages(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             Authentication authentication) {
         try {
             List<Message> messages = messageService.getPublicMessages(sessionId);
             List<MessageResponse> responses = messages.stream()
-                .map(MessageResponse::new)
-                .collect(Collectors.toList());
+                    .map(MessageResponse::new)
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(new SuccessResponse("Public messages retrieved", responses));
         } catch (Exception e) {
             log.error("Failed to retrieve public messages", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve public messages"));
+                    .body(new ErrorResponse("Failed to retrieve public messages"));
         }
     }
 
@@ -246,20 +264,20 @@ public class MessageController {
      */
     @GetMapping("/search")
     public ResponseEntity<?> searchMessages(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             @RequestParam String keyword,
             Authentication authentication) {
         try {
             List<Message> messages = messageService.searchMessages(sessionId, keyword);
             List<MessageResponse> responses = messages.stream()
-                .map(MessageResponse::new)
-                .collect(Collectors.toList());
+                    .map(MessageResponse::new)
+                    .collect(Collectors.toList());
 
             return ResponseEntity.ok(new SuccessResponse("Messages found", responses));
         } catch (Exception e) {
             log.error("Failed to search messages", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to search messages"));
+                    .body(new ErrorResponse("Failed to search messages"));
         }
     }
 
@@ -268,11 +286,11 @@ public class MessageController {
      */
     @GetMapping("/latest")
     public ResponseEntity<?> getLatestMessage(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             Authentication authentication) {
         try {
             Message message = messageService.getLatestMessage(sessionId)
-                .orElse(null);
+                    .orElse(null);
 
             if (message == null) {
                 return ResponseEntity.notFound().build();
@@ -282,7 +300,7 @@ public class MessageController {
         } catch (Exception e) {
             log.error("Failed to retrieve latest message", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve latest message"));
+                    .body(new ErrorResponse("Failed to retrieve latest message"));
         }
     }
 
@@ -291,7 +309,7 @@ public class MessageController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteMessage(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             @PathVariable Long id,
             Authentication authentication) {
         try {
@@ -302,7 +320,7 @@ public class MessageController {
         } catch (Exception e) {
             log.error("Failed to delete message", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to delete message"));
+                    .body(new ErrorResponse("Failed to delete message"));
         }
     }
 
@@ -311,7 +329,7 @@ public class MessageController {
      */
     @DeleteMapping("/clear-all")
     public ResponseEntity<?> deleteAllMessages(
-            @PathVariable Long sessionId,
+            @PathVariable UUID sessionId,
             Authentication authentication) {
         try {
             messageService.deleteSessionMessages(sessionId);
@@ -321,7 +339,7 @@ public class MessageController {
         } catch (Exception e) {
             log.error("Failed to clear messages", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to clear messages"));
+                    .body(new ErrorResponse("Failed to clear messages"));
         }
     }
 
@@ -339,7 +357,7 @@ public class MessageController {
     @AllArgsConstructor
     public static class MessageResponse {
         private Long id;
-        private Long sessionId;
+        private UUID sessionId;
         private UUID senderId;
         private String senderType;
         private String content;

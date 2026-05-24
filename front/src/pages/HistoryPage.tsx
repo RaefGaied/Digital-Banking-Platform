@@ -68,8 +68,9 @@ export default function HistoryPage() {
 
       {/* Search */}
       <div className='relative'>
+        <label htmlFor='history-search' className='sr-only'>Search transactions</label>
         <Search className='absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300' />
-        <input type='text' value={search} onChange={e => setSearch(e.target.value)}
+        <input id='history-search' name='search' type='text' value={search} onChange={e => setSearch(e.target.value)}
           className='w-full bg-white border border-cream-200 rounded-xl pl-11 pr-4 py-3 text-dark-800 placeholder-gray-300 focus:outline-none focus:border-primary-500 transition-colors shadow-sm'
           placeholder={text.searchPlaceholder} />
       </div>

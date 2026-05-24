@@ -23,8 +23,8 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "session_id", nullable = false)
-    private Long sessionId;
+    @Column(name = "session_uuid", nullable = false)
+    private UUID sessionId;
 
     @Column(name = "sender_id", nullable = false)
     private UUID senderId;

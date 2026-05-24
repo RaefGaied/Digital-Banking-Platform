@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, HelpCircle, LogOut } from 'lucide-react';
+import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, HelpCircle, LogOut, ShieldCheck, Activity, Users, FileText } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -12,9 +12,11 @@ const navItems = [
   { to: '/profile', icon: User, key: 'sidebar.profile' },
 ] as const;
 
+// const adminNavItem = { to: '/admin', icon: ShieldCheck, key: 'sidebar.admin' } as const;
+
 export default function Sidebar() {
   const navigate = useNavigate();
-  const { logout, userName } = useAuth();
+  const { logout, userName, userRole } = useAuth();
   const { t } = useI18n();
 
   const handleLogout = () => {
@@ -25,6 +27,14 @@ export default function Sidebar() {
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
+  const adminOnlyNav = [
+    { to: '/admin/dashboard', icon: ShieldCheck, key: 'sidebar.admin' },
+    { to: '/admin/tasks', icon: Activity, key: 'sidebar.tasks' },
+    { to: '/admin/users', icon: Users, key: 'sidebar.users' },
+    { to: '/admin/audit', icon: FileText, key: 'sidebar.audit' },
+    { to: '/help', icon: HelpCircle, key: 'sidebar.helpSupport' },
+  ];
 
   return (
     <aside className='fixed left-0 top-0 h-full w-64 bg-cream-50 flex flex-col z-50 shadow-sm'>
@@ -41,7 +51,7 @@ export default function Sidebar() {
       </div>
 
       <nav className='flex-1 p-4 space-y-1'>
-        {navItems.map(({ to, icon: Icon, key }) => (
+        {(userRole === 'ADMIN' ? adminOnlyNav : navItems).map(({ to, icon: Icon, key }) => (
           <NavLink key={to} to={to}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
@@ -52,7 +62,7 @@ export default function Sidebar() {
             }
           >
             <Icon className='w-5 h-5' />
-            {t(key)}
+            {t(key as any)}
           </NavLink>
         ))}
       </nav>

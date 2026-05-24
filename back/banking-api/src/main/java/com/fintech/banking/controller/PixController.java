@@ -22,6 +22,7 @@ public class PixController {
 
     private final PixService pixService;
 
+
     @PostMapping("/keys")
     public ResponseEntity<PixKeyResponse> registerKey(
             @AuthenticationPrincipal UserDetails userDetails,

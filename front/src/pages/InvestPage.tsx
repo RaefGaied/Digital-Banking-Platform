@@ -319,10 +319,10 @@ export default function InvestPage() {
             </div>
 
             {/* Amount */}
-            <label className='block text-xs font-medium text-dark-800 mb-2'>Amount to invest</label>
+            <label htmlFor='invest-amount' className='block text-xs font-medium text-dark-800 mb-2'>Amount to invest</label>
             <div className='relative mb-3'>
               <span className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium'>R$</span>
-              <input type='number' value={amount} onChange={e => setAmount(e.target.value)}
+              <input id='invest-amount' name='amount' type='number' value={amount} onChange={e => setAmount(e.target.value)}
                 className='w-full bg-cream-100 border border-cream-200 rounded-xl pl-10 pr-4 py-3 text-dark-800 focus:outline-none focus:border-primary-500 text-sm'
                 placeholder='0,00' min='1' step='0.01' />
             </div>

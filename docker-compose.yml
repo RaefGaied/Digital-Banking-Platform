@@ -40,9 +40,6 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    volumes:
-      - zookeeper_data:/var/lib/zookeeper/data
-      - zookeeper_log:/var/lib/zookeeper/log
     networks:
       - banking-network
     healthcheck:
@@ -66,8 +63,9 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-    volumes:
-      - kafka_data:/var/lib/kafka/data
+    command: >
+      bash -ec "echo 'delete /brokers/ids/1' | zookeeper-shell zookeeper:2181 >/dev/null 2>&1 || true;
+      /etc/confluent/docker/run"
     networks:
       - banking-network
     healthcheck:
@@ -106,6 +104,19 @@ services:
       retries: 10
       start_period: 30s
 
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: banking-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+    networks:
+      - banking-network
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: banking-pgadmin
@@ -123,9 +134,6 @@ services:
 
 volumes:
   postgres_data:
-  zookeeper_data:
-  zookeeper_log:
-  kafka_data:
   pgadmin_data:
 
 networks:

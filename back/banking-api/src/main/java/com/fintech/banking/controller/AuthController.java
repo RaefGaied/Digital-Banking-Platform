@@ -5,7 +5,7 @@ import com.fintech.banking.dto.request.RefreshTokenRequest;
 import com.fintech.banking.dto.request.RegisterRequest;
 import com.fintech.banking.dto.request.Verify2faRequest;
 import com.fintech.banking.dto.response.LoginResponse;
-import com.fintech.banking.dto.response.TokenResponse;
+import com.fintech.banking.dto.response.ClientResponse;
 import com.fintech.banking.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<TokenResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ClientResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
@@ -31,7 +31,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<ClientResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
     }
 
@@ -42,7 +42,7 @@ public class AuthController {
     }
 
     @PostMapping("/verify-2fa")
-    public ResponseEntity<TokenResponse> verify2fa(@Valid @RequestBody Verify2faRequest request) {
+    public ResponseEntity<ClientResponse> verify2fa(@Valid @RequestBody Verify2faRequest request) {
         return ResponseEntity.ok(authService.verify2fa(request.getTempToken(), request.getCode()));
     }
 }

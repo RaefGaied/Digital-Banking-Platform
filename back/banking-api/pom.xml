@@ -224,6 +224,13 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            
+            <!-- SonarQube Maven scanner plugin (used by CI) -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.10.0.4607</version>
+            </plugin>
         </plugins>
     </build>
 

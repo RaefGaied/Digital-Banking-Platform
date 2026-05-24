@@ -1,21 +1,22 @@
 package com.fintech.banking.dto.response;
 
-import com.fintech.banking.dto.response.TokenResponse;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 /**
  * Response for login API that may require 2FA verification.
  */
 public class LoginResponse {
     private boolean twoFactorRequired;
-    private TokenResponse tokenResponse;
+    @JsonUnwrapped
+    private ClientResponse clientResponse;
     private String tempToken;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(boolean twoFactorRequired, TokenResponse tokenResponse, String tempToken) {
+    public LoginResponse(boolean twoFactorRequired, ClientResponse clientResponse, String tempToken) {
         this.twoFactorRequired = twoFactorRequired;
-        this.tokenResponse = tokenResponse;
+        this.clientResponse = clientResponse;
         this.tempToken = tempToken;
     }
 
@@ -27,12 +28,12 @@ public class LoginResponse {
         this.twoFactorRequired = twoFactorRequired;
     }
 
-    public TokenResponse getTokenResponse() {
-        return tokenResponse;
+    public ClientResponse getTokenResponse() {
+        return clientResponse;
     }
 
-    public void setTokenResponse(TokenResponse tokenResponse) {
-        this.tokenResponse = tokenResponse;
+    public void setTokenResponse(ClientResponse clientResponse) {
+        this.clientResponse = clientResponse;
     }
 
     public String getTempToken() {

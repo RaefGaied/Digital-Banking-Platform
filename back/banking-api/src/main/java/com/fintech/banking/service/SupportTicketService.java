@@ -47,7 +47,7 @@ public class SupportTicketService {
         log.info("Support ticket created: {}", ticket.getId());
 
         // Send notification
-        notificationService.notifyTicketCreated(UUID.randomUUID(), ticket.getId(), subject);
+        notificationService.notifyTicketCreated(ticket.getUserId(), ticket.getId(), subject);
         return ticket;
     }
 
@@ -108,9 +108,9 @@ public class SupportTicketService {
 
         // Send notification
         if (newStatus == TicketStatus.RESOLVED) {
-            notificationService.notifyTicketResolved(UUID.randomUUID(), ticketId);
+            notificationService.notifyTicketResolved(ticket.getUserId(), ticketId);
         } else if (newStatus == TicketStatus.IN_PROGRESS) {
-            notificationService.notifyTicketUpdated(UUID.randomUUID(), ticketId, "Your ticket is being reviewed");
+            notificationService.notifyTicketUpdated(ticket.getUserId(), ticketId, "Your ticket is being reviewed");
         }
 
         return ticket;

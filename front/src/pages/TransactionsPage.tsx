@@ -222,10 +222,10 @@ export default function TransactionsPage() {
 
               {/* Amount */}
               <div>
-                <label className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.amount}</label>
+                <label htmlFor='txn-amount' className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.amount}</label>
                 <div className='relative'>
                   <span className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm'>R$</span>
-                  <input type='number' value={amount} onChange={e => setAmount(e.target.value)}
+                  <input id='txn-amount' name='amount' type='number' value={amount} onChange={e => setAmount(e.target.value)}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl pl-10 pr-4 py-3.5 text-dark-800 text-lg font-semibold placeholder-gray-300 focus:outline-none focus:border-primary-500 transition-colors'
                     placeholder='0,00' min='0.01' step='0.01' />
                 </div>
@@ -248,8 +248,8 @@ export default function TransactionsPage() {
               {/* Target account (transfer) */}
               {tab === 'transfer' && (
                 <div>
-                  <label className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.destinationAccount}</label>
-                  <input type='text' value={targetAccount} onChange={e => setTargetAccount(e.target.value)}
+                  <label htmlFor='txn-targetAccount' className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.destinationAccount}</label>
+                  <input id='txn-targetAccount' name='targetAccount' type='text' value={targetAccount} onChange={e => setTargetAccount(e.target.value)}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl px-4 py-3.5 text-dark-800 placeholder-gray-300 focus:outline-none focus:border-primary-500 transition-colors'
                     placeholder={text.accountNumber} />
                 </div>
@@ -258,8 +258,8 @@ export default function TransactionsPage() {
               {/* PIX key */}
               {tab === 'pix' && (
                 <div>
-                  <label className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.pixKey}</label>
-                  <input type='text' value={pixKey} onChange={e => setPixKey(e.target.value)}
+                  <label htmlFor='txn-pixKey' className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.pixKey}</label>
+                  <input id='txn-pixKey' name='pixKey' type='text' value={pixKey} onChange={e => setPixKey(e.target.value)}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl px-4 py-3.5 text-dark-800 placeholder-gray-300 focus:outline-none focus:border-primary-500 transition-colors'
                     placeholder={text.pixKeyPlaceholder} />
                 </div>
@@ -267,10 +267,10 @@ export default function TransactionsPage() {
 
               {/* Description */}
               <div>
-                <label className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>
+                <label htmlFor='txn-description' className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>
                   {text.description} <span className='text-gray-300 normal-case font-normal'>{text.optional}</span>
                 </label>
-                <input type='text' value={description} onChange={e => setDescription(e.target.value)}
+                <input id='txn-description' name='description' type='text' value={description} onChange={e => setDescription(e.target.value)}
                   className='w-full bg-cream-100 border border-cream-200 rounded-xl px-4 py-3.5 text-dark-800 placeholder-gray-300 focus:outline-none focus:border-primary-500 transition-colors'
                   placeholder={text.descriptionPlaceholder} />
               </div>

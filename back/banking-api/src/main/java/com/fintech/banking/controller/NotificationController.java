@@ -1,7 +1,9 @@
 package com.fintech.banking.controller;
 
 import com.fintech.banking.domain.entity.Notification;
+import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.NotificationType;
+import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.NotificationService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,12 +20,20 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/notifications")
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
+
+    private UUID resolveAuthenticatedUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .map(User::getId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+    }
 
     /**
      * Get all notifications for the authenticated user (paginated)
@@ -34,16 +44,17 @@ public class NotificationController {
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             Pageable pageable = PageRequest.of(page, size);
 
             Page<Notification> notifications = notificationService.getNotifications(userId, pageable);
 
-            return ResponseEntity.ok(new SuccessResponse("Notifications retrieved", notifications));
+            return ResponseEntity.ok(new SuccessResponse("Notifications retrieved",
+                    com.fintech.banking.dto.response.PageResponse.from(notifications)));
         } catch (Exception e) {
             log.error("Failed to retrieve notifications", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve notifications"));
+                    .body(new ErrorResponse("Failed to retrieve notifications"));
         }
     }
 
@@ -56,16 +67,17 @@ public class NotificationController {
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             Pageable pageable = PageRequest.of(page, size);
 
             Page<Notification> notifications = notificationService.getUnreadNotifications(userId, pageable);
 
-            return ResponseEntity.ok(new SuccessResponse("Unread notifications retrieved", notifications));
+            return ResponseEntity.ok(new SuccessResponse("Unread notifications retrieved",
+                    com.fintech.banking.dto.response.PageResponse.from(notifications)));
         } catch (Exception e) {
             log.error("Failed to retrieve unread notifications", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve unread notifications"));
+                    .body(new ErrorResponse("Failed to retrieve unread notifications"));
         }
     }
 
@@ -75,15 +87,15 @@ public class NotificationController {
     @GetMapping("/unread/count")
     public ResponseEntity<?> getUnreadCount(Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             long unreadCount = notificationService.getUnreadCount(userId);
 
-            return ResponseEntity.ok(new SuccessResponse("Unread count retrieved", 
-                new UnreadCountResponse(unreadCount)));
+            return ResponseEntity.ok(new SuccessResponse("Unread count retrieved",
+                    new UnreadCountResponse(unreadCount)));
         } catch (Exception e) {
             log.error("Failed to retrieve unread count", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve unread count"));
+                    .body(new ErrorResponse("Failed to retrieve unread count"));
         }
     }
 
@@ -99,12 +111,12 @@ public class NotificationController {
 
             log.info("Notification marked as read: {}", id);
 
-            return ResponseEntity.ok(new SuccessResponse("Notification marked as read", 
-                new NotificationResponse(notification)));
+            return ResponseEntity.ok(new SuccessResponse("Notification marked as read",
+                    new NotificationResponse(notification)));
         } catch (Exception e) {
             log.error("Failed to mark notification as read", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to mark notification as read"));
+                    .body(new ErrorResponse("Failed to mark notification as read"));
         }
     }
 
@@ -114,7 +126,7 @@ public class NotificationController {
     @PostMapping("/read-all")
     public ResponseEntity<?> markAllAsRead(Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             notificationService.markAllAsRead(userId);
 
             log.info("All notifications marked as read for user: {}", userId);
@@ -123,7 +135,7 @@ public class NotificationController {
         } catch (Exception e) {
             log.error("Failed to mark all notifications as read", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to mark all notifications as read"));
+                    .body(new ErrorResponse("Failed to mark all notifications as read"));
         }
     }
 
@@ -136,20 +148,19 @@ public class NotificationController {
             Authentication authentication) {
         try {
             Notification notification = notificationService.getNotifications(
-                UUID.fromString(authentication.getName()),
-                PageRequest.of(0, 1)
-            ).stream().filter(n -> n.getId().equals(id)).findFirst().orElse(null);
+                    resolveAuthenticatedUserId(authentication),
+                    PageRequest.of(0, 1)).stream().filter(n -> n.getId().equals(id)).findFirst().orElse(null);
 
             if (notification == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            return ResponseEntity.ok(new SuccessResponse("Notification retrieved", 
-                new NotificationResponse(notification)));
+            return ResponseEntity.ok(new SuccessResponse("Notification retrieved",
+                    new NotificationResponse(notification)));
         } catch (Exception e) {
             log.error("Failed to retrieve notification", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve notification"));
+                    .body(new ErrorResponse("Failed to retrieve notification"));
         }
     }
 
@@ -163,18 +174,19 @@ public class NotificationController {
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             NotificationType notificationType = NotificationType.valueOf(type.toUpperCase());
             Pageable pageable = PageRequest.of(page, size);
 
             // Would need custom repository method for this
             Page<Notification> notifications = notificationService.getNotifications(userId, pageable);
 
-            return ResponseEntity.ok(new SuccessResponse("Notifications retrieved", notifications));
+            return ResponseEntity.ok(new SuccessResponse("Notifications retrieved",
+                    com.fintech.banking.dto.response.PageResponse.from(notifications)));
         } catch (Exception e) {
             log.error("Failed to retrieve notifications by type", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Invalid type or retrieval failed"));
+                    .body(new ErrorResponse("Invalid type or retrieval failed"));
         }
     }
 
@@ -193,7 +205,7 @@ public class NotificationController {
         } catch (Exception e) {
             log.error("Failed to delete notification", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to delete notification"));
+                    .body(new ErrorResponse("Failed to delete notification"));
         }
     }
 
@@ -203,21 +215,21 @@ public class NotificationController {
     @GetMapping("/preferences")
     public ResponseEntity<?> getPreferences(Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
 
             // TODO: Implement notification preferences storage
             var preferences = new NotificationPreferences(
-                true,  // email notifications
-                true,  // in-app notifications
-                true,  // ticket updates
-                true   // security alerts
+                    true, // email notifications
+                    true, // in-app notifications
+                    true, // ticket updates
+                    true // security alerts
             );
 
             return ResponseEntity.ok(new SuccessResponse("Preferences retrieved", preferences));
         } catch (Exception e) {
             log.error("Failed to retrieve notification preferences", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve preferences"));
+                    .body(new ErrorResponse("Failed to retrieve preferences"));
         }
     }
 
@@ -238,7 +250,7 @@ public class NotificationController {
         } catch (Exception e) {
             log.error("Failed to update notification preferences", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to update preferences"));
+                    .body(new ErrorResponse("Failed to update preferences"));
         }
     }
 

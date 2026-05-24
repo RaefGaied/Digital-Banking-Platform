@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/profile")
 @RequiredArgsConstructor
 @Slf4j
 public class UserProfileController {
@@ -32,10 +32,8 @@ public class UserProfileController {
     public ResponseEntity<?> getCurrentUserProfile(
             org.springframework.security.core.Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
-
-            User user = userRepository.findById(userId)
-                .orElse(null);
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email).orElse(null);
 
             if (user == null) {
                 return ResponseEntity.notFound().build();
@@ -57,10 +55,10 @@ public class UserProfileController {
             @RequestBody UpdateProfileRequest request,
             org.springframework.security.core.Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
-
-            User user = userRepository.findById(userId)
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            UUID userId = user.getId();
 
             if (request.getName() != null && !request.getName().isEmpty()) {
                 user.setName(request.getName());
@@ -93,10 +91,10 @@ public class UserProfileController {
             @RequestBody ChangePasswordRequest request,
             org.springframework.security.core.Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
-
-            User user = userRepository.findById(userId)
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            UUID userId = user.getId();
 
             // Verify current password
             if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -128,10 +126,9 @@ public class UserProfileController {
     public ResponseEntity<?> getUserStatus(
             org.springframework.security.core.Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
-
-            User user = userRepository.findById(userId)
-                .orElse(null);
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email).orElse(null);
+            UUID userId = user != null ? user.getId() : null;
 
             if (user == null) {
                 return ResponseEntity.notFound().build();
@@ -154,10 +151,10 @@ public class UserProfileController {
             @RequestBody DeviceFingerprintRequest request,
             org.springframework.security.core.Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
-
-            User user = userRepository.findById(userId)
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            UUID userId = user.getId();
 
             user.setDeviceFingerprint(request.getFingerprint());
             user = userRepository.save(user);
@@ -180,10 +177,10 @@ public class UserProfileController {
             @RequestBody PasswordVerificationRequest request,
             org.springframework.security.core.Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
-
-            User user = userRepository.findById(userId)
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+            UUID userId = user.getId();
 
             // Verify password
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

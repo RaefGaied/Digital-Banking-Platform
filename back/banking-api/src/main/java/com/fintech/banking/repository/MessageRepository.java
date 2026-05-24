@@ -13,21 +13,21 @@ import java.util.UUID;
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    Page<Message> findBySessionIdOrderByCreatedAtDesc(Long sessionId, Pageable pageable);
+    Page<Message> findBySessionIdOrderByCreatedAtDesc(UUID sessionId, Pageable pageable);
 
-    List<Message> findBySessionIdOrderByCreatedAtAsc(Long sessionId);
+    List<Message> findBySessionIdOrderByCreatedAtAsc(UUID sessionId);
 
-    List<Message> findBySessionIdOrderByCreatedAtDesc(Long sessionId);
+    List<Message> findBySessionIdOrderByCreatedAtDesc(UUID sessionId);
 
-    List<Message> findBySessionIdAndSenderType(Long sessionId, SenderType senderType);
+    List<Message> findBySessionIdAndSenderType(UUID sessionId, SenderType senderType);
 
-    List<Message> findBySessionIdAndIsInternalTrue(Long sessionId);
+    List<Message> findBySessionIdAndIsInternalTrue(UUID sessionId);
 
-    List<Message> findBySessionIdAndIsInternalFalse(Long sessionId);
+    List<Message> findBySessionIdAndIsInternalFalse(UUID sessionId);
 
-    List<Message> findBySessionIdAndContentContainingIgnoreCase(Long sessionId, String keyword);
+    List<Message> findBySessionIdAndContentContainingIgnoreCase(UUID sessionId, String keyword);
 
-    long countBySessionId(Long sessionId);
+    long countBySessionId(UUID sessionId);
 
     // Legacy support for backward compatibility
         // Legacy support removed: messages are linked by sessionId

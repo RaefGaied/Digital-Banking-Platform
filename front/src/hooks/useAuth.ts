@@ -6,6 +6,7 @@ import type { LoginRequest, RegisterRequest } from '../types';
 export function useAuth() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [userName, setUserName] = useState<string>(() => localStorage.getItem('userName') || '');
+  const [userRole, setUserRole] = useState<string>(() => localStorage.getItem('userRole') || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,22 +18,17 @@ export function useAuth() {
     try {
       const response = await authApi.login(data);
       localStorage.setItem('token', response.accessToken);
+      localStorage.setItem('userId', response.uuid);
+      localStorage.setItem('userName', response.name);
+      localStorage.setItem('userRole', response.role);
       setToken(response.accessToken);
+      setUserName(response.name);
+      setUserRole(response.role);
 
-      // Fetch user name from account endpoint
-      const accountResponse = await fetch('http://localhost:8080/api/v1/accounts/me', {
-        headers: { Authorization: `Bearer ${response.accessToken}` }
-      });
-      if (accountResponse.ok) {
-        const account = await accountResponse.json();
-        localStorage.setItem('userName', account.ownerName);
-        setUserName(account.ownerName);
-      }
-
-      return true;
+      return response;
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid email or password');
-      return false;
+      return null;
     } finally {
       setLoading(false);
     }
@@ -44,9 +40,12 @@ export function useAuth() {
     try {
       const response = await authApi.register(data);
       localStorage.setItem('token', response.accessToken);
-      localStorage.setItem('userName', data.name);
+      localStorage.setItem('userId', response.uuid);
+      localStorage.setItem('userName', response.name);
+      localStorage.setItem('userRole', response.role);
       setToken(response.accessToken);
-      setUserName(data.name);
+      setUserName(response.name);
+      setUserRole(response.role);
       return true;
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error creating account');
@@ -58,10 +57,13 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     localStorage.removeItem('userName');
+    localStorage.removeItem('userRole');
     setToken(null);
     setUserName('');
+    setUserRole('');
   };
 
-  return { isAuthenticated, token, userName, loading, error, login, register, logout };
+  return { isAuthenticated, token, userName, userRole, loading, error, login, register, logout };
 }

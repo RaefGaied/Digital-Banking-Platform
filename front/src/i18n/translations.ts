@@ -26,6 +26,7 @@ export const translations = {
       invest: 'Invest',
       analytics: 'Analytics',
       profile: 'Profile',
+      admin: 'Admin',
       helpSupport: 'Help & Support',
       viewProfile: 'View profile',
       logout: 'Logout',
@@ -57,6 +58,7 @@ export const translations = {
       invest: 'Investir',
       analytics: 'Analytique',
       profile: 'Profil',
+      admin: 'Admin',
       helpSupport: 'Aide et support',
       viewProfile: 'Voir le profil',
       logout: 'Se deconnecter',
@@ -83,6 +85,7 @@ export type TranslationKey =
   | 'sidebar.invest'
   | 'sidebar.analytics'
   | 'sidebar.profile'
+  | 'sidebar.admin'
   | 'sidebar.helpSupport'
   | 'sidebar.viewProfile'
   | 'sidebar.logout'

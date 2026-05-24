@@ -6,9 +6,8 @@ import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.dto.request.LoginRequest;
 import com.fintech.banking.dto.request.RefreshTokenRequest;
 import com.fintech.banking.dto.request.RegisterRequest;
-import com.fintech.banking.dto.request.Verify2faRequest;
 import com.fintech.banking.dto.response.LoginResponse;
-import com.fintech.banking.dto.response.TokenResponse;
+import com.fintech.banking.dto.response.ClientResponse;
 import com.fintech.banking.repository.AccountRepository;
 import com.fintech.banking.repository.RefreshTokenRepository;
 import com.fintech.banking.repository.UserRepository;
@@ -54,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
         return "unknown";
     }
 
-    private TokenResponse buildTokenResponse(User user) {
+    private ClientResponse buildTokenResponse(User user) {
         String accessToken = jwtService.generateToken(user);
         String refreshTokenValue = UUID.randomUUID().toString();
 
@@ -66,8 +65,11 @@ public class AuthServiceImpl implements AuthService {
 
         refreshTokenRepository.save(refreshToken);
 
-        return TokenResponse.builder()
-                .accessToken(accessToken)
+        return ClientResponse.builder()
+            .uuid(user.getId())
+            .name(user.getName())
+            .role(user.getRole() != null ? user.getRole().name() : null)
+            .accessToken(accessToken)
                 .refreshToken(refreshTokenValue)
                 .tokenType("Bearer")
                 .expiresIn(86400000L)
@@ -76,7 +78,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public TokenResponse register(RegisterRequest request) {
+    public ClientResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             auditLogService.logFailure(request.getEmail(), "REGISTER", "Email already registered", getClientIp());
             throw new IllegalArgumentException("Email already registered");
@@ -146,7 +148,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public TokenResponse refresh(RefreshTokenRequest request) {
+    public ClientResponse refresh(RefreshTokenRequest request) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(request.getRefreshToken())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
 
@@ -178,7 +180,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public TokenResponse verify2fa(String tempToken, int code) {
+    public ClientResponse verify2fa(String tempToken, int code) {
         // Extract user from temp token
         String email = jwtService.extractUsername(tempToken);
         User user = userRepository.findByEmail(email)

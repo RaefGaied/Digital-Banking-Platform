@@ -44,15 +44,30 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/auth/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs",
-                                "/v3/api-docs/**",
-                                "/actuator/health")
-                        .permitAll()
-                        .anyRequest().authenticated())
+                    .requestMatchers(
+                        "/auth/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**",
+                        "/actuator/health")
+                    .permitAll()
+                    // Admin-only endpoints
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
+                    // User-only endpoints (defense-in-depth)
+                    .requestMatchers(
+                        "/accounts/**",
+                        "/transactions/**",
+                        "/cards/**",
+                        "/investments/**",
+                        "/support-tickets/**",
+                        "/sessions/**",
+                        "/users/**",
+                        "/profile/**",
+                        "/notifications/**",
+                        "/pix/**"
+                    ).hasRole("USER")
+                    .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

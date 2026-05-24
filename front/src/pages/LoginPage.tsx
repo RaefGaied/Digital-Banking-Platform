@@ -59,8 +59,8 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login({ email, password });
-    if (success) navigate('/dashboard');
+    const response = await login({ email, password });
+    if (response) navigate(response.role === 'ADMIN' ? '/admin' : '/dashboard');
   };
 
   return (
@@ -233,12 +233,13 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
 
             {/* Email */}
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 8, fontWeight: 500 }}>
+              <div style={{ marginBottom: 18 }}>
+              <label htmlFor='login-email' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 8, fontWeight: 500 }}>
                 {text.emailAddress}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
+                  id='login-email' name='email'
                   type='email'
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -252,11 +253,12 @@ export default function LoginPage() {
 
             {/* Password */}
             <div style={{ marginBottom: 10 }}>
-              <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 8, fontWeight: 500 }}>
+              <label htmlFor='login-password' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 8, fontWeight: 500 }}>
                 {text.password}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
+                  id='login-password' name='password'
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}

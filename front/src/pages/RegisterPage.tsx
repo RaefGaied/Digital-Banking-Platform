@@ -235,12 +235,12 @@ export default function RegisterPage() {
 
             {/* Name */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
+              <label htmlFor='register-name' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
                 {text.fullName}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
-                  name='name' type='text' value={form.name} onChange={handleChange}
+                  id='register-name' name='name' type='text' value={form.name} onChange={handleChange}
                   className='fb-input' placeholder='John Smith' required
                 />
                 <User style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'rgba(var(--auth-muted),0.7)', pointerEvents: 'none' }} />
@@ -249,28 +249,28 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
+              <label htmlFor='register-email' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
                 {text.emailAddress}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
-                  name='email' type='email' value={form.email} onChange={handleChange}
+                  id='register-email' name='email' type='email' value={form.email} onChange={handleChange}
                   className='fb-input' placeholder='you@email.com' required
                 />
                 <Mail style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'rgba(var(--auth-muted),0.7)', pointerEvents: 'none' }} />
               </div>
             </div>
 
-            {/* CPF removed per cahier des charges; collect account identifiers at account creation */}
+            {/* taxId collection removed per cahier des charges; collect tax identifiers elsewhere */}
 
             {/* Password */}
             <div style={{ marginBottom: 26 }}>
-              <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
+              <label htmlFor='register-password' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
                 {text.password}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
-                  name='password' type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange}
+                  id='register-password' name='password' type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange}
                   className='fb-input' placeholder={text.minChars} minLength={6} required
                 />
                 <button type='button' onClick={() => setShowPassword(!showPassword)}

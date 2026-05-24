@@ -186,16 +186,16 @@ const handleSubmit = (e: React.FormEvent) => {
             <form onSubmit={handleSubmit} className='space-y-4'>
               <div className='grid grid-cols-2 gap-3'>
                 <div>
-                  <label className='block text-xs font-medium text-dark-800 mb-1'>Card Type</label>
-                  <select value={form.cardType} onChange={e => setForm({ ...form, cardType: e.target.value as any })}
-                    className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'>
+                  <label htmlFor='cardType' className='block text-xs font-medium text-dark-800 mb-1'>Card Type</label>
+                    <select id='cardType' name='cardType' value={form.cardType} onChange={e => setForm({ ...form, cardType: e.target.value as any })}
+                      className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'>
                     <option value='CREDIT'>Credit</option>
                     <option value='DEBIT'>Debit</option>
                   </select>
                 </div>
                 <div>
-                  <label className='block text-xs font-medium text-dark-800 mb-1'>Brand</label>
-                  <select value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value as any })}
+                  <label htmlFor='brand' className='block text-xs font-medium text-dark-800 mb-1'>Brand</label>
+                  <select id='brand' name='brand' value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value as any })}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'>
                     <option value='VISA'>Visa</option>
                     <option value='MASTERCARD'>Mastercard</option>
@@ -206,29 +206,29 @@ const handleSubmit = (e: React.FormEvent) => {
               </div>
 
               <div>
-                <label className='block text-xs font-medium text-dark-800 mb-1'>Holder Name</label>
-                <input type='text' value={form.holderName} onChange={e => setForm({ ...form, holderName: e.target.value })}
+                <label htmlFor='holderName' className='block text-xs font-medium text-dark-800 mb-1'>Holder Name</label>
+                <input id='holderName' name='holderName' type='text' value={form.holderName} onChange={e => setForm({ ...form, holderName: e.target.value })}
                   className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
                   placeholder='JOHN SMITH' required />
               </div>
 
               <div>
-                <label className='block text-xs font-medium text-dark-800 mb-1'>Last 4 digits</label>
-                <input type='text' value={form.lastFour} onChange={e => setForm({ ...form, lastFour: e.target.value })}
+                <label htmlFor='lastFour' className='block text-xs font-medium text-dark-800 mb-1'>Last 4 digits</label>
+                <input id='lastFour' name='lastFour' type='text' value={form.lastFour} onChange={e => setForm({ ...form, lastFour: e.target.value })}
                   className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
                   placeholder='1234' maxLength={4} required />
               </div>
 
               <div className='grid grid-cols-2 gap-3'>
                 <div>
-                  <label className='block text-xs font-medium text-dark-800 mb-1'>Expiry Month</label>
-                  <input type='number' value={form.expiryMonth} onChange={e => setForm({ ...form, expiryMonth: parseInt(e.target.value) })}
+                  <label htmlFor='expiryMonth' className='block text-xs font-medium text-dark-800 mb-1'>Expiry Month</label>
+                  <input id='expiryMonth' name='expiryMonth' type='number' value={form.expiryMonth} onChange={e => setForm({ ...form, expiryMonth: parseInt(e.target.value) })}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
                     min={1} max={12} required />
                 </div>
                 <div>
-                  <label className='block text-xs font-medium text-dark-800 mb-1'>Expiry Year</label>
-                  <input type='number' value={form.expiryYear} onChange={e => setForm({ ...form, expiryYear: parseInt(e.target.value) })}
+                  <label htmlFor='expiryYear' className='block text-xs font-medium text-dark-800 mb-1'>Expiry Year</label>
+                  <input id='expiryYear' name='expiryYear' type='number' value={form.expiryYear} onChange={e => setForm({ ...form, expiryYear: parseInt(e.target.value) })}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
                     min={2024} required />
                 </div>
@@ -236,8 +236,8 @@ const handleSubmit = (e: React.FormEvent) => {
 
               {form.cardType === 'CREDIT' && (
                 <div>
-                  <label className='block text-xs font-medium text-dark-800 mb-1'>Credit Limit</label>
-                  <input type='number' value={form.creditLimit || ''} onChange={e => setForm({ ...form, creditLimit: parseFloat(e.target.value) })}
+                  <label htmlFor='creditLimit' className='block text-xs font-medium text-dark-800 mb-1'>Credit Limit</label>
+                  <input id='creditLimit' name='creditLimit' type='number' value={form.creditLimit || ''} onChange={e => setForm({ ...form, creditLimit: parseFloat(e.target.value) })}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
                     placeholder='5000.00' />
                 </div>

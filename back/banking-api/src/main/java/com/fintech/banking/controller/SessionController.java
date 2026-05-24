@@ -2,6 +2,8 @@ package com.fintech.banking.controller;
 
 import com.fintech.banking.domain.entity.Session;
 import com.fintech.banking.domain.enums.SessionStatus;
+import com.fintech.banking.domain.entity.User;
+import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.SessionService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,12 +19,20 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/sessions")
+@RequestMapping("/sessions")
 @RequiredArgsConstructor
 @Slf4j
 public class SessionController {
 
     private final SessionService sessionService;
+    private final UserRepository userRepository;
+
+    private UUID resolveAuthenticatedUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+            .map(User::getId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+    }
 
     /**
      * Create a new session for the authenticated user
@@ -32,7 +42,7 @@ public class SessionController {
             @RequestBody CreateSessionRequest request,
             Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             String ipAddress = request.getIpAddress() != null ? request.getIpAddress() : "127.0.0.1";
 
             Session session = sessionService.createSession(userId, ipAddress);
@@ -78,7 +88,7 @@ public class SessionController {
     @GetMapping("/active")
     public ResponseEntity<?> getActiveSessions(Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
 
             List<Session> sessions = sessionService.getActiveSessions(userId);
             List<SessionResponse> responses = sessions.stream()
@@ -99,7 +109,7 @@ public class SessionController {
     @GetMapping
     public ResponseEntity<?> getAllSessions(Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
 
             List<Session> sessions = sessionService.getAllSessions(userId);
             List<SessionResponse> responses = sessions.stream()
@@ -197,7 +207,7 @@ public class SessionController {
     @PostMapping("/close-all")
     public ResponseEntity<?> closeAllSessions(Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             sessionService.closeAllSessionsForUser(userId);
 
             log.info("All sessions closed for user: {}", userId);

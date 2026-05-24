@@ -1,9 +1,11 @@
 package com.fintech.banking.controller;
 
 import com.fintech.banking.domain.entity.SupportTicket;
+import com.fintech.banking.domain.entity.User;
+import com.fintech.banking.domain.enums.TicketPriority;
 import com.fintech.banking.domain.enums.TicketStatus;
 import com.fintech.banking.domain.enums.TicketType;
-import com.fintech.banking.domain.enums.TicketPriority;
+import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.SupportTicketService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,12 +22,20 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/support-tickets")
+@RequestMapping("/support-tickets")
 @RequiredArgsConstructor
 @Slf4j
 public class SupportTicketController {
 
     private final SupportTicketService supportTicketService;
+    private final UserRepository userRepository;
+
+    private UUID resolveAuthenticatedUserId(Authentication authentication) {
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .map(User::getId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+    }
 
     /**
      * Create a new support ticket
@@ -35,9 +45,8 @@ public class SupportTicketController {
             @RequestBody CreateTicketRequest request,
             Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
 
-            // Validation
             if (request.getSubject() == null || request.getSubject().isEmpty()) {
                 return ResponseEntity.badRequest().body(new ErrorResponse("Subject is required"));
             }
@@ -46,24 +55,22 @@ public class SupportTicketController {
                 return ResponseEntity.badRequest().body(new ErrorResponse("Description is required"));
             }
 
-            // Create ticket
             SupportTicket ticket = supportTicketService.createTicket(
-                userId,
-                request.getSubject(),
-                request.getDescription(),
-                request.getTicketType(),
-                userId
-            );
+                    userId,
+                    request.getSubject(),
+                    request.getDescription(),
+                    request.getTicketType(),
+                    userId);
 
             log.info("Support ticket created: {}", ticket.getId());
 
             return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new SuccessResponse("Ticket created successfully", new TicketResponse(ticket)));
+                    .body(new SuccessResponse("Ticket created successfully", new TicketResponse(ticket)));
 
         } catch (Exception e) {
             log.error("Failed to create support ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to create ticket: " + e.getMessage()));
+                    .body(new ErrorResponse("Failed to create ticket: " + e.getMessage()));
         }
     }
 
@@ -76,7 +83,7 @@ public class SupportTicketController {
             Authentication authentication) {
         try {
             SupportTicket ticket = supportTicketService.getTicketById(id)
-                .orElse(null);
+                    .orElse(null);
 
             if (ticket == null) {
                 return ResponseEntity.notFound().build();
@@ -86,7 +93,7 @@ public class SupportTicketController {
         } catch (Exception e) {
             log.error("Failed to retrieve ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve ticket"));
+                    .body(new ErrorResponse("Failed to retrieve ticket"));
         }
     }
 
@@ -99,18 +106,25 @@ public class SupportTicketController {
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
             Pageable pageable = PageRequest.of(page, size);
 
-            Page<SupportTicket> tickets = supportTicketService.getUserTickets(
-                userId, pageable
-            );
+            Page<SupportTicket> tickets = supportTicketService.getUserTickets(userId, pageable);
+            var responses = tickets.getContent().stream().map(TicketResponse::new)
+                    .collect(java.util.stream.Collectors.toList());
+            var pageResp = new com.fintech.banking.dto.response.PageResponse<>(
+                    responses,
+                    tickets.getNumber(),
+                    tickets.getSize(),
+                    tickets.getTotalElements(),
+                    tickets.getTotalPages(),
+                    tickets.isLast());
 
-            return ResponseEntity.ok(new SuccessResponse("Tickets retrieved", tickets));
+            return ResponseEntity.ok(new SuccessResponse("Tickets retrieved", pageResp));
         } catch (Exception e) {
             log.error("Failed to retrieve user tickets", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve tickets"));
+                    .body(new ErrorResponse("Failed to retrieve tickets"));
         }
     }
 
@@ -120,7 +134,7 @@ public class SupportTicketController {
     @GetMapping("/open")
     public ResponseEntity<?> getOpenTickets(Authentication authentication) {
         try {
-            UUID userId = UUID.fromString(authentication.getName());
+            UUID userId = resolveAuthenticatedUserId(authentication);
 
             var tickets = supportTicketService.getOpenTickets(userId);
 
@@ -128,7 +142,7 @@ public class SupportTicketController {
         } catch (Exception e) {
             log.error("Failed to retrieve open tickets", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve open tickets"));
+                    .body(new ErrorResponse("Failed to retrieve open tickets"));
         }
     }
 
@@ -150,7 +164,7 @@ public class SupportTicketController {
         } catch (Exception e) {
             log.error("Failed to update ticket status", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to update ticket status"));
+                    .body(new ErrorResponse("Failed to update ticket status"));
         }
     }
 
@@ -171,7 +185,7 @@ public class SupportTicketController {
         } catch (Exception e) {
             log.error("Failed to assign ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to assign ticket"));
+                    .body(new ErrorResponse("Failed to assign ticket"));
         }
     }
 
@@ -191,7 +205,7 @@ public class SupportTicketController {
         } catch (Exception e) {
             log.error("Failed to close ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to close ticket"));
+                    .body(new ErrorResponse("Failed to close ticket"));
         }
     }
 
@@ -211,7 +225,7 @@ public class SupportTicketController {
         } catch (Exception e) {
             log.error("Failed to reopen ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to reopen ticket"));
+                    .body(new ErrorResponse("Failed to reopen ticket"));
         }
     }
 
@@ -227,7 +241,7 @@ public class SupportTicketController {
         } catch (Exception e) {
             log.error("Failed to retrieve ticket statistics", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Failed to retrieve statistics"));
+                    .body(new ErrorResponse("Failed to retrieve statistics"));
         }
     }
 

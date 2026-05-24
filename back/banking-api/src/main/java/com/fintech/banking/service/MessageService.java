@@ -30,7 +30,7 @@ public class MessageService {
      * Creates a new message in a session
      */
     @Transactional
-    public Message createMessage(Long sessionId, UUID senderId, SenderType senderType, 
+    public Message createMessage(UUID sessionId, UUID senderId, SenderType senderType, 
                                   String content, Boolean isInternal, String intent, JsonNode parameters) {
         Message message = Message.builder()
             .sessionId(sessionId)
@@ -57,56 +57,56 @@ public class MessageService {
     /**
      * Gets all messages for a session (paginated, descending order)
      */
-    public Page<Message> getSessionMessages(Long sessionId, Pageable pageable) {
+    public Page<Message> getSessionMessages(UUID sessionId, Pageable pageable) {
         return messageRepository.findBySessionIdOrderByCreatedAtDesc(sessionId, pageable);
     }
 
     /**
      * Gets all messages for a session (list, ascending order for conversation)
      */
-    public List<Message> getSessionMessagesList(Long sessionId) {
+    public List<Message> getSessionMessagesList(UUID sessionId) {
         return messageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
     }
 
     /**
      * Gets message count for a session
      */
-    public long getMessageCount(Long sessionId) {
+    public long getMessageCount(UUID sessionId) {
         return messageRepository.countBySessionId(sessionId);
     }
 
     /**
      * Gets messages by sender type
      */
-    public List<Message> getMessagesBySenderType(Long sessionId, SenderType senderType) {
+    public List<Message> getMessagesBySenderType(UUID sessionId, SenderType senderType) {
         return messageRepository.findBySessionIdAndSenderType(sessionId, senderType);
     }
 
     /**
      * Gets internal messages only (admin/system messages)
      */
-    public List<Message> getInternalMessages(Long sessionId) {
+    public List<Message> getInternalMessages(UUID sessionId) {
         return messageRepository.findBySessionIdAndIsInternalTrue(sessionId);
     }
 
     /**
      * Gets user-visible messages (public messages)
      */
-    public List<Message> getPublicMessages(Long sessionId) {
+    public List<Message> getPublicMessages(UUID sessionId) {
         return messageRepository.findBySessionIdAndIsInternalFalse(sessionId);
     }
 
     /**
      * Searches messages by content keyword
      */
-    public List<Message> searchMessages(Long sessionId, String keyword) {
+    public List<Message> searchMessages(UUID sessionId, String keyword) {
         return messageRepository.findBySessionIdAndContentContainingIgnoreCase(sessionId, keyword);
     }
 
     /**
      * Gets latest message in a session
      */
-    public Optional<Message> getLatestMessage(Long sessionId) {
+    public Optional<Message> getLatestMessage(UUID sessionId) {
         List<Message> messages = messageRepository.findBySessionIdOrderByCreatedAtDesc(sessionId);
         return messages.isEmpty() ? Optional.empty() : Optional.of(messages.get(0));
     }
@@ -124,7 +124,7 @@ public class MessageService {
      * Deletes all messages in a session
      */
     @Transactional
-    public void deleteSessionMessages(Long sessionId) {
+    public void deleteSessionMessages(UUID sessionId) {
         List<Message> messages = messageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
         messageRepository.deleteAll(messages);
         log.info("All messages deleted for session: {}", sessionId);

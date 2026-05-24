@@ -76,7 +76,7 @@ FinBank is a production-ready digital banking platform that demonstrates modern 
 | History | `GET /transactions/history` | Full transaction history |
 
 ### ⚡ PIX — Instant Payments
-- Key registration: EMAIL, CPF, PHONE, RANDOM
+- Key registration: EMAIL, TAXID, PHONE, RANDOM
 - Instant transfer simulation
 - QR Code generation with EMV payload format
 - Share PIX key functionality
@@ -114,7 +114,7 @@ FinBank is a production-ready digital banking platform that demonstrates modern 
 - Dismissible notification center with unread badge
 
 ### 👤 Profile Management
-- View account details with masked CPF
+- View account details with masked taxId
 - Toggle notification preferences
 - Change password via secure modal
 - Quick access to payment methods
@@ -270,7 +270,7 @@ Controller (authenticated)
 │ id (UUID) PK    │◄────────│ id (UUID) PK         │
 │ name            │  1   1  │ user_id (UUID) FK    │
 │ email (unique)  │         │ number (unique)      │
-│ cpf (unique)    │         │ agency               │
+│ taxId (unique)  │         │ agency               │
 │ password (hash) │         │ balance (NUMERIC)    │
 │ created_at      │         │ created_at           │
 └────────┬────────┘         └─────────────────────┘
@@ -557,14 +557,14 @@ When creating a new account, fill in the following fields:
 - **Required:** ✅ Yes
 
 #### 3️⃣ **Tax ID** (Cadastro de Pessoa Física / Tax Identifier)
-- **What to enter:** Your taxpayer identification number (e.g., Brazilian CPF — 11 digits)
+- **What to enter:** Your taxpayer identification number (e.g., Brazilian tax ID — 11 digits)
 - **Format:** Digits only; formatting (dots/hyphen) will be stripped automatically
 - **Examples:**
   - ✅ `12345678901`
   - ❌ `123.456.789-01` (will be auto-stripped)
   - ❌ `1234567890` (invalid length)
 - **Validation:** Must be unique (only one account per tax identifier)
-- **Length:** Varies by country; for CPF specifically 11 digits
+- **Length:** Varies by country; for Brazil typically 11 digits
 - **Required:** ✅ Yes
 - **Note:** Used as a unique identifier alongside email; referred to as `taxId` in API examples
 
@@ -600,7 +600,7 @@ Password:       FinBank@2024
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `Email already exists` | Another account uses this email | Use a different email address |
-| `CPF already exists` | Another account uses this CPF | Use a different CPF or login if it's yours |
+| `TaxId already exists` | Another account uses this taxId | Use a different taxId or login if it's yours |
 | `Invalid email format` | Email doesn't match pattern | Check format: user@domain.com |
 | `Password too short` | Less than 6 characters | Enter at least 6 characters |
 | `Email required` | Email field is empty | Fill in your email address |
