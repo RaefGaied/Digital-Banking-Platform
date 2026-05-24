@@ -51,7 +51,7 @@ jobs:
             echo "SONAR_TOKEN is required" >&2
             exit 1
           fi
-          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar \
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar \
             -Dsonar.projectKey=RaefGaied_Digital-Banking-Platform-main \
             -Dsonar.organization=raefgaied \
             -Dsonar.host.url=https://sonarcloud.io \
