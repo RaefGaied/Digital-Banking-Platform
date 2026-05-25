@@ -1,26 +1,64 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Box, Card, CardContent, Chip, TablePagination, Typography } from '@mui/material';
 import { adminApi } from '../../api/admin';
 
 export default function AdminAuditPage() {
-  const auditQuery = useQuery({ queryKey: ['admin-audit-logs'], queryFn: () => adminApi.getAuditLogs(0, 50) });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const auditQuery = useQuery({ queryKey: ['admin-audit-logs', page, rowsPerPage], queryFn: () => adminApi.getAuditLogs(page, rowsPerPage) });
 
   return (
-    <div className='space-y-4'>
-      <h2 className='text-xl font-semibold text-dark-800'>Journal d'audit</h2>
-      <div className='space-y-3'>
+    <Box sx={{ display: 'grid', gap: 3 }}>
+      <Box>
+        <Typography variant='h5' sx={{ fontWeight: 800 }}>
+          Audit log
+        </Typography>
+        <Typography variant='body2' color='text.secondary'>
+          Browse the latest tracked actions and system events.
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: 'grid', gap: 2 }}>
         {auditQuery.data?.content.map((entry) => (
-          <div key={entry.id} className='rounded-2xl border border-cream-200 bg-white p-4'>
-            <div className='flex items-center justify-between gap-3'>
-              <div>
-                <p className='font-medium text-dark-800'>{entry.action}</p>
-                <p className='text-xs text-gray-400'>{entry.userEmail || 'system'} · {entry.entity || 'N/A'}</p>
-              </div>
-              <span className='rounded-full px-3 py-1 text-xs font-medium bg-cream-100 text-gray-600'>{entry.status}</span>
-            </div>
-            <p className='mt-2 text-sm text-gray-500'>{entry.details || 'Aucun detail'}</p>
-          </div>
+          <Card key={entry.id} sx={{ borderRadius: 4 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
+                <Box>
+                  <Typography variant='subtitle1' sx={{ fontWeight: 700 }}>
+                    {entry.action}
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary'>
+                    {entry.userEmail || 'system'} · {entry.entity || 'N/A'}
+                  </Typography>
+                </Box>
+                <Chip label={entry.status} size='small' variant='outlined' />
+              </Box>
+              <Typography variant='body2' color='text.secondary' sx={{ mt: 2 }}>
+                {entry.details || 'No details available'}
+              </Typography>
+            </CardContent>
+          </Card>
         ))}
-      </div>
-    </div>
+      </Box>
+
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent sx={{ py: 0 }}>
+          <TablePagination
+            component='div'
+            count={auditQuery.data?.totalElements ?? 0}
+            page={page}
+            onPageChange={(_, nextPage) => setPage(nextPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(event) => {
+              setRowsPerPage(parseInt(event.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[10, 25, 50]}
+          />
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

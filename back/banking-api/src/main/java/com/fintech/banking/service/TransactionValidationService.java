@@ -25,6 +25,7 @@ public class TransactionValidationService {
     private final WorkflowTaskRepository workflowTaskRepository;
     private final NotificationService notificationService;
     private final AuditLogRepository auditLogRepository;
+    private final SensitiveLineService sensitiveLineService;
 
     private static final BigDecimal HIGH_RISK_THRESHOLD = new BigDecimal("5000");
     private static final List<IntentType> HIGH_RISK_INTENTS = List.of(
@@ -40,29 +41,17 @@ public class TransactionValidationService {
             IntentResult intentResult,
             UUID userId) {
 
-        // Check amount threshold
         boolean exceedsAmountThreshold = transaction.getAmount().compareTo(HIGH_RISK_THRESHOLD) > 0;
+        boolean isHighRiskIntent = sensitiveLineService.isSensitive(
+                intentResult != null ? intentResult.getIntent() : null,
+                intentResult != null ? intentResult.getParameters() : null);
 
-        // Check intent risk
-        boolean isHighRiskIntent = intentResult != null 
-            && intentResult.getIntent() != null 
-            && HIGH_RISK_INTENTS.contains(intentResult.getIntent());
-
-        // Check confidence level
-        boolean lowConfidence = intentResult != null 
-            && (intentResult.getConfidence() == null || intentResult.getConfidence() < 0.7);
-
-        // Determine decision
         if (exceedsAmountThreshold || isHighRiskIntent) {
             createBPMNWorkflow(transaction, userId);
             return AgentDecision.TRIGGER_BPMN;
         }
 
-        if (lowConfidence) {
-            return AgentDecision.REQUEST_INFO;
-        }
-
-        return AgentDecision.AUTO_EXECUTE;
+        return sensitiveLineService.evaluate(intentResult);
     }
 
     /**

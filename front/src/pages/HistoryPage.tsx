@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Box, Card, CardContent, Chip, Divider, InputAdornment, Stack, TextField, Typography } from '@mui/material';
+import { Search, TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react';
 import { accountApi } from '../api/account';
 import { formatCurrency, formatDate, getTransactionLabel } from '../utils/formatters';
-import { TrendingUp, TrendingDown, ArrowLeftRight, Search } from 'lucide-react';
-import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 
 export default function HistoryPage() {
@@ -43,12 +44,12 @@ export default function HistoryPage() {
     queryFn: accountApi.getHistory,
   });
 
-  const filtered = transactions.filter(t => {
-    const matchType = filter === 'ALL' || t.type === filter;
+  const filtered = transactions.filter(transaction => {
+    const matchType = filter === 'ALL' || transaction.type === filter;
     const matchSearch = !search ||
-      getTransactionLabel(t.type).toLowerCase().includes(search.toLowerCase()) ||
-      t.description?.toLowerCase().includes(search.toLowerCase()) ||
-      t.amount.toString().includes(search);
+      getTransactionLabel(transaction.type).toLowerCase().includes(search.toLowerCase()) ||
+      transaction.description?.toLowerCase().includes(search.toLowerCase()) ||
+      transaction.amount.toString().includes(search);
     return matchType && matchSearch;
   });
 
@@ -60,97 +61,115 @@ export default function HistoryPage() {
   ];
 
   return (
-    <div className='space-y-6'>
-      <div>
-        <h1 className='text-2xl font-bold text-dark-800'>{text.title}</h1>
-        <p className='text-gray-400 text-sm mt-1'>{text.subtitle}</p>
-      </div>
+    <Box sx={{ display: 'grid', gap: 3 }}>
+      <Card
+        sx={{
+          borderRadius: 5,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, rgba(232,97,26,0.12), rgba(255,255,255,0.98))',
+        }}
+      >
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          <Typography variant='overline' sx={{ color: 'primary.main', letterSpacing: 3, fontWeight: 700 }}>
+            Ledger
+          </Typography>
+          <Typography variant='h4' sx={{ fontWeight: 900, mt: 1 }}>
+            {text.title}
+          </Typography>
+          <Typography variant='body2' color='text.secondary' sx={{ mt: 1.25, maxWidth: 720, lineHeight: 1.8 }}>
+            {text.subtitle}
+          </Typography>
 
-      {/* Search */}
-      <div className='relative'>
-        <label htmlFor='history-search' className='sr-only'>Search transactions</label>
-        <Search className='absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300' />
-        <input id='history-search' name='search' type='text' value={search} onChange={e => setSearch(e.target.value)}
-          className='w-full bg-white border border-cream-200 rounded-xl pl-11 pr-4 py-3 text-dark-800 placeholder-gray-300 focus:outline-none focus:border-primary-500 transition-colors shadow-sm'
-          placeholder={text.searchPlaceholder} />
-      </div>
+          <TextField
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={text.searchPlaceholder}
+            sx={{ mt: 3, maxWidth: 560 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position='start'>
+                    <Search className='h-4 w-4' />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </CardContent>
+      </Card>
 
-      {/* Filters */}
-      <div className='flex gap-2'>
-        {filters.map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              filter === f.key
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-white text-gray-500 hover:text-primary-500 border border-cream-200'
-            }`}>
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* List */}
-      <div className='card overflow-hidden'>
-        {isLoading ? (
-          <div className='p-6 space-y-4'>
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className='flex items-center gap-3 animate-pulse'>
-                <div className='w-10 h-10 rounded-full bg-cream-200' />
-                <div className='flex-1'>
-                  <div className='h-4 w-32 bg-cream-200 rounded mb-2' />
-                  <div className='h-3 w-24 bg-cream-200 rounded' />
-                </div>
-                <div className='h-4 w-20 bg-cream-200 rounded' />
-              </div>
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <Stack direction='row' spacing={1} sx={{ flexWrap: 'wrap' }}>
+            {filters.map(entry => (
+              <Chip
+                key={entry.key}
+                label={entry.label}
+                color={filter === entry.key ? 'primary' : 'default'}
+                variant={filter === entry.key ? 'filled' : 'outlined'}
+                onClick={() => setFilter(entry.key)}
+                clickable
+              />
             ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className='p-12 text-center'>
-            <div className='w-16 h-16 rounded-2xl bg-cream-100 flex items-center justify-center mx-auto mb-4'>
-              <Search className='w-8 h-8 text-gray-300' />
-            </div>
-            <p className='text-gray-400'>{text.noTransactions}</p>
-          </div>
-        ) : (
-          <div className='divide-y divide-cream-100'>
-            {filtered.map(t => (
-              <div key={t.id} className='flex items-center justify-between p-4 hover:bg-cream-50 transition-colors'>
-                <div className='flex items-center gap-3'>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    t.type === 'DEPOSIT' ? 'bg-green-100' :
-                    t.type === 'WITHDRAWAL' ? 'bg-red-100' : 'bg-blue-100'
-                  }`}>
-                    {t.type === 'DEPOSIT' ? <TrendingUp className='w-5 h-5 text-green-500' /> :
-                     t.type === 'WITHDRAWAL' ? <TrendingDown className='w-5 h-5 text-red-500' /> :
-                     <ArrowLeftRight className='w-5 h-5 text-blue-500' />}
-                  </div>
-                  <div>
-                    <p className='text-dark-800 text-sm font-medium'>{getTransactionLabel(t.type)}</p>
-                    <p className='text-gray-400 text-xs mt-0.5'>
-                      {t.description || formatDate(t.createdAt)}
-                    </p>
-                    <p className='text-gray-300 text-xs'>{formatDate(t.createdAt)}</p>
-                  </div>
-                </div>
-                <div className='text-right'>
-                  <p className={`font-semibold text-sm ${
-                    t.type === 'DEPOSIT' ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {t.type === 'DEPOSIT' ? '+' : '-'}{formatCurrency(t.amount)}
-                  </p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    t.status === 'COMPLETED' ? 'bg-green-100 text-green-600' :
-                    t.status === 'FAILED' ? 'bg-red-100 text-red-600' :
-                    'bg-yellow-100 text-yellow-600'
-                  }`}>
-                    {t.status === 'COMPLETED' ? text.completed : t.status === 'FAILED' ? text.failed : text.pending}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent sx={{ p: 0 }}>
+          {isLoading ? (
+            <Box sx={{ p: 3, display: 'grid', gap: 2 }}>
+              {[1, 2, 3, 4, 5].map(index => (
+                <Box key={index} sx={{ height: 76, borderRadius: 3, bgcolor: 'action.hover', opacity: 0.7 }} />
+              ))}
+            </Box>
+          ) : filtered.length === 0 ? (
+            <Box sx={{ p: 6, textAlign: 'center' }}>
+              <Box sx={{ width: 64, height: 64, mx: 'auto', borderRadius: 4, bgcolor: 'action.hover', display: 'grid', placeItems: 'center', color: 'text.secondary' }}>
+                <Search className='h-7 w-7' />
+              </Box>
+              <Typography variant='body2' color='text.secondary' sx={{ mt: 2 }}>
+                {text.noTransactions}
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'grid' }}>
+              {filtered.map((transaction, index) => (
+                <Box key={transaction.id} sx={{ p: { xs: 2.5, md: 3 } }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ width: 46, height: 46, borderRadius: 3, display: 'grid', placeItems: 'center', bgcolor: transaction.type === 'DEPOSIT' ? '#f0fdf4' : transaction.type === 'WITHDRAWAL' ? '#fef2f2' : '#eff6ff', color: transaction.type === 'DEPOSIT' ? '#16a34a' : transaction.type === 'WITHDRAWAL' ? '#dc2626' : '#2563eb' }}>
+                      {transaction.type === 'DEPOSIT' ? <TrendingUp className='h-5 w-5' /> : transaction.type === 'WITHDRAWAL' ? <TrendingDown className='h-5 w-5' /> : <ArrowLeftRight className='h-5 w-5' />}
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant='subtitle2' sx={{ fontWeight: 800 }} noWrap>
+                        {getTransactionLabel(transaction.type)}
+                      </Typography>
+                      <Typography variant='body2' color='text.secondary' noWrap>
+                        {transaction.description || formatDate(transaction.createdAt)}
+                      </Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        {formatDate(transaction.createdAt)}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant='subtitle2' sx={{ fontWeight: 800, color: transaction.type === 'DEPOSIT' ? 'success.main' : 'error.main' }}>
+                        {transaction.type === 'DEPOSIT' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      </Typography>
+                      <Chip
+                        size='small'
+                        label={transaction.status === 'COMPLETED' ? text.completed : transaction.status === 'FAILED' ? text.failed : text.pending}
+                        variant='outlined'
+                        sx={{ mt: 0.5 }}
+                      />
+                    </Box>
+                  </Box>
+                  {index < filtered.length - 1 && <Divider sx={{ mt: 2.5 }} />}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

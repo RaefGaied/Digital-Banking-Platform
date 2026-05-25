@@ -1,4 +1,5 @@
-import { Moon, Sun } from 'lucide-react';
+import { DarkMode, LightMode } from '@mui/icons-material';
+import { Button, Tooltip } from '@mui/material';
 import { useI18n } from '../../i18n/I18nContext';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -7,22 +8,31 @@ export default function ThemeToggle() {
   const { t } = useI18n();
 
   return (
-    <button
-      type='button'
-      onClick={toggleTheme}
-      className='inline-flex items-center gap-2 rounded-full bg-cream-50 px-3 py-1.5 shadow-sm transition-all hover:shadow-md'
-      aria-label={t('theme.toggle')}>
-      {theme === 'dark' ? (
-        <>
-          <Sun className='h-4 w-4 text-primary-500' />
-          <span className='text-xs font-medium text-dark-800'>{t('theme.light')}</span>
-        </>
-      ) : (
-        <>
-          <Moon className='h-4 w-4 text-primary-500' />
-          <span className='text-xs font-medium text-dark-800'>{t('theme.dark')}</span>
-        </>
-      )}
-    </button>
+    <Tooltip title={t('theme.toggle')}>
+      <Button
+        type='button'
+        onClick={toggleTheme}
+        variant='outlined'
+        size='small'
+        aria-label={t('theme.toggle')}
+        startIcon={theme === 'dark' ? <LightMode fontSize='small' /> : <DarkMode fontSize='small' />}
+        sx={{
+          borderRadius: 999,
+          textTransform: 'none',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          boxShadow: 1,
+          px: 1.75,
+          py: 0.9,
+          '&:hover': {
+            borderColor: 'primary.main',
+            bgcolor: 'action.hover',
+          },
+        }}
+      >
+        {theme === 'dark' ? t('theme.light') : t('theme.dark')}
+      </Button>
+    </Tooltip>
   );
 }

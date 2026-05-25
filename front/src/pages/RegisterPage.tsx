@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Box, Button, Card, CardContent, Divider, Stack, TextField, Typography, InputAdornment } from '@mui/material';
+import { ArrowRight, Loader2, ShieldCheck, User, Mail, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { Eye, EyeOff, ArrowRight, Loader2, ShieldCheck, User, Mail } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 import ThemeToggle from '../components/ui/ThemeToggle';
 
@@ -32,7 +33,6 @@ export default function RegisterPage() {
         securityNote: 'Vos donnees sont protegees par un chiffrement 256 bits. Nous ne partageons jamais vos informations.',
         alreadyHaveAccount: 'Vous avez deja un compte ?',
         signIn: 'Se connecter',
-        minChars: 'Min. 6 caracteres',
       }
     : {
         openAccount: 'Open an account',
@@ -53,7 +53,6 @@ export default function RegisterPage() {
         securityNote: 'Your data is protected with 256-bit encryption. We never share your information.',
         alreadyHaveAccount: 'Already have an account?',
         signIn: 'Sign in',
-        minChars: 'Min. 6 characters',
       };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,245 +66,169 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className='min-h-screen flex' style={{ fontFamily: "'DM Sans', sans-serif", background: 'rgb(var(--auth-bg))' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Box
+        sx={{
+          display: { xs: 'none', lg: 'flex' },
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: 6,
+          position: 'relative',
+          overflow: 'hidden',
+          width: '50%',
+          bgcolor: 'background.paper',
+          borderRight: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <Box sx={{ position: 'absolute', inset: 0, opacity: 0.35, background: 'radial-gradient(circle at top left, rgba(232,97,26,0.16), transparent 34%), radial-gradient(circle at bottom right, rgba(232,97,26,0.08), transparent 28%)' }} />
+        <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center', position: 'relative', zIndex: 1 }}>
+          <Box sx={{ width: 40, height: 40, borderRadius: 3, bgcolor: 'primary.main', display: 'grid', placeItems: 'center', color: 'primary.contrastText', fontWeight: 800 }}>
+            $
+          </Box>
+          <Typography variant='h5' sx={{ fontWeight: 800 }}>FinBank</Typography>
+        </Stack>
 
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
-
-        .fb-input {
-          width: 100%;
-          height: 50px;
-          background: rgb(var(--auth-input-bg));
-          border: 1px solid rgb(var(--auth-input-border));
-          border-radius: 12px;
-          padding: 0 44px 0 16px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
-          color: rgb(var(--auth-input-text));
-          outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
-          font-weight: 300;
-        }
-        .fb-input::placeholder { color: rgb(var(--auth-muted)); }
-        .fb-input:focus { border-color: #e8611a; box-shadow: 0 0 0 3px rgba(232,97,26,0.08); }
-
-        .fb-btn {
-          width: 100%;
-          height: 52px;
-          background: #e8611a;
-          color: #fff;
-          border: none;
-          border-radius: 12px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
-          font-weight: 500;
-          letter-spacing: 0.06em;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          transition: background 0.2s, transform 0.15s, opacity 0.2s;
-        }
-        .fb-btn:hover:not(:disabled) { background: #d45515; transform: translateY(-1px); }
-        .fb-btn:active:not(:disabled) { transform: translateY(0); }
-        .fb-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .geo-circle {
-          position: absolute;
-          border-radius: 50%;
-          border: 1px solid rgba(232,97,26,0.15);
-          pointer-events: none;
-        }
-        .dot-grid {
-          position: absolute;
-          bottom: 0; left: 0; right: 0;
-          height: 200px;
-          background-image: radial-gradient(rgba(232,97,26,0.2) 1px, transparent 1px);
-          background-size: 22px 22px;
-          -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
-          mask-image: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
-          pointer-events: none;
-        }
-        .stat-card {
-          background: rgb(var(--auth-panel) / 0.08);
-          border: 0.5px solid rgb(var(--auth-panel-border) / 0.35);
-          border-radius: 14px;
-          padding: 16px 18px;
-          transition: border-color 0.2s;
-        }
-        .stat-card:hover { border-color: rgba(232,97,26,0.3); }
-      `}</style>
-
-      {/* ── LEFT PANEL ── */}
-      <div className='hidden lg:flex lg:w-[52%] flex-col justify-between p-10 relative overflow-hidden'
-        style={{ background: 'rgb(var(--auth-left-bg))' }}>
-
-        <div className='geo-circle' style={{ width: 420, height: 420, top: -110, left: -130 }} />
-        <div className='geo-circle' style={{ width: 270, height: 270, top: 30, left: 20, borderColor: 'rgba(232,97,26,0.08)' }} />
-        <div className='geo-circle' style={{ width: 180, height: 180, bottom: 60, right: -40, borderColor: 'rgba(232,97,26,0.12)' }} />
-        <div className='geo-circle' style={{ width: 80, height: 80, bottom: 140, right: 40, borderColor: 'rgba(232,97,26,0.22)' }} />
-        <div className='dot-grid' />
-
-        {/* Logo */}
-        <div className='flex items-center gap-3 relative z-10'>
-          <div className='w-9 h-9 rounded-xl flex items-center justify-center' style={{ background: '#e8611a' }}>
-            <span className='text-white font-bold text-base'>$</span>
-          </div>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: 'rgb(var(--auth-text))', letterSpacing: '0.01em' }}>
-            FinBank
-          </span>
-        </div>
-
-        {/* Tagline */}
-        <div className='relative z-10'>
-          <div className='flex items-center gap-2 mb-4' style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#e8611a' }}>
-            <span style={{ display: 'block', width: 28, height: 1, background: '#e8611a', flexShrink: 0 }} />
+        <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 460 }}>
+          <Typography variant='overline' sx={{ color: 'primary.main', letterSpacing: 3 }}>
             {text.openAccount}
-          </div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 44, lineHeight: 1.1, color: 'rgb(var(--auth-text))', fontWeight: 400, marginBottom: 16 }}>
-            {text.heroTitle1}<br />
-            <em style={{ fontStyle: 'italic', color: '#e8611a' }}>{text.heroTitle2}</em>
-          </h1>
-          <p style={{ fontSize: 14, color: 'rgba(var(--auth-text),0.6)', fontWeight: 300, lineHeight: 1.65, maxWidth: 300 }}>
+          </Typography>
+          <Typography variant='h2' sx={{ mt: 1, mb: 2, fontWeight: 800, lineHeight: 1.05 }}>
+            {text.heroTitle1}<Box component='span' sx={{ color: 'primary.main' }}> {text.heroTitle2}</Box>
+          </Typography>
+          <Typography variant='body1' color='text.secondary' sx={{ maxWidth: 420, lineHeight: 1.8 }}>
             {text.heroDesc}
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
-        {/* Stats */}
-        <div className='grid grid-cols-2 gap-3 relative z-10'>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2, position: 'relative', zIndex: 1, maxWidth: 520 }}>
           {[
-            { label: text.zeroFees, value: '100%' },
+            { label: text.zeroFees, value: '0%' },
             { label: text.encryption, value: '256-bit' },
             { label: text.support, value: '24/7' },
             { label: text.satisfaction, value: '4.9★' },
           ].map(stat => (
-            <div key={stat.label} className='stat-card'>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, color: 'rgb(var(--auth-text))', fontWeight: 600, letterSpacing: '-0.01em' }}>
-                {stat.value}
-              </p>
-              <p style={{ fontSize: 11, color: 'rgba(var(--auth-text),0.45)', marginTop: 2, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            <Card key={stat.label} variant='outlined' sx={{ p: 2, borderRadius: 4, bgcolor: 'background.paper' }}>
+              <Typography variant='h5' sx={{ fontWeight: 800 }}>{stat.value}</Typography>
+              <Typography variant='caption' color='text.secondary' sx={{ textTransform: 'uppercase', letterSpacing: 1.2 }}>
                 {stat.label}
-              </p>
-            </div>
+              </Typography>
+            </Card>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      {/* Vertical divider */}
-      <div className='hidden lg:block w-px flex-shrink-0'
-        style={{ background: 'linear-gradient(to bottom, transparent, rgba(232,97,26,0.25) 30%, rgba(232,97,26,0.25) 70%, transparent)' }} />
+      <Box sx={{ width: { xs: '100%', lg: '50%' }, display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 3, sm: 4, md: 6 } }}>
+        <Card sx={{ width: '100%', maxWidth: 520, borderRadius: 5 }}>
+          <CardContent sx={{ p: { xs: 3, sm: 4, md: 5 } }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+              <ThemeToggle />
+            </Box>
 
-      {/* ── RIGHT PANEL ── */}
-      <div className='flex-1 flex items-center justify-center p-8' style={{ background: 'rgb(var(--auth-right-bg))' }}>
-        <div className='w-full max-w-sm relative'>
-          <div className='absolute -top-2 right-0'>
-            <ThemeToggle />
-          </div>
+            <Stack spacing={0.75} sx={{ mb: 4 }}>
+              <Typography variant='overline' sx={{ color: 'primary.main', letterSpacing: 3 }}>
+                {text.newAccount}
+              </Typography>
+              <Typography variant='h3' sx={{ fontWeight: 800, lineHeight: 1.05 }}>
+                {text.createAccount}
+              </Typography>
+              <Typography variant='body2' color='text.secondary'>
+                {text.joinUsers}
+              </Typography>
+            </Stack>
 
-          {/* Mobile logo */}
-          <div className='lg:hidden flex items-center gap-3 mb-10'>
-            <div className='w-9 h-9 rounded-xl flex items-center justify-center' style={{ background: '#e8611a' }}>
-              <span className='text-white font-bold text-base'>$</span>
-            </div>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: 'rgb(var(--auth-text))' }}>FinBank</span>
-          </div>
+            {error && (
+              <Box sx={{ mb: 3, p: 2, borderRadius: 3, bgcolor: 'error.main', color: 'error.contrastText' }}>
+                <Typography variant='body2'>{error}</Typography>
+              </Box>
+            )}
 
-          {/* Header */}
-          <div className='flex items-center gap-2 mb-3' style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#e8611a' }}>
-            <span style={{ display: 'block', width: 20, height: 1, background: '#e8611a', flexShrink: 0 }} />
-            {text.newAccount}
-          </div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 34, color: 'rgb(var(--auth-text))', fontWeight: 400, lineHeight: 1.1, marginBottom: 6 }}>
-            {text.createAccount}
-          </h2>
-          <p style={{ fontSize: 13, color: 'rgb(var(--auth-muted))', marginBottom: 28, fontWeight: 300 }}>
-            {text.joinUsers}
-          </p>
-
-          {/* Error */}
-          {error && (
-            <div className='rounded-xl p-3 mb-5' style={{ background: 'rgba(220,38,38,0.08)', border: '0.5px solid rgba(220,38,38,0.25)' }}>
-              <p style={{ color: '#b91c1c', fontSize: 13 }}>{error}</p>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
-
-            {/* Name */}
-            <div style={{ marginBottom: 14 }}>
-              <label htmlFor='register-name' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
-                {text.fullName}
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  id='register-name' name='name' type='text' value={form.name} onChange={handleChange}
-                  className='fb-input' placeholder='John Smith' required
+            <Box component='form' onSubmit={handleSubmit}>
+              <Stack spacing={2.25}>
+                <TextField
+                  label={text.fullName}
+                  name='name'
+                  value={form.name}
+                  onChange={handleChange}
+                  autoComplete='name'
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <User className='h-4 w-4 text-gray-400' />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
-                <User style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'rgba(var(--auth-muted),0.7)', pointerEvents: 'none' }} />
-              </div>
-            </div>
 
-            {/* Email */}
-            <div style={{ marginBottom: 14 }}>
-              <label htmlFor='register-email' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
-                {text.emailAddress}
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  id='register-email' name='email' type='email' value={form.email} onChange={handleChange}
-                  className='fb-input' placeholder='you@email.com' required
+                <TextField
+                  label={text.emailAddress}
+                  name='email'
+                  value={form.email}
+                  onChange={handleChange}
+                  type='email'
+                  autoComplete='email'
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position='start'>
+                          <Mail className='h-4 w-4 text-gray-400' />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
-                <Mail style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: 'rgba(var(--auth-muted),0.7)', pointerEvents: 'none' }} />
-              </div>
-            </div>
 
-            {/* taxId collection removed per cahier des charges; collect tax identifiers elsewhere */}
-
-            {/* Password */}
-            <div style={{ marginBottom: 26 }}>
-              <label htmlFor='register-password' style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#7a5c3e', marginBottom: 7, fontWeight: 500 }}>
-                {text.password}
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  id='register-password' name='password' type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange}
-                  className='fb-input' placeholder={text.minChars} minLength={6} required
+                <TextField
+                  label={text.password}
+                  name='password'
+                  value={form.password}
+                  onChange={handleChange}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete='new-password'
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position='end'>
+                          <Button type='button' onClick={() => setShowPassword(v => !v)} sx={{ minWidth: 'auto', p: 0, color: 'text.secondary' }}>
+                            {showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
+                          </Button>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
-                <button type='button' onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'rgba(var(--auth-muted),0.7)', display: 'flex' }}>
-                  {showPassword ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
-                </button>
-              </div>
-            </div>
 
-            {/* Submit */}
-            <button type='submit' disabled={loading} className='fb-btn'>
-              {loading
-                ? <Loader2 style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }} />
-                : <><span>{text.createAccountBtn}</span><ArrowRight style={{ width: 16, height: 16 }} /></>
-              }
-            </button>
-          </form>
+                <Button
+                  type='submit'
+                  variant='contained'
+                  size='large'
+                  disabled={loading}
+                  endIcon={loading ? <Loader2 className='h-4 w-4 animate-spin' /> : <ArrowRight className='h-4 w-4' />}
+                  sx={{ py: 1.6 }}
+                >
+                  {text.createAccountBtn}
+                </Button>
+              </Stack>
+            </Box>
 
-          {/* Security note */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(232,97,26,0.06)', border: '0.5px solid rgba(232,97,26,0.15)', borderRadius: 10, padding: '10px 14px', marginTop: 20 }}>
-            <ShieldCheck style={{ width: 15, height: 15, color: '#e8611a', flexShrink: 0, marginTop: 1 }} />
-            <span style={{ fontSize: 11, color: '#9c7a5a', lineHeight: 1.5 }}>
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant='body2' color='text.secondary' sx={{ lineHeight: 1.7 }}>
+              <ShieldCheck className='mr-2 inline h-4 w-4 text-primary-500' />
               {text.securityNote}
-            </span>
-          </div>
+            </Typography>
 
-          {/* Login link */}
-          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#9c7a5a' }}>
-            {text.alreadyHaveAccount}{' '}
-            <Link to='/login' style={{ color: '#e8611a', textDecoration: 'none', fontWeight: 500 }}>
-              {text.signIn}
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+            <Typography variant='body2' sx={{ mt: 3 }}>
+              {text.alreadyHaveAccount}{' '}
+              <Box component={Link} to='/login' sx={{ color: 'primary.main', fontWeight: 700, textDecoration: 'none' }}>
+                {text.signIn}
+              </Box>
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+    </Box>
   );
 }

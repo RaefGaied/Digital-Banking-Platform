@@ -27,6 +27,9 @@ export const translations = {
       analytics: 'Analytics',
       profile: 'Profile',
       admin: 'Admin',
+      tasks: 'Tasks',
+      users: 'Users',
+      audit: 'Audit',
       helpSupport: 'Help & Support',
       viewProfile: 'View profile',
       logout: 'Logout',
@@ -59,6 +62,9 @@ export const translations = {
       analytics: 'Analytique',
       profile: 'Profil',
       admin: 'Admin',
+      tasks: 'Taches',
+      users: 'Utilisateurs',
+      audit: 'Audit',
       helpSupport: 'Aide et support',
       viewProfile: 'Voir le profil',
       logout: 'Se deconnecter',
@@ -86,6 +92,9 @@ export type TranslationKey =
   | 'sidebar.analytics'
   | 'sidebar.profile'
   | 'sidebar.admin'
+  | 'sidebar.tasks'
+  | 'sidebar.users'
+  | 'sidebar.audit'
   | 'sidebar.helpSupport'
   | 'sidebar.viewProfile'
   | 'sidebar.logout'

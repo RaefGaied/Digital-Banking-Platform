@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { Box, Button, Card, CardContent, Chip, Table, TableBody, TableCell, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
 import { adminApi } from '../../api/admin';
 
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [userReason, setUserReason] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => adminApi.getUsers(0, 50) });
+  const usersQuery = useQuery({ queryKey: ['admin-users', page, rowsPerPage], queryFn: () => adminApi.getUsers(page, rowsPerPage) });
 
   const userMutation = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: string; blocked: boolean }) =>
@@ -19,43 +22,91 @@ export default function AdminUsersPage() {
   });
 
   return (
-    <div className='space-y-6'>
-      <h2 className='text-xl font-semibold text-dark-800'>Gestion utilisateurs</h2>
+    <Box sx={{ display: 'grid', gap: 3 }}>
+      <Box>
+        <Typography variant='h5' sx={{ fontWeight: 800 }}>
+          User management
+        </Typography>
+        <Typography variant='body2' color='text.secondary'>
+          Review, block, or unblock users from a structured admin view.
+        </Typography>
+      </Box>
 
-      <div className='overflow-hidden rounded-2xl border border-cream-200 bg-white'>
-        <table className='min-w-full divide-y divide-cream-200 text-left text-sm'>
-          <thead className='bg-cream-50 text-xs uppercase tracking-[0.18em] text-gray-400'>
-            <tr>
-              <th className='px-4 py-3'>Nom</th>
-              <th className='px-4 py-3'>Statut</th>
-              <th className='px-4 py-3'>Action</th>
-            </tr>
-          </thead>
-          <tbody className='divide-y divide-cream-100'>
-            {usersQuery.data?.content.map((user) => (
-              <tr key={user.id}>
-                <td className='px-4 py-4'>
-                  <div className='font-medium text-dark-800'>{user.name}</div>
-                  <div className='text-xs text-gray-400'>{user.email}</div>
-                </td>
-                <td className='px-4 py-4'><span className='rounded-full px-3 py-1 text-xs font-medium bg-cream-100 text-gray-600'>{user.status}</span></td>
-                <td className='px-4 py-4'>
-                  {user.status === 'BLOCKED' ? (
-                    <button onClick={() => userMutation.mutate({ userId: user.id, blocked: false })} className='rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white'>Debloquer</button>
-                  ) : (
-                    <button onClick={() => userMutation.mutate({ userId: user.id, blocked: true })} className='rounded-xl bg-rose-600 px-3 py-2 text-xs font-medium text-white'>Bloquer</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent sx={{ p: 0, overflowX: 'auto' }}>
+          <Table size='small'>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {usersQuery.data?.content.map((user) => (
+                <TableRow key={user.id} hover>
+                  <TableCell>
+                    <Typography variant='body2' sx={{ fontWeight: 700 }}>{user.name}</Typography>
+                    <Typography variant='caption' color='text.secondary'>{user.email}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={user.status} size='small' variant='outlined' />
+                  </TableCell>
+                  <TableCell>
+                    {user.status === 'BLOCKED' ? (
+                      <Button
+                        onClick={() => userMutation.mutate({ userId: user.id, blocked: false })}
+                        variant='contained'
+                        color='success'
+                        size='small'
+                      >
+                        Unblock
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => userMutation.mutate({ userId: user.id, blocked: true })}
+                        variant='contained'
+                        color='error'
+                        size='small'
+                      >
+                        Block
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <TablePagination
+            component='div'
+            count={usersQuery.data?.totalElements ?? 0}
+            page={page}
+            onPageChange={(_, nextPage) => setPage(nextPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(event) => {
+              setRowsPerPage(parseInt(event.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[10, 25, 50]}
+          />
+        </CardContent>
+      </Card>
 
-      <div>
-        <label className='mb-2 block text-sm font-medium text-dark-800'>Raison du blocage</label>
-        <textarea value={userReason} onChange={(e) => setUserReason(e.target.value)} rows={3} className='w-full rounded-2xl border border-cream-200 bg-white px-4 py-3 text-sm text-dark-800' placeholder='Raison optionnelle...' />
-      </div>
-    </div>
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent>
+          <Typography variant='subtitle1' sx={{ fontWeight: 700, mb: 2 }}>
+            Block reason
+          </Typography>
+          <TextField
+            value={userReason}
+            onChange={(e) => setUserReason(e.target.value)}
+            placeholder='Optional reason for blocking...'
+            multiline
+            minRows={3}
+            fullWidth
+          />
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

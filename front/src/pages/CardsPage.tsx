@@ -1,15 +1,31 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { cardsApi } from '../api/cards';
-import type { CreateCardRequest, Card } from '../api/cards';
-import { formatCurrency } from '../utils/formatters';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { CreditCard, Plus, Trash2, Pencil, Loader2, X } from 'lucide-react';
+import { cardsApi } from '../api/cards';
+import type { CreateCardRequest, Card as BankCard } from '../api/cards';
+import { formatCurrency } from '../utils/formatters';
 
 const brandColors: Record<string, string> = {
-  VISA: 'bg-primary-500',
-  MASTERCARD: 'bg-dark-800',
-  ELO: 'bg-yellow-600',
-  AMEX: 'bg-blue-700',
+  VISA: 'linear-gradient(135deg, #e8611a, #ff9a4d)',
+  MASTERCARD: 'linear-gradient(135deg, #111827, #374151)',
+  ELO: 'linear-gradient(135deg, #ca8a04, #f59e0b)',
+  AMEX: 'linear-gradient(135deg, #1d4ed8, #60a5fa)',
 };
 
 const emptyForm: CreateCardRequest = {
@@ -25,7 +41,7 @@ const emptyForm: CreateCardRequest = {
 export default function CardsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const [editingCard, setEditingCard] = useState<BankCard | null>(null);
   const [form, setForm] = useState<CreateCardRequest>(emptyForm);
 
   const { data: cards = [], isLoading } = useQuery({
@@ -42,27 +58,21 @@ export default function CardsPage() {
     },
   });
 
-const updateMutation = useMutation({
-  mutationFn: ({ id, data }: { id: string; data: CreateCardRequest }) => {
-    console.log('Calling updateCard:', id, data);
-    return cardsApi.updateCard(id, data);
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['cards'] });
-    setEditingCard(null);
-    setForm(emptyForm);
-  },
-  onError: (error) => {
-    console.error('Update error:', error);
-  },
-});
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateCardRequest }) => cardsApi.updateCard(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cards'] });
+      setEditingCard(null);
+      setForm(emptyForm);
+    },
+  });
 
   const deleteMutation = useMutation({
     mutationFn: cardsApi.deleteCard,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
   });
 
-  const handleEdit = (card: Card) => {
+  const handleEdit = (card: BankCard) => {
     setEditingCard(card);
     setForm({
       cardType: card.cardType,
@@ -75,15 +85,14 @@ const updateMutation = useMutation({
     });
   };
 
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  console.log('Submit - editingCard:', editingCard, 'form:', form);
-  if (editingCard) {
-    updateMutation.mutate({ id: editingCard.id, data: form });
-  } else {
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (editingCard) {
+      updateMutation.mutate({ id: editingCard.id, data: form });
+      return;
+    }
     createMutation.mutate(form);
-  }
-};
+  };
 
   const handleClose = () => {
     setShowForm(false);
@@ -94,163 +103,192 @@ const handleSubmit = (e: React.FormEvent) => {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-2xl font-bold text-dark-800'>My Cards</h1>
-          <p className='text-gray-400 text-sm mt-1'>Manage your credit and debit cards</p>
-        </div>
-        <button onClick={() => setShowForm(true)}
-          className='flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all'>
-          <Plus className='w-4 h-4' /> Add Card
-        </button>
-      </div>
+    <Box sx={{ display: 'grid', gap: 3 }}>
+      <Card
+        sx={{
+          borderRadius: 5,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, rgba(232,97,26,0.12), rgba(255,255,255,0.98))',
+        }}
+      >
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant='overline' sx={{ color: 'primary.main', letterSpacing: 3, fontWeight: 700 }}>
+                Wallet
+              </Typography>
+              <Typography variant='h4' sx={{ fontWeight: 900, mt: 1 }}>
+                My Cards
+              </Typography>
+              <Typography variant='body2' color='text.secondary' sx={{ mt: 1.25, maxWidth: 700, lineHeight: 1.8 }}>
+                Manage your credit and debit cards from a cleaner, premium control surface.
+              </Typography>
+            </Box>
+            <Button variant='contained' startIcon={<Plus className='h-4 w-4' />} onClick={() => setShowForm(true)}>
+              Add Card
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
-      {/* Cards Grid */}
       {isLoading ? (
-        <div className='grid grid-cols-2 gap-4'>
-          {[1,2].map(i => <div key={i} className='h-48 rounded-2xl bg-cream-200 animate-pulse' />)}
-        </div>
+        <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
+          {[1, 2].map(index => <Box key={index} sx={{ height: 240, borderRadius: 4, bgcolor: 'action.hover' }} />)}
+        </Box>
       ) : cards.length === 0 ? (
-        <div className='card p-12 text-center'>
-          <div className='w-16 h-16 rounded-2xl bg-cream-100 flex items-center justify-center mx-auto mb-4'>
-            <CreditCard className='w-8 h-8 text-gray-300' />
-          </div>
-          <p className='text-dark-800 font-medium mb-1'>No cards yet</p>
-          <p className='text-gray-400 text-sm mb-4'>Add your first card to get started</p>
-          <button onClick={() => setShowForm(true)}
-            className='bg-primary-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-600 transition-all'>
-            Add Card
-          </button>
-        </div>
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent sx={{ py: 8, textAlign: 'center' }}>
+            <CreditCard className='h-12 w-12 mx-auto text-primary-500' />
+            <Typography variant='h6' sx={{ fontWeight: 800, mt: 2 }}>
+              No cards yet
+            </Typography>
+            <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+              Add your first card to get started.
+            </Typography>
+            <Button sx={{ mt: 3 }} variant='contained' startIcon={<Plus className='h-4 w-4' />} onClick={() => setShowForm(true)}>
+              Add Card
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        <div className='grid grid-cols-2 gap-4'>
+        <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' } }}>
           {cards.map(card => (
-            <div key={card.id} className={`${brandColors[card.brand]} rounded-2xl p-6 text-white relative overflow-hidden`}>
-              <div className='absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-10 translate-x-10' />
-              <div className='relative'>
-                <div className='flex items-center justify-between mb-6'>
-                  <div>
-                    <p className='text-white/70 text-xs'>{card.cardType} Card</p>
-                    <p className='font-bold'>{card.brand}</p>
-                  </div>
-                  <div className='flex gap-2'>
-                    <button onClick={() => handleEdit(card)}
-                      className='w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors'>
-                      <Pencil className='w-4 h-4' />
-                    </button>
-                    <button onClick={() => deleteMutation.mutate(card.id)}
-                      className='w-8 h-8 rounded-full bg-white/20 hover:bg-red-500/50 flex items-center justify-center transition-colors'>
-                      {deleteMutation.isPending ? <Loader2 className='w-4 h-4 animate-spin' /> : <Trash2 className='w-4 h-4' />}
-                    </button>
-                  </div>
-                </div>
-                <p className='font-mono text-lg mb-4'>•••• •••• •••• {card.lastFour}</p>
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <p className='text-white/60 text-xs'>Card Holder</p>
-                    <p className='font-medium text-sm'>{card.holderName}</p>
-                  </div>
-                  <div>
-                    <p className='text-white/60 text-xs'>Expires</p>
-                    <p className='font-medium text-sm'>
+            <Card key={card.id} sx={{ borderRadius: 5, overflow: 'hidden', color: 'common.white', background: brandColors[card.brand] || brandColors.VISA }}>
+              <CardContent sx={{ p: 3, position: 'relative' }}>
+                <Box sx={{ position: 'absolute', top: -26, right: -18, width: 140, height: 140, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.12)' }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
+                  <Box>
+                    <Chip label={`${card.cardType} Card`} size='small' sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: 'common.white', fontWeight: 700 }} />
+                    <Typography variant='h6' sx={{ fontWeight: 800, mt: 1 }}>
+                      {card.brand}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <IconButton onClick={() => handleEdit(card)} sx={{ color: 'common.white', bgcolor: 'rgba(255,255,255,0.12)' }}>
+                      <Pencil className='h-4 w-4' />
+                    </IconButton>
+                    <IconButton onClick={() => deleteMutation.mutate(card.id)} sx={{ color: 'common.white', bgcolor: 'rgba(255,255,255,0.12)' }}>
+                      {deleteMutation.isPending ? <Loader2 className='h-4 w-4 animate-spin' /> : <Trash2 className='h-4 w-4' />}
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                <Typography variant='h5' sx={{ fontFamily: 'monospace', letterSpacing: 2, mt: 5 }}>
+                  •••• •••• •••• {card.lastFour}
+                </Typography>
+
+                <Stack direction='row' spacing={2} sx={{ mt: 4, justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>Card holder</Typography>
+                    <Typography variant='body2' sx={{ fontWeight: 700 }}>
+                      {card.holderName}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>Expires</Typography>
+                    <Typography variant='body2' sx={{ fontWeight: 700 }}>
                       {String(card.expiryMonth).padStart(2, '0')}/{card.expiryYear}
-                    </p>
-                  </div>
+                    </Typography>
+                  </Box>
                   {card.creditLimit && (
-                    <div>
-                      <p className='text-white/60 text-xs'>Limit</p>
-                      <p className='font-medium text-sm'>{formatCurrency(card.creditLimit)}</p>
-                    </div>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>Limit</Typography>
+                      <Typography variant='body2' sx={{ fontWeight: 700 }}>
+                        {formatCurrency(card.creditLimit)}
+                      </Typography>
+                    </Box>
                   )}
-                </div>
-              </div>
-            </div>
+                </Stack>
+              </CardContent>
+            </Card>
           ))}
-        </div>
+        </Box>
       )}
 
-      {/* Add/Edit Card Modal */}
-      {(showForm || editingCard) && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
-          <div className='bg-white rounded-2xl p-6 w-full max-w-md'>
-            <div className='flex items-center justify-between mb-6'>
-              <h2 className='text-lg font-bold text-dark-800'>
-                {editingCard ? 'Edit Card' : 'Add New Card'}
-              </h2>
-              <button onClick={handleClose} className='text-gray-400 hover:text-dark-800 transition-colors'>
-                <X className='w-5 h-5' />
-              </button>
-            </div>
+      <Dialog open={showForm || Boolean(editingCard)} onClose={handleClose} fullWidth maxWidth='sm'>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          {editingCard ? 'Edit Card' : 'Add New Card'}
+          <IconButton onClick={handleClose}><X className='h-4 w-4' /></IconButton>
+        </DialogTitle>
+        <Box component='form' onSubmit={handleSubmit}>
+          <DialogContent sx={{ display: 'grid', gap: 2 }}>
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' } }}>
+              <TextField
+                select
+                label='Card type'
+                value={form.cardType}
+                onChange={(event) => setForm({ ...form, cardType: event.target.value as CreateCardRequest['cardType'] })}
+              >
+                <MenuItem value='CREDIT'>Credit</MenuItem>
+                <MenuItem value='DEBIT'>Debit</MenuItem>
+              </TextField>
+              <TextField
+                select
+                label='Brand'
+                value={form.brand}
+                onChange={(event) => setForm({ ...form, brand: event.target.value as CreateCardRequest['brand'] })}
+              >
+                <MenuItem value='VISA'>Visa</MenuItem>
+                <MenuItem value='MASTERCARD'>Mastercard</MenuItem>
+                <MenuItem value='ELO'>Elo</MenuItem>
+                <MenuItem value='AMEX'>Amex</MenuItem>
+              </TextField>
+            </Box>
 
-            <form onSubmit={handleSubmit} className='space-y-4'>
-              <div className='grid grid-cols-2 gap-3'>
-                <div>
-                  <label htmlFor='cardType' className='block text-xs font-medium text-dark-800 mb-1'>Card Type</label>
-                    <select id='cardType' name='cardType' value={form.cardType} onChange={e => setForm({ ...form, cardType: e.target.value as any })}
-                      className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'>
-                    <option value='CREDIT'>Credit</option>
-                    <option value='DEBIT'>Debit</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor='brand' className='block text-xs font-medium text-dark-800 mb-1'>Brand</label>
-                  <select id='brand' name='brand' value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value as any })}
-                    className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'>
-                    <option value='VISA'>Visa</option>
-                    <option value='MASTERCARD'>Mastercard</option>
-                    <option value='ELO'>Elo</option>
-                    <option value='AMEX'>Amex</option>
-                  </select>
-                </div>
-              </div>
+            <TextField
+              label='Holder name'
+              value={form.holderName}
+              onChange={(event) => setForm({ ...form, holderName: event.target.value })}
+              placeholder='JOHN SMITH'
+              required
+            />
 
-              <div>
-                <label htmlFor='holderName' className='block text-xs font-medium text-dark-800 mb-1'>Holder Name</label>
-                <input id='holderName' name='holderName' type='text' value={form.holderName} onChange={e => setForm({ ...form, holderName: e.target.value })}
-                  className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
-                  placeholder='JOHN SMITH' required />
-              </div>
+            <TextField
+              label='Last 4 digits'
+              value={form.lastFour}
+              onChange={(event) => setForm({ ...form, lastFour: event.target.value })}
+              placeholder='1234'
+                slotProps={{ htmlInput: { maxLength: 4 } }}
+              required
+            />
 
-              <div>
-                <label htmlFor='lastFour' className='block text-xs font-medium text-dark-800 mb-1'>Last 4 digits</label>
-                <input id='lastFour' name='lastFour' type='text' value={form.lastFour} onChange={e => setForm({ ...form, lastFour: e.target.value })}
-                  className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
-                  placeholder='1234' maxLength={4} required />
-              </div>
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' } }}>
+              <TextField
+                type='number'
+                label='Expiry month'
+                value={form.expiryMonth}
+                onChange={(event) => setForm({ ...form, expiryMonth: parseInt(event.target.value, 10) })}
+                slotProps={{ htmlInput: { min: 1, max: 12 } }}
+                required
+              />
+              <TextField
+                type='number'
+                label='Expiry year'
+                value={form.expiryYear}
+                onChange={(event) => setForm({ ...form, expiryYear: parseInt(event.target.value, 10) })}
+                slotProps={{ htmlInput: { min: 2024 } }}
+                required
+              />
+            </Box>
 
-              <div className='grid grid-cols-2 gap-3'>
-                <div>
-                  <label htmlFor='expiryMonth' className='block text-xs font-medium text-dark-800 mb-1'>Expiry Month</label>
-                  <input id='expiryMonth' name='expiryMonth' type='number' value={form.expiryMonth} onChange={e => setForm({ ...form, expiryMonth: parseInt(e.target.value) })}
-                    className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
-                    min={1} max={12} required />
-                </div>
-                <div>
-                  <label htmlFor='expiryYear' className='block text-xs font-medium text-dark-800 mb-1'>Expiry Year</label>
-                  <input id='expiryYear' name='expiryYear' type='number' value={form.expiryYear} onChange={e => setForm({ ...form, expiryYear: parseInt(e.target.value) })}
-                    className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
-                    min={2024} required />
-                </div>
-              </div>
-
-              {form.cardType === 'CREDIT' && (
-                <div>
-                  <label htmlFor='creditLimit' className='block text-xs font-medium text-dark-800 mb-1'>Credit Limit</label>
-                  <input id='creditLimit' name='creditLimit' type='number' value={form.creditLimit || ''} onChange={e => setForm({ ...form, creditLimit: parseFloat(e.target.value) })}
-                    className='w-full bg-cream-100 border border-cream-200 rounded-xl px-3 py-2.5 text-dark-800 text-sm focus:outline-none focus:border-primary-500'
-                    placeholder='5000.00' />
-                </div>
-              )}
-
-              <button type='submit' disabled={isPending}
-                className='w-full bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2'>
-                {isPending ? <Loader2 className='w-5 h-5 animate-spin' /> : editingCard ? <><Pencil className='w-5 h-5' /> Save Changes</> : <><Plus className='w-5 h-5' /> Add Card</>}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+            {form.cardType === 'CREDIT' && (
+              <TextField
+                type='number'
+                label='Credit limit'
+                value={form.creditLimit || ''}
+                onChange={(event) => setForm({ ...form, creditLimit: parseFloat(event.target.value) })}
+                placeholder='5000.00'
+              />
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button onClick={handleClose} variant='outlined'>Cancel</Button>
+            <Button type='submit' variant='contained' disabled={isPending} startIcon={isPending ? <Loader2 className='h-4 w-4 animate-spin' /> : <Plus className='h-4 w-4' />}>
+              {editingCard ? 'Save Changes' : 'Add Card'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+    </Box>
   );
 }

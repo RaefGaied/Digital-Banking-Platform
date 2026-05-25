@@ -1,16 +1,51 @@
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Box, Button, Card, CardContent, Chip, Divider, LinearProgress, List, ListItem, ListItemAvatar, ListItemText, Stack, Typography } from '@mui/material';
+import { TrendingUp, TrendingDown, ArrowLeftRight, Copy, Send, Download, CreditCard, Zap, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { accountApi } from '../api/account';
 import { cardsApi } from '../api/cards';
 import { investmentsApi } from '../api/investments';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { TrendingUp, TrendingDown, ArrowLeftRight, Copy, Send, Download, CreditCard, Zap, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
-import { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+
 
 type SpendingFilter = 'week' | 'month' | 'all';
 type SpendingType = 'all' | 'WITHDRAWAL' | 'TRANSFER' | 'DEPOSIT';
+
+type QuickAction = {
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  bg: string;
+  action: () => void;
+};
+
+function StatCard({ label, value, sub, icon: Icon, accent, bg }: { label: string; value: string; sub: string; icon: React.ElementType; accent: string; bg: string; }) {
+  return (
+    <Card sx={{ borderRadius: 4, height: '100%' }}>
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant='overline' sx={{ color: 'text.secondary', letterSpacing: 2.4 }}>
+              {label}
+            </Typography>
+            <Typography variant='h5' sx={{ mt: 1, fontWeight: 800, lineHeight: 1.1 }}>
+              {value}
+            </Typography>
+            <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+              {sub}
+            </Typography>
+          </Box>
+          <Box sx={{ width: 40, height: 40, borderRadius: 3, display: 'grid', placeItems: 'center', bgcolor: bg, color: accent, flexShrink: 0 }}>
+            <Icon className='h-5 w-5' />
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -20,7 +55,7 @@ export default function DashboardPage() {
   const [cardIndex, setCardIndex] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  const text = locale === 'fr'
+  const text = useMemo(() => locale === 'fr'
     ? {
         totalBalance: 'Solde total',
         agencyShort: 'Ag',
@@ -68,6 +103,10 @@ export default function DashboardPage() {
         myPixKey: 'Ma cle PIX',
         loading: 'Chargement...',
         share: 'Partager',
+        quickActions: 'Actions rapides',
+        portfolio: 'Portefeuille',
+        activeInvestments: 'Investissements actifs',
+        cardCarousel: 'Mes cartes',
       }
     : {
         totalBalance: 'Total Balance',
@@ -116,7 +155,11 @@ export default function DashboardPage() {
         myPixKey: 'My Pix Key',
         loading: 'Loading...',
         share: 'Share',
-      };
+        quickActions: 'Quick actions',
+        portfolio: 'Portfolio',
+        activeInvestments: 'Active investments',
+        cardCarousel: 'My cards',
+      }, [locale]);
 
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ['account'],
@@ -138,354 +181,336 @@ export default function DashboardPage() {
     queryFn: investmentsApi.getMyInvestments,
   });
 
-  // Calculate the real return of active investments
-  const activeInvestments = investments.filter(i => i.status === 'ACTIVE');
-  const totalInvested = activeInvestments.reduce((sum, i) => sum + i.amount, 0);
-  const totalCurrent  = activeInvestments.reduce((sum, i) => sum + i.currentValue, 0);
-  const investmentGain = totalInvested > 0
-    ? ((totalCurrent - totalInvested) / totalInvested) * 100
-    : null;
+  const activeInvestments = investments.filter(investment => investment.status === 'ACTIVE');
+  const totalInvested = activeInvestments.reduce((sum, investment) => sum + investment.amount, 0);
+  const totalCurrent = activeInvestments.reduce((sum, investment) => sum + investment.currentValue, 0);
+  const investmentGain = totalInvested > 0 ? ((totalCurrent - totalInvested) / totalInvested) * 100 : null;
 
-  const copyAccountNumber = () => {
-    if (account) {
-      navigator.clipboard.writeText(account.number);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    }
+  const copyAccountNumber = async () => {
+    if (!account) return;
+    await navigator.clipboard.writeText(account.number);
+    setCopySuccess(true);
+    window.setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  // Weekly Spending with filters
   const now = new Date();
-  const getFilteredTransactions = () => {
-    return transactions.filter(t => {
-      const date = new Date(t.createdAt);
-      const typeMatch = spendingType === 'all' || t.type === spendingType;
+  const filteredTransactions = transactions.filter(transaction => {
+    const date = new Date(transaction.createdAt);
+    const typeMatch = spendingType === 'all' || transaction.type === spendingType;
 
-      if (spendingFilter === 'week') {
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        startOfWeek.setHours(0, 0, 0, 0);
-        return date >= startOfWeek && typeMatch;
-      } else if (spendingFilter === 'month') {
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        return date >= startOfMonth && typeMatch;
-      }
-      return typeMatch;
-    });
-  };
+    if (spendingFilter === 'week') {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return date >= startOfWeek && typeMatch;
+    }
 
-  const filteredTransactions = getFilteredTransactions();
+    if (spendingFilter === 'month') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return date >= startOfMonth && typeMatch;
+    }
+
+    return typeMatch;
+  });
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weeklyData = weekDays.map(day => ({ day, value: 0 }));
-  filteredTransactions.forEach(t => {
-    const date = new Date(t.createdAt);
-    weeklyData[date.getDay()].value += Number(t.amount);
+  filteredTransactions.forEach(transaction => {
+    const date = new Date(transaction.createdAt);
+    weeklyData[date.getDay()].value += Number(transaction.amount);
   });
 
-  const totalSpending = weeklyData.reduce((s, d) => s + d.value, 0);
-  const maxDay = weeklyData.reduce((max, d) => d.value > max.value ? d : max, weeklyData[0]);
+  const totalSpending = weeklyData.reduce((sum, entry) => sum + entry.value, 0);
+  const maxDay = weeklyData.reduce((max, entry) => (entry.value > max.value ? entry : max), weeklyData[0]);
   const avgDay = totalSpending / 7;
-
-  const cardBgColor = (brand: string) => {
-    if (brand === 'VISA') return 'bg-primary-500';
-    if (brand === 'MASTERCARD') return 'bg-dark-800';
-    if (brand === 'ELO') return 'bg-yellow-600';
-    return 'bg-blue-700';
-  };
 
   const visibleCard = cards[cardIndex];
 
+  const quickActions: QuickAction[] = [
+    { label: text.deposit, icon: Send, color: '#16a34a', bg: '#f0fdf4', action: () => navigate('/transactions?tab=deposit') },
+    { label: text.transfer, icon: ArrowLeftRight, color: '#2563eb', bg: '#eff6ff', action: () => navigate('/transactions?tab=transfer') },
+    { label: text.pixKey, icon: Zap, color: '#e8611a', bg: '#fff7ed', action: () => navigate('/transactions?tab=pix') },
+    { label: text.addCard, icon: Plus, color: '#7c3aed', bg: '#f5f3ff', action: () => navigate('/cards') },
+  ];
+
   return (
-    <div className='grid grid-cols-3 gap-6'>
+    <Box sx={{ display: 'grid', gap: 3 }}>
+      <Card
+        sx={{
+          borderRadius: 5,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, rgba(232,97,26,0.12), rgba(255,255,255,0.98))',
+        }}
+      >
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '1.4fr 1fr' }, alignItems: 'stretch' }}>
+            <Box>
+              <Typography variant='overline' sx={{ color: 'primary.main', letterSpacing: 3, fontWeight: 700 }}>
+                FinBank dashboard
+              </Typography>
+              <Typography variant='h3' sx={{ fontWeight: 900, lineHeight: 1.05, mt: 1 }}>
+                {accountLoading ? text.loading : formatCurrency(account?.balance || 0)}
+              </Typography>
+              <Typography variant='body1' color='text.secondary' sx={{ mt: 1.5, maxWidth: 680, lineHeight: 1.8 }}>
+                {text.totalBalance} · {text.agencyShort}: {account?.agency || '----'} · {text.accountShort}: {account?.number || '--------'}
+              </Typography>
 
-      {/* Left column */}
-      <div className='col-span-2 space-y-6'>
+              <Stack direction='row' spacing={1.5} sx={{ mt: 2.5, flexWrap: 'wrap' }}>
+                <Button variant='contained' startIcon={<Send className='h-4 w-4' />} onClick={() => navigate('/transactions?tab=deposit')}>
+                  {text.sendMoney}
+                </Button>
+                <Button variant='outlined' startIcon={<Download className='h-4 w-4' />} onClick={() => navigate('/transactions?tab=withdraw')}>
+                  {text.receive}
+                </Button>
+                <Button variant='text' startIcon={<Copy className='h-4 w-4' />} onClick={copyAccountNumber}>
+                  {copySuccess ? text.copied : text.copy}
+                </Button>
+              </Stack>
+            </Box>
 
-        {/* Balance Card */}
-        <div className='relative overflow-hidden rounded-2xl p-6 bg-primary-500 text-white'>
-          <div className='absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-16 translate-x-16' />
-          <div className='absolute bottom-0 left-1/2 w-64 h-64 bg-white/5 rounded-full translate-y-32' />
-          <div className='relative'>
-            <div className='flex items-center justify-between mb-4'>
-              <p className='text-white/70 text-sm'>{text.totalBalance}</p>
-            </div>
-            {accountLoading ? (
-              <div className='h-12 w-48 bg-white/20 rounded-lg animate-pulse mb-4' />
-            ) : (
-              <h2 className='text-4xl font-bold mb-1'>{formatCurrency(account?.balance || 0)}</h2>
-            )}
-            <div className='flex items-center gap-3 text-white/60 text-sm mb-6'>
-              <span>{text.agencyShort}: {account?.agency || '----'} • {text.accountShort}: {account?.number || '--------'}</span>
-              <button
-                onClick={copyAccountNumber}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all ${copySuccess ? 'bg-green-500/30 text-green-300' : 'bg-white/10 hover:bg-white/20 text-white/60'}`}>
-                <Copy className='w-3 h-3' />
-                <span className='text-xs'>{copySuccess ? text.copied : text.copy}</span>
-              </button>
-            </div>
-            <div className='flex gap-3'>
-              <button onClick={() => navigate('/transactions?tab=deposit')}
-                className='flex-1 flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 text-white py-3 rounded-xl text-sm font-medium transition-all'>
-                <Send className='w-4 h-4' /> {text.sendMoney}
-              </button>
-              <button onClick={() => navigate('/transactions?tab=withdraw')}
-                className='flex-1 flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 text-white py-3 rounded-xl text-sm font-medium transition-all'>
-                <Download className='w-4 h-4' /> {text.receive}
-              </button>
-            </div>
-          </div>
-        </div>
+            <Box sx={{ display: 'grid', gap: 2 }}>
+              <Card variant='outlined' sx={{ borderRadius: 4 }}>
+                <CardContent sx={{ p: 2.5 }}>
+                  <Typography variant='overline' color='text.secondary'>Portfolio</Typography>
+                  <Typography variant='h5' sx={{ fontWeight: 800, mt: 0.5 }}>
+                    {formatCurrency(totalCurrent)}
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+                    {investmentGain !== null ? `${investmentGain >= 0 ? '+' : ''}${investmentGain.toFixed(2)}%` : text.noInvestments}
+                  </Typography>
+                  <LinearProgress variant='determinate' value={Math.min(100, Math.abs(investmentGain || 0))} sx={{ mt: 2, height: 10, borderRadius: 999 }} />
+                </CardContent>
+              </Card>
 
-        {/* Weekly Spending */}
-        <div className='card p-6'>
-          <div className='flex items-center justify-between mb-4'>
-            <div>
-              <h3 className='font-semibold text-dark-800'>{text.spendingOverview}</h3>
-            </div>
-            <div className='text-right'>
-              <p className='font-bold text-dark-800'>{formatCurrency(totalSpending)}</p>
-            </div>
-          </div>
+              <Card variant='outlined' sx={{ borderRadius: 4 }}>
+                <CardContent sx={{ p: 2.5 }}>
+                  <Typography variant='overline' color='text.secondary'>Quick status</Typography>
+                  <Typography variant='body1' sx={{ fontWeight: 700, mt: 0.5 }}>
+                    {activeInvestments.length} {text.activeInvestments}
+                  </Typography>
+                  <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+                    {cards.length} {text.myCards.toLowerCase()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
-          {/* Filters */}
-          <div className='flex gap-2 mb-4 flex-wrap'>
-            <div className='flex gap-1 bg-cream-100 p-1 rounded-xl'>
-              {(['week', 'month', 'all'] as SpendingFilter[]).map(f => (
-                <button key={f} onClick={() => setSpendingFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${spendingFilter === f ? 'bg-white text-primary-500 shadow-sm' : 'text-gray-400 hover:text-dark-800'}`}>
-                  {f === 'week' ? text.thisWeek : f === 'month' ? text.thisMonth : text.allTime}
-                </button>
-              ))}
-            </div>
-            <div className='flex gap-1 bg-cream-100 p-1 rounded-xl'>
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, minmax(0, 1fr))' } }}>
+        <StatCard label={text.totalBalance} value={formatCurrency(account?.balance || 0)} sub={`${text.agencyShort}: ${account?.agency || '----'}`} icon={CreditCard} accent='#e8611a' bg='#fff7ed' />
+        <StatCard label={text.activeInvestments} value={String(activeInvestments.length)} sub={text.portfolio} icon={TrendingUp} accent='#16a34a' bg='#f0fdf4' />
+        <StatCard label={text.recentTransactions} value={String(transactions.length)} sub={text.quickActions} icon={ArrowLeftRight} accent='#2563eb' bg='#eff6ff' />
+        <StatCard label={text.myCards} value={String(cards.length)} sub={text.cardCarousel} icon={CreditCard} accent='#7c3aed' bg='#f5f3ff' />
+      </Box>
+
+      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', lg: '1.15fr 0.85fr' } }}>
+        <Card sx={{ borderRadius: 4 }}>
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2 }}>
+              <Box>
+                <Typography variant='h6' sx={{ fontWeight: 800 }}>{text.spendingOverview}</Typography>
+                <Typography variant='body2' color='text.secondary'>{formatCurrency(totalSpending)}</Typography>
+              </Box>
+              <Stack direction='row' spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {(['week', 'month', 'all'] as SpendingFilter[]).map(filter => (
+                  <Button
+                    key={filter}
+                    variant={spendingFilter === filter ? 'contained' : 'outlined'}
+                    size='small'
+                    onClick={() => setSpendingFilter(filter)}
+                  >
+                    {filter === 'week' ? text.thisWeek : filter === 'month' ? text.thisMonth : text.allTime}
+                  </Button>
+                ))}
+              </Stack>
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
               {([
                 { key: 'all', label: text.all },
                 { key: 'DEPOSIT', label: text.income },
                 { key: 'WITHDRAWAL', label: text.expenses },
                 { key: 'TRANSFER', label: text.transfers },
-              ] as { key: SpendingType; label: string }[]).map(f => (
-                <button key={f.key} onClick={() => setSpendingType(f.key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${spendingType === f.key ? 'bg-white text-primary-500 shadow-sm' : 'text-gray-400 hover:text-dark-800'}`}>
-                  {f.label}
-                </button>
+              ] as { key: SpendingType; label: string }[]).map(entry => (
+                <Chip
+                  key={entry.key}
+                  label={entry.label}
+                  color={spendingType === entry.key ? 'primary' : 'default'}
+                  variant={spendingType === entry.key ? 'filled' : 'outlined'}
+                  onClick={() => setSpendingType(entry.key)}
+                  clickable
+                />
               ))}
-            </div>
-          </div>
+            </Box>
 
-          <ResponsiveContainer width='100%' height={180}>
-            <BarChart data={weeklyData}>
-              <XAxis dataKey='day' stroke='#d1d5db' tick={{ fill: '#9ca3af', fontSize: 12 }} />
-              <YAxis stroke='#d1d5db' tick={{ fill: '#9ca3af', fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                formatter={(value) => [formatCurrency(Number(value)), text.amount]}
-              />
-              <Bar dataKey='value' fill='#e8611a' radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width='100%' height={220}>
+              <BarChart data={weeklyData}>
+                <XAxis dataKey='day' stroke='#e5e7eb' tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                <YAxis stroke='#e5e7eb' tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}
+                  formatter={(value) => [formatCurrency(Number(value)), text.amount]}
+                />
+                <Bar dataKey='value' fill='#e8611a' radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
 
-          <div className='grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-cream-200'>
-            <div className='text-center'>
-              <p className='text-xs text-gray-400'>{text.avgPerDay}</p>
-              <p className='font-semibold text-dark-800'>{formatCurrency(avgDay)}</p>
-            </div>
-            <div className='text-center'>
-              <p className='text-xs text-gray-400'>{text.highestDay}</p>
-              <p className='font-semibold text-dark-800'>{maxDay.day} — {formatCurrency(maxDay.value)}</p>
-            </div>
-            <div className='text-center'>
-              <p className='text-xs text-gray-400'>{text.transactions}</p>
-              <p className='font-semibold text-dark-800'>{filteredTransactions.length}</p>
-            </div>
-          </div>
-        </div>
+            <Divider sx={{ my: 3 }} />
+            <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant='caption' color='text.secondary'>{text.avgPerDay}</Typography>
+                <Typography variant='subtitle2' sx={{ fontWeight: 700 }}>{formatCurrency(avgDay)}</Typography>
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant='caption' color='text.secondary'>{text.highestDay}</Typography>
+                <Typography variant='subtitle2' sx={{ fontWeight: 700 }}>{maxDay.day} · {formatCurrency(maxDay.value)}</Typography>
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant='caption' color='text.secondary'>{text.transactions}</Typography>
+                <Typography variant='subtitle2' sx={{ fontWeight: 700 }}>{filteredTransactions.length}</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
 
-        {/* Recent Transactions */}
-        <div className='card p-6'>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='font-semibold text-dark-800'>{text.recentTransactions}</h3>
-            <button onClick={() => navigate('/history')} className='text-primary-500 text-sm font-medium hover:text-primary-600'>{text.seeAll}</button>
-          </div>
+        <Stack spacing={3}>
+          <Card sx={{ borderRadius: 4 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box>
+                  <Typography variant='h6' sx={{ fontWeight: 800 }}>{text.quickActions}</Typography>
+                  <Typography variant='body2' color='text.secondary'>{text.quickSend}</Typography>
+                </Box>
+              </Box>
+              <Stack spacing={1.25}>
+                {quickActions.map(action => (
+                  <Button
+                    key={action.label}
+                    onClick={action.action}
+                    variant='outlined'
+                    sx={{ justifyContent: 'flex-start', borderRadius: 3, px: 2, py: 1.35, textTransform: 'none' }}
+                    startIcon={<Box sx={{ width: 32, height: 32, borderRadius: 2.5, display: 'grid', placeItems: 'center', bgcolor: action.bg, color: action.color }}><action.icon className='h-4 w-4' /></Box>}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ borderRadius: 4 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box>
+                  <Typography variant='h6' sx={{ fontWeight: 800 }}>{text.myCards}</Typography>
+                  <Typography variant='body2' color='text.secondary'>{cards.length ? `${cards.length} ${text.active}` : text.noCardsYet}</Typography>
+                </Box>
+                <Stack direction='row' spacing={1}>
+                  <Button size='small' variant='outlined' onClick={() => setCardIndex(index => Math.max(index - 1, 0))} disabled={cardIndex === 0}>
+                    <ChevronLeft className='h-4 w-4' />
+                  </Button>
+                  <Button size='small' variant='outlined' onClick={() => setCardIndex(index => Math.min(index + 1, Math.max(cards.length - 1, 0)))} disabled={cardIndex >= cards.length - 1}>
+                    <ChevronRight className='h-4 w-4' />
+                  </Button>
+                </Stack>
+              </Box>
+              {visibleCard ? (
+                <Box sx={{ borderRadius: 4, p: 2.5, color: 'common.white', position: 'relative', overflow: 'hidden', background: visibleCard.brand === 'VISA' ? 'linear-gradient(135deg, #e8611a, #ff9a4d)' : visibleCard.brand === 'MASTERCARD' ? 'linear-gradient(135deg, #111827, #374151)' : visibleCard.brand === 'ELO' ? 'linear-gradient(135deg, #ca8a04, #f59e0b)' : 'linear-gradient(135deg, #1d4ed8, #60a5fa)' }}>
+                  <Box sx={{ position: 'absolute', top: -24, right: -24, width: 140, height: 140, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.14)' }} />
+                  <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.72)' }}>{visibleCard.cardType} Card</Typography>
+                  <Typography variant='body1' sx={{ fontWeight: 800, mt: 0.5 }}>{visibleCard.brand}</Typography>
+                  <Typography variant='h6' sx={{ fontFamily: 'monospace', letterSpacing: 1.5, mt: 3 }}>
+                    •••• •••• •••• {visibleCard.lastFour}
+                  </Typography>
+                  <Stack direction='row' spacing={2} sx={{ mt: 3, justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>Holder</Typography>
+                      <Typography variant='body2' sx={{ fontWeight: 700 }}>{visibleCard.holderName}</Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.7)' }}>Expires</Typography>
+                      <Typography variant='body2' sx={{ fontWeight: 700 }}>{String(visibleCard.expiryMonth).padStart(2, '0')}/{visibleCard.expiryYear}</Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+              ) : (
+                <Typography variant='body2' color='text.secondary'>{text.noCardsYet}</Typography>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card sx={{ borderRadius: 4 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant='h6' sx={{ fontWeight: 800, mb: 1 }}>{text.portfolio}</Typography>
+              <Typography variant='body2' color='text.secondary'>
+                {activeInvestments.length ? `${activeInvestments.length} ${text.activeInvestments}` : text.noInvestments}
+              </Typography>
+              <Divider sx={{ my: 2 }} />
+              <List disablePadding>
+                {activeInvestments.slice(0, 3).map(investment => (
+                  <ListItem key={investment.id} disableGutters sx={{ py: 1 }}>
+                    <ListItemAvatar>
+                      <Box sx={{ width: 38, height: 38, borderRadius: 3, bgcolor: 'action.hover', display: 'grid', placeItems: 'center', color: 'primary.main' }}>
+                        <TrendingUp className='h-4 w-4' />
+                      </Box>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={investment.investmentType.replace('_', ' ')}
+                      secondary={formatDate(investment.investedAt)}
+                    />
+                    <Typography variant='body2' sx={{ fontWeight: 800 }}>{formatCurrency(investment.currentValue)}</Typography>
+                  </ListItem>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Stack>
+      </Box>
+
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box>
+              <Typography variant='h6' sx={{ fontWeight: 800 }}>{text.recentTransactions}</Typography>
+              <Typography variant='body2' color='text.secondary'>{text.seeAll}</Typography>
+            </Box>
+            <Button variant='text' onClick={() => navigate('/history')}>{text.seeAll}</Button>
+          </Box>
           {transactions.length === 0 ? (
-            <p className='text-gray-400 text-sm text-center py-8'>{text.noTransactionsYet}</p>
+            <Typography variant='body2' color='text.secondary' sx={{ py: 4, textAlign: 'center' }}>
+              {text.noTransactionsYet}
+            </Typography>
           ) : (
-            <div className='space-y-3'>
-              {transactions.slice(0, 6).map(t => (
-                <div key={t.id} className='flex items-center justify-between py-2'>
-                  <div className='flex items-center gap-3'>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                      t.type === 'DEPOSIT' ? 'bg-green-100' :
-                      t.type === 'WITHDRAWAL' ? 'bg-red-100' : 'bg-blue-100'
-                    }`}>
-                      {t.type === 'DEPOSIT' ? <TrendingUp className='w-5 h-5 text-green-500' /> :
-                       t.type === 'WITHDRAWAL' ? <TrendingDown className='w-5 h-5 text-red-500' /> :
-                       <ArrowLeftRight className='w-5 h-5 text-blue-500' />}
-                    </div>
-                    <div>
-                      <p className='text-sm font-medium text-dark-800'>
-                        {t.type === 'DEPOSIT' ? text.depositReceived :
-                         t.type === 'WITHDRAWAL' ? text.withdrawal :
-                         `${text.transferTo} ${t.targetAccountNumber || text.account}`}
-                      </p>
-                      {t.description && (
-                        <p className='text-xs text-gray-500'>{t.description}</p>
-                      )}
-                      {t.type === 'TRANSFER' && t.sourceAccountNumber && (
-                        <p className='text-xs text-gray-400'>{text.from}: {t.sourceAccountNumber}</p>
-                      )}
-                      <p className='text-xs text-gray-300'>{formatDate(t.createdAt)}</p>
-                    </div>
-                  </div>
-                  <div className='text-right'>
-                    <p className={`font-semibold text-sm ${t.type === 'DEPOSIT' ? 'text-green-500' : 'text-red-500'}`}>
-                      {t.type === 'DEPOSIT' ? '+' : '-'}{formatCurrency(t.amount)}
-                    </p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      t.status === 'COMPLETED' ? 'bg-green-100 text-green-600' :
-                      t.status === 'FAILED' ? 'bg-red-100 text-red-600' :
-                      'bg-yellow-100 text-yellow-600'
-                    }`}>
-                      {t.status === 'COMPLETED' ? text.completed : t.status === 'FAILED' ? text.failed : text.pending}
-                    </span>
-                  </div>
-                </div>
+            <List disablePadding>
+              {transactions.slice(0, 6).map(transaction => (
+                <ListItem key={transaction.id} disableGutters sx={{ py: 1.2 }}>
+                  <ListItemAvatar>
+                    <Box sx={{ width: 42, height: 42, borderRadius: 3, display: 'grid', placeItems: 'center', bgcolor: transaction.type === 'DEPOSIT' ? '#f0fdf4' : transaction.type === 'WITHDRAWAL' ? '#fef2f2' : '#eff6ff', color: transaction.type === 'DEPOSIT' ? '#16a34a' : transaction.type === 'WITHDRAWAL' ? '#dc2626' : '#2563eb' }}>
+                      {transaction.type === 'DEPOSIT' ? <TrendingUp className='h-5 w-5' /> : transaction.type === 'WITHDRAWAL' ? <TrendingDown className='h-5 w-5' /> : <ArrowLeftRight className='h-5 w-5' />}
+                    </Box>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={transaction.description || transaction.type}
+                    secondary={formatDate(transaction.createdAt)}
+                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                    <Typography variant='body2' sx={{ fontWeight: 800, color: transaction.type === 'DEPOSIT' ? 'success.main' : 'error.main' }}>
+                      {transaction.type === 'DEPOSIT' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </Typography>
+                    <Chip
+                      size='small'
+                      label={transaction.status === 'COMPLETED' ? text.completed : transaction.status === 'FAILED' ? text.failed : text.pending}
+                      variant='outlined'
+                    />
+                  </Box>
+                </ListItem>
               ))}
-            </div>
+            </List>
           )}
-        </div>
-      </div>
-
-      {/* Right column */}
-      <div className='space-y-6'>
-
-        {/* Quick Actions */}
-        <div className='card p-6'>
-          <div className='grid grid-cols-2 gap-3'>
-            <button onClick={() => navigate('/cards')} className='flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-100 hover:bg-primary-50 transition-colors card-hover'>
-              <div className='w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm'>
-                <CreditCard className='w-5 h-5 text-primary-500' />
-              </div>
-              <span className='text-xs font-medium text-dark-800'>My Cards</span>
-              <span className='text-xs text-gray-400'>{cards.length} {text.active}</span>
-            </button>
-            <button onClick={() => navigate('/transactions?tab=pix')} className='flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-100 hover:bg-primary-50 transition-colors card-hover'>
-              <div className='w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm'>
-                <Zap className='w-5 h-5 text-primary-500' />
-              </div>
-              <span className='text-xs font-medium text-dark-800'>{text.pixTransfers}</span>
-              <span className='text-xs text-gray-400'>{text.quickSend}</span>
-            </button>
-            <button onClick={() => navigate('/invest')} className='flex flex-col items-center gap-2 p-4 rounded-xl bg-cream-100 hover:bg-primary-50 transition-colors card-hover col-span-2'>
-              <div className='w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm'>
-                <TrendingUp className='w-5 h-5 text-primary-500' />
-              </div>
-              <span className='text-xs font-medium text-dark-800'>{text.investments}</span>
-              {/* Rendimento real calculado a partir dos investimentos ativos */}
-              <span className={`text-xs ${
-                investmentGain === null
-                  ? 'text-gray-400'
-                  : investmentGain >= 0
-                    ? 'text-green-500'
-                    : 'text-red-500'
-              }`}>
-                {investmentGain === null
-                  ? text.noInvestments
-                  : `${investmentGain >= 0 ? '+' : ''}${investmentGain.toFixed(2)}%`}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* My Cards */}
-        <div className='card p-6'>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='font-semibold text-dark-800'>{text.myCards}</h3>
-            <button onClick={() => navigate('/cards')} className='text-primary-500 text-sm font-medium flex items-center gap-1'>
-              <Plus className='w-4 h-4' /> {text.addCard}
-            </button>
-          </div>
-          {cards.length === 0 ? (
-            <div className='text-center py-4'>
-              <p className='text-gray-400 text-sm mb-3'>{text.noCardsYet}</p>
-              <button onClick={() => navigate('/cards')}
-                className='bg-primary-500 text-white text-xs px-3 py-2 rounded-lg hover:bg-primary-600 transition-colors'>
-                {text.addCard}
-              </button>
-            </div>
-          ) : (
-            <div>
-              {visibleCard && (
-                <div className={`${cardBgColor(visibleCard.brand)} rounded-2xl p-4 text-white mb-3`}>
-                  <div className='flex items-center justify-between mb-3'>
-                    <p className='text-xs text-white/70'>{visibleCard.cardType} Card</p>
-                    <CreditCard className='w-4 h-4 text-white/70' />
-                  </div>
-                  <p className='text-sm font-bold mb-2'>{visibleCard.brand}</p>
-                  <p className='font-mono text-sm mb-3'>•••• •••• •••• {visibleCard.lastFour}</p>
-                  <div className='flex items-center justify-between text-xs text-white/70'>
-                    <span>{visibleCard.holderName}</span>
-                    <span>{String(visibleCard.expiryMonth).padStart(2, '0')}/{visibleCard.expiryYear}</span>
-                  </div>
-                </div>
-              )}
-              {cards.length > 1 && (
-                <div className='flex items-center justify-between'>
-                  <button onClick={() => setCardIndex(i => Math.max(0, i - 1))}
-                    disabled={cardIndex === 0}
-                    className='w-8 h-8 rounded-full bg-cream-100 hover:bg-primary-50 flex items-center justify-center disabled:opacity-30 transition-all'>
-                    <ChevronLeft className='w-4 h-4 text-dark-800' />
-                  </button>
-                  <div className='flex gap-1'>
-                    {cards.map((_, i) => (
-                      <button key={i} onClick={() => setCardIndex(i)}
-                        className={`w-2 h-2 rounded-full transition-all ${i === cardIndex ? 'bg-primary-500 w-4' : 'bg-cream-200'}`} />
-                    ))}
-                  </div>
-                  <button onClick={() => setCardIndex(i => Math.min(cards.length - 1, i + 1))}
-                    disabled={cardIndex === cards.length - 1}
-                    className='w-8 h-8 rounded-full bg-cream-100 hover:bg-primary-50 flex items-center justify-center disabled:opacity-30 transition-all'>
-                    <ChevronRight className='w-4 h-4 text-dark-800' />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* PIX */}
-        <div className='card p-6'>
-          <h3 className='font-semibold text-dark-800 mb-4'>{text.pixAndTransfers}</h3>
-          <div className='grid grid-cols-4 gap-2 mb-4'>
-            {[
-              { label: text.qrCode, tab: 'qrcode' },
-              { label: text.pixKey, tab: 'pix' },
-              { label: text.transfer, tab: 'transfer' },
-              { label: text.deposit, tab: 'deposit' },
-            ].map(item => (
-              <button key={item.label} onClick={() => navigate(`/transactions?tab=${item.tab}`)}
-                className='flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-cream-100 transition-colors'>
-                <div className='w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center'>
-                  <Zap className='w-4 h-4 text-primary-500' />
-                </div>
-                <span className='text-xs text-gray-500'>{item.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className='bg-cream-100 rounded-xl p-3 flex items-center justify-between'>
-            <div>
-              <p className='text-xs text-gray-400'>{text.myPixKey}</p>
-              <p className='text-sm font-medium text-dark-800 truncate max-w-32'>
-                {account?.number || text.loading}
-              </p>
-            </div>
-            <button onClick={copyAccountNumber}
-              className='bg-primary-500 text-white text-xs font-medium px-3 py-2 rounded-lg hover:bg-primary-600 transition-colors'>
-              {copySuccess ? text.copied : text.share}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

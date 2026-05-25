@@ -36,6 +36,11 @@ export interface TokenResponse {
   expiresIn: number;
 }
 
+export type LoginResponse = {
+  twoFactorRequired?: boolean;
+  tempToken?: string;
+} & Partial<TokenResponse>;
+
 export interface PageResponse<T> {
   content: T[];
   number: number;

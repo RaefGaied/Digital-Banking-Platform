@@ -10,8 +10,9 @@ type AuthContextValue = {
 	userRole: string;
 	loading: boolean;
 	error: string | null;
-	login: (data: LoginRequest) => Promise<Awaited<ReturnType<typeof authApi.login>> | null>;
+	login: (data: LoginRequest) => Promise<any | null>;
 	register: (data: RegisterRequest) => Promise<boolean>;
+	verify2fa: (tempToken: string, code: number) => Promise<boolean>;
 	logout: () => void;
 };
 
@@ -48,16 +49,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		});
 	};
 
+
 	const login = async (data: LoginRequest) => {
 		setLoading(true);
 		setError(null);
 		try {
 			const response = await authApi.login(data);
+			// If backend indicates 2FA is required it will return a shape like { twoFactorRequired: true, tempToken }
+			if (response && response.twoFactorRequired) {
+				return response; // let caller show 2FA UI
+			}
+			// otherwise persist tokens
 			persistAuth(response);
 			return response;
 		} catch (err: any) {
 			setError(err.response?.data?.error || 'Invalid email or password');
 			return null;
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const verify2fa = async (tempToken: string, code: number) => {
+		setLoading(true);
+		setError(null);
+		try {
+			const response = await authApi.verify2fa(tempToken, code);
+			// response should be the token payload
+			persistAuth(response);
+			return true;
+		} catch (err: any) {
+			setError(err.response?.data?.error || 'Invalid 2FA code');
+			return false;
 		} finally {
 			setLoading(false);
 		}
@@ -94,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		loading,
 		error,
 		login,
+		verify2fa,
 		register,
 		logout,
 	}), [token, userName, userRole, loading, error]);
