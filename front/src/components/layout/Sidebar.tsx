@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Box, Divider, Stack, Paper, Tooltip, IconButton } from '@mui/material';
-import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, LogOut, ShieldCheck, Activity, Users, FileText } from 'lucide-react';
+import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, LogOut, ShieldCheck, Activity, Users, FileText, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -17,6 +17,7 @@ const adminNavItems = [
   { to: '/admin/dashboard', icon: ShieldCheck, key: 'sidebar.admin' },
   { to: '/admin/tasks', icon: Activity, key: 'sidebar.tasks' },
   { to: '/admin/users', icon: Users, key: 'sidebar.users' },
+  { to: '/admin/security', icon: ShieldAlert, key: 'sidebar.security' },
   { to: '/admin/audit', icon: FileText, key: 'sidebar.audit' },
 ] as const;
 

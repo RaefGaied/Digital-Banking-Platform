@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Box, Button, Dialog, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material';
 
 type Props = {
@@ -41,7 +41,12 @@ export default function TwoFactorModal({ open, tempToken, onClose, onVerify }: P
               label='6-digit code'
               value={code}
               onChange={e => setCode(e.target.value)}
-              inputProps={{ inputMode: 'numeric', maxLength: 6 }}
+              slotProps={{
+                htmlInput: {
+                  inputMode: 'numeric',
+                  maxLength: 6,
+                },
+              }}
             />
 
             {error && <Typography color='error' variant='body2'>{error}</Typography>}

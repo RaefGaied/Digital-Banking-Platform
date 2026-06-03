@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Box, Button, Card, CardContent, Divider, Stack, TextField, Typography, InputAdornment } from '@mui/material';
 import { ArrowRight, Loader2, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
@@ -9,7 +9,7 @@ import ThemeToggle from '../components/ui/ThemeToggle';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, lockedUntil, attemptsRemaining } = useAuth();
   const { verify2fa } = useAuth();
   const { locale } = useI18n();
   const [show2fa, setShow2fa] = useState(false);
@@ -17,6 +17,30 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!lockedUntil) {
+      setNow(Date.now());
+      return;
+    }
+
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [lockedUntil]);
+
+  const lockExpiry = lockedUntil ? new Date(lockedUntil).getTime() : null;
+  const lockRemainingMs = lockExpiry ? Math.max(lockExpiry - now, 0) : 0;
+  const isAccountLocked = lockRemainingMs > 0;
+  const formatLockCountdown = () => {
+    const totalSeconds = Math.ceil(lockRemainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes > 0) {
+      return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+    }
+    return `${seconds}s`;
+  };
 
   const text = locale === 'fr'
     ? {
@@ -155,9 +179,29 @@ export default function LoginPage() {
               </Typography>
             </Stack>
 
+            {lockedUntil && (
+              <Box sx={{ mb: 2, p: 2, borderRadius: 3, bgcolor: 'warning.main', color: 'warning.contrastText' }}>
+                <Typography variant='body2' sx={{ fontWeight: 700 }}>
+                  Account temporarily locked. Try again in {formatLockCountdown()}.
+                </Typography>
+              </Box>
+            )}
+
             {error && (
               <Box sx={{ mb: 3, p: 2, borderRadius: 3, bgcolor: 'error.main', color: 'error.contrastText' }}>
-                <Typography variant='body2'>{error}</Typography>
+                <Stack spacing={0.5}>
+                  <Typography variant='body2'>{error}</Typography>
+                  {!lockedUntil && typeof attemptsRemaining === 'number' && attemptsRemaining > 0 && (
+                    <Typography variant='caption' sx={{ opacity: 0.9 }}>
+                      {attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} left before the account is locked.
+                    </Typography>
+                  )}
+                  {!lockedUntil && isAccountLocked && (
+                    <Typography variant='caption' sx={{ opacity: 0.9 }}>
+                      Re-try in {formatLockCountdown()}.
+                    </Typography>
+                  )}
+                </Stack>
               </Box>
             )}
 
@@ -169,6 +213,7 @@ export default function LoginPage() {
                   onChange={e => setEmail(e.target.value)}
                   type='email'
                   autoComplete='username'
+                  disabled={loading || isAccountLocked}
                   slotProps={{
                     input: {
                       startAdornment: (
@@ -186,11 +231,12 @@ export default function LoginPage() {
                   onChange={e => setPassword(e.target.value)}
                   type={showPassword ? 'text' : 'password'}
                   autoComplete='current-password'
+                  disabled={loading || isAccountLocked}
                   slotProps={{
                     input: {
                       endAdornment: (
                         <InputAdornment position='end'>
-                          <Button type='button' onClick={() => setShowPassword(v => !v)} sx={{ minWidth: 'auto', p: 0, color: 'text.secondary' }}>
+                          <Button type='button' onClick={() => setShowPassword(v => !v)} disabled={loading || isAccountLocked} sx={{ minWidth: 'auto', p: 0, color: 'text.secondary' }}>
                             {showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
                           </Button>
                         </InputAdornment>
@@ -203,7 +249,7 @@ export default function LoginPage() {
                   type='submit'
                   variant='contained'
                   size='large'
-                  disabled={loading}
+                  disabled={loading || isAccountLocked}
                   endIcon={loading ? <Loader2 className='h-4 w-4 animate-spin' /> : <ArrowRight className='h-4 w-4' />}
                   sx={{ py: 1.6 }}
                 >

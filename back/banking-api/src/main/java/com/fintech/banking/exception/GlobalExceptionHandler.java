@@ -25,6 +25,17 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
     }
 
+    @ExceptionHandler(AccountLockedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountLocked(AccountLockedException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("status", HttpStatus.LOCKED.value());
+        body.put("error", "Account locked");
+        body.put("message", "Account locked. Try again after " + ex.getLockedUntil());
+        body.put("lockedUntil", ex.getLockedUntil() != null ? ex.getLockedUntil().toString() : null);
+        return ResponseEntity.status(HttpStatus.LOCKED).body(body);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();

@@ -4,6 +4,7 @@ import type {
   AdminDashboardResponse,
   AdminTaskDetail,
   AdminTaskSummary,
+  AdminSecurityEvent,
   AdminUserSummary,
   PageResponse,
   TaskActionRequest,
@@ -49,6 +50,16 @@ export const adminApi = {
 
   getAuditLogs: async (page = 0, size = 10): Promise<PageResponse<AdminAuditLog>> => {
     const response = await api.get<PageResponse<AdminAuditLog>>('/admin/audit-logs', { params: { page, size } });
+    return response.data;
+  },
+
+  getSecurityEvents: async (page = 0, size = 10): Promise<PageResponse<AdminSecurityEvent>> => {
+    const response = await api.get<PageResponse<AdminSecurityEvent>>('/admin/security-events', { params: { page, size } });
+    return response.data;
+  },
+
+  resolveSecurityEvent: async (eventId: string): Promise<AdminSecurityEvent> => {
+    const response = await api.post<AdminSecurityEvent>(`/admin/security-events/${eventId}/resolve`);
     return response.data;
   },
 };

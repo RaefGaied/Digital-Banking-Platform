@@ -126,6 +126,16 @@ export interface AdminAuditLog {
   createdAt: string;
 }
 
+export interface AdminSecurityEvent {
+  id: string;
+  userId: string;
+  type: string;
+  ipAddress: string | null;
+  deviceId: string | null;
+  resolved: boolean;
+  timestamp: string;
+}
+
 export interface AdminDashboardResponse {
   ticketStatistics: TicketStatistics;
   activeSessions: number;

@@ -4,6 +4,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  twoFactorEnabled?: boolean;
   agency: string;
   accountNumber: string;
   createdAt: string;

@@ -8,6 +8,8 @@ type AuthContextValue = {
 	token: string | null;
 	userName: string;
 	userRole: string;
+	lockedUntil: string | null;
+	attemptsRemaining: number | null;
 	loading: boolean;
 	error: string | null;
 	login: (data: LoginRequest) => Promise<any | null>;
@@ -23,13 +25,48 @@ function readAuthState() {
 		token: localStorage.getItem('token'),
 		userName: localStorage.getItem('userName') || '',
 		userRole: localStorage.getItem('userRole') || '',
+		lockedUntil: localStorage.getItem('lockedUntil'),
 	};
 }
 
+function setLockUntil(lockedUntilValue: string | null) {
+	if (lockedUntilValue) {
+		localStorage.setItem('lockedUntil', lockedUntilValue);
+	} else {
+		localStorage.removeItem('lockedUntil');
+	}
+}
+
+function getDefaultLockUntil(minutes = 30) {
+	return new Date(Date.now() + minutes * 60_000).toISOString();
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-	const [{ token, userName, userRole }, setAuthState] = useState(readAuthState);
+	const [{ token, userName, userRole, lockedUntil: storedLockedUntil }, setAuthState] = useState(readAuthState);
+	const [lockedUntil, setLockedUntil] = useState<string | null>(storedLockedUntil);
+	const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	// Auto-clear lock state when the lockedUntil time expires
+	useEffect(() => {
+		if (!lockedUntil) return;
+		const expiry = new Date(lockedUntil).getTime();
+		const now = Date.now();
+		const ms = expiry - now;
+		if (ms <= 0) {
+			setLockedUntil(null);
+			localStorage.removeItem('lockedUntil');
+			setError(null);
+			return;
+		}
+		const timer = window.setTimeout(() => {
+			setLockedUntil(null);
+			localStorage.removeItem('lockedUntil');
+			setError(null);
+		}, ms);
+		return () => window.clearTimeout(timer);
+	}, [lockedUntil]);
 
 	useEffect(() => {
 		const handleStorage = () => setAuthState(readAuthState());
@@ -42,10 +79,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		localStorage.setItem('userId', response.uuid);
 		localStorage.setItem('userName', response.name);
 		localStorage.setItem('userRole', response.role);
+		localStorage.removeItem('lockedUntil');
+		setLockedUntil(null);
+		setAttemptsRemaining(null);
+		setError(null);
 		setAuthState({
 			token: response.accessToken,
 			userName: response.name,
 			userRole: response.role,
+			lockedUntil: null,
 		});
 	};
 
@@ -63,7 +105,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			persistAuth(response);
 			return response;
 		} catch (err: any) {
-			setError(err.response?.data?.error || 'Invalid email or password');
+			const status = err?.response?.status;
+			const serverError = err?.response?.data?.error || err?.response?.data?.message;
+			const serverLockedUntil = err?.response?.data?.lockedUntil;
+			const attemptsRemaining = err?.response?.data?.attemptsRemaining;
+			const shouldLock = status === 423 || attemptsRemaining === 0;
+			if (status === 401) {
+				if (shouldLock) {
+					const nextLockedUntil = serverLockedUntil || getDefaultLockUntil();
+					setLockedUntil(nextLockedUntil);
+					setLockUntil(nextLockedUntil);
+					setAttemptsRemaining(0);
+					setError(serverError || 'Account locked — try again later');
+				} else {
+					setLockedUntil(null);
+					setLockUntil(null);
+					setAttemptsRemaining(typeof attemptsRemaining === 'number' ? attemptsRemaining : null);
+					setError(serverError || 'Invalid email or password');
+				}
+			} else if (status === 423) {
+				const nextLockedUntil = serverLockedUntil || getDefaultLockUntil();
+				setLockedUntil(nextLockedUntil);
+				setLockUntil(nextLockedUntil);
+				setAttemptsRemaining(0);
+				setError(serverError || 'Account locked — try again later');
+			} else if (status === 429) {
+				setLockedUntil(null);
+				setLockUntil(null);
+				setAttemptsRemaining(null);
+				setError('Too many attempts — try again later');
+			} else if (serverError) {
+				setLockedUntil(null);
+				setLockUntil(null);
+				setAttemptsRemaining(null);
+				setError(serverError);
+			} else {
+				setLockedUntil(null);
+				setLockUntil(null);
+				setAttemptsRemaining(null);
+				setError('Invalid email or password');
+			}
 			return null;
 		} finally {
 			setLoading(false);
@@ -75,11 +156,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setError(null);
 		try {
 			const response = await authApi.verify2fa(tempToken, code);
-			// response should be the token payload
 			persistAuth(response);
 			return true;
 		} catch (err: any) {
-			setError(err.response?.data?.error || 'Invalid 2FA code');
+			const status = err?.response?.status;
+			const serverError = err?.response?.data?.error || err?.response?.data?.message;
+			if (status === 401) {
+				setError('Invalid two-factor authentication code');
+			} else if (serverError) {
+				setError(serverError);
+			} else {
+				setError('Invalid two-factor authentication code');
+			}
 			return false;
 		} finally {
 			setLoading(false);
@@ -94,7 +182,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			persistAuth(response);
 			return true;
 		} catch (err: any) {
-			setError(err.response?.data?.error || 'Error creating account');
+			const status = err?.response?.status;
+			const serverError = err?.response?.data?.error || err?.response?.data?.message;
+			if (status === 409) {
+				setError('An account with this email already exists');
+			} else if (serverError) {
+				setError(serverError);
+			} else {
+				setError('Error creating account');
+			}
 			return false;
 		} finally {
 			setLoading(false);
@@ -106,7 +202,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		localStorage.removeItem('userId');
 		localStorage.removeItem('userName');
 		localStorage.removeItem('userRole');
-		setAuthState({ token: null, userName: '', userRole: '' });
+		localStorage.removeItem('lockedUntil');
+		setLockedUntil(null);
+		setError(null);
+		setAuthState({ token: null, userName: '', userRole: '', lockedUntil: null });
 	};
 
 	const value = useMemo<AuthContextValue>(() => ({
@@ -114,13 +213,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		token,
 		userName,
 		userRole,
+		lockedUntil,
+		attemptsRemaining,
 		loading,
 		error,
 		login,
 		verify2fa,
 		register,
 		logout,
-	}), [token, userName, userRole, loading, error]);
+	}), [token, userName, userRole, lockedUntil, attemptsRemaining, loading, error]);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

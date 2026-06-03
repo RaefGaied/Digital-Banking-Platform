@@ -18,5 +18,6 @@ public class UserResponse {
     private String email;
     private String agency;
     private String accountNumber;
+    private Boolean twoFactorEnabled;
     private LocalDateTime createdAt;
 }

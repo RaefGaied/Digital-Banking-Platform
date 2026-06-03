@@ -29,6 +29,7 @@ export const translations = {
       admin: 'Admin',
       tasks: 'Tasks',
       users: 'Users',
+      security: 'Security',
       audit: 'Audit',
       helpSupport: 'Help & Support',
       viewProfile: 'View profile',
@@ -64,6 +65,7 @@ export const translations = {
       admin: 'Admin',
       tasks: 'Taches',
       users: 'Utilisateurs',
+      security: 'Securite',
       audit: 'Audit',
       helpSupport: 'Aide et support',
       viewProfile: 'Voir le profil',
@@ -94,6 +96,7 @@ export type TranslationKey =
   | 'sidebar.admin'
   | 'sidebar.tasks'
   | 'sidebar.users'
+  | 'sidebar.security'
   | 'sidebar.audit'
   | 'sidebar.helpSupport'
   | 'sidebar.viewProfile'

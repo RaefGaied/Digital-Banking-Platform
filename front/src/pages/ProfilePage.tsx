@@ -9,6 +9,9 @@ import {
   Lock, Smartphone, HelpCircle, LogOut,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { profileApi } from '../api/profile';
+import Enable2faModal from '../components/auth/Enable2faModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -20,6 +23,9 @@ export default function ProfilePage() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+  const [showEnableModal, setShowEnableModal] = useState(false);
+  const [otpauthUri, setOtpauthUri] = useState<string | null>(null);
+  const [secretValue, setSecretValue] = useState<string | null>(null);
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['user'],
@@ -76,6 +82,32 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  const queryClient = useQueryClient();
+
+  const handleStartEnable = async () => {
+    try {
+      const res = await profileApi.setup2fa();
+      setOtpauthUri(res.otpauthUri);
+      setSecretValue(res.secret);
+      setShowEnableModal(true);
+    } catch (e) {
+      console.error('setup2fa failed', e);
+    }
+  };
+
+  const handleConfirmEnable = async (code: number) => {
+    try {
+      await profileApi.enable2fa(code);
+      setShowEnableModal(false);
+      setOtpauthUri(null);
+      setSecretValue(null);
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      return true;
+    } catch (err: any) {
+      return false;
+    }
+  };
 
   return (
     <>
@@ -232,16 +264,26 @@ export default function ProfilePage() {
               {[
                 { icon: Lock,        label: 'Password',      status: 'Protected',  ok: true },
                 { icon: Shield,      label: 'Encryption',    status: '256-bit TLS', ok: true },
-                { icon: Smartphone,  label: '2FA',           status: 'Not enabled', ok: false },
+                { icon: Smartphone,  label: '2FA',           status: user?.twoFactorEnabled ? 'Enabled' : 'Not enabled', ok: !!user?.twoFactorEnabled },
               ].map(({ icon: Icon, label, status, ok }) => (
-                <div key={label} className='flex items-center justify-between'>
+                <div key={label} className='flex items-center justify-between gap-3'>
                   <div className='flex items-center gap-3'>
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${ok ? 'bg-green-50' : 'bg-orange-50'}`}>
                       <Icon className={`w-4 h-4 ${ok ? 'text-green-500' : 'text-orange-400'}`} />
                     </div>
                     <span className='text-sm text-dark-800'>{label}</span>
                   </div>
-                  <span className={`text-xs font-medium ${ok ? 'text-green-600' : 'text-orange-500'}`}>{status}</span>
+                  <div className='flex items-center gap-2'>
+                    <span className={`text-xs font-medium ${ok ? 'text-green-600' : 'text-orange-500'}`}>{status}</span>
+                    {label === '2FA' && !ok && (
+                      <button
+                        onClick={handleStartEnable}
+                        className='px-3 py-1 rounded-full text-xs font-semibold bg-primary-500 text-white hover:bg-primary-600 transition-colors'
+                      >
+                        Enable
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -328,6 +370,7 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+      <Enable2faModal open={showEnableModal} otpauthUri={otpauthUri} secret={secretValue} onClose={() => setShowEnableModal(false)} onEnable={handleConfirmEnable} />
     </>
   );
 }

@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { accountApi } from '../../api/account';
 import { investmentsApi } from '../../api/investments';
+import { notificationsApi } from '../../api/notifications';
+import { useAuth } from '../../hooks/useAuth';
 import { Bell, TrendingUp, DollarSign, X, Check } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 export default function Notifications() {
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const { userRole } = useAuth();
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
@@ -17,6 +20,19 @@ export default function Notifications() {
   const { data: investments = [] } = useQuery({
     queryKey: ['investments'],
     queryFn: investmentsApi.getMyInvestments,
+  });
+
+  const { data: adminUnreadCount = 0 } = useQuery({
+    queryKey: ['notifications','unread','count'],
+    queryFn: notificationsApi.getUnreadCount,
+    enabled: userRole === 'ADMIN',
+    refetchInterval: 10000,
+  });
+
+  const { data: adminNotifications = [] } = useQuery({
+    queryKey: ['notifications','unread','list'],
+    queryFn: () => notificationsApi.getUnreadNotifications(0, 10),
+    enabled: open && userRole === 'ADMIN',
   });
 
   const notifications = [
@@ -46,7 +62,8 @@ export default function Notifications() {
     })),
   ].filter(n => !dismissed.includes(n.id));
 
-  const unreadCount = notifications.length;
+  // For admin, show unread notifications count from server
+  const unreadCount = userRole === 'ADMIN' ? adminUnreadCount : notifications.length;
 
   return (
     <div className='relative'>
@@ -82,29 +99,56 @@ export default function Notifications() {
             </div>
 
             <div className='max-h-96 overflow-y-auto'>
-              {notifications.length === 0 ? (
-                <div className='p-8 text-center'>
-                  <Bell className='w-8 h-8 text-gray-200 mx-auto mb-2' />
-                  <p className='text-gray-400 text-sm'>No notifications</p>
-                </div>
-              ) : (
-                notifications.map(n => (
-                  <div key={n.id} className='flex items-start gap-3 p-4 hover:bg-cream-50 transition-colors border-b border-cream-100 last:border-0'>
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${n.color}`}>
-                      <n.icon className='w-4 h-4' />
-                    </div>
-                    <div className='flex-1 min-w-0'>
-                      <p className='text-sm font-medium text-dark-800'>{n.title}</p>
-                      <p className='text-xs text-gray-400 truncate mt-0.5'>{n.description}</p>
-                      <p className='text-xs text-gray-300 mt-1'>{n.time}</p>
-                    </div>
-                    <button
-                      onClick={() => setDismissed(prev => [...prev, n.id])}
-                      className='text-gray-300 hover:text-gray-500 shrink-0'>
-                      <X className='w-3 h-3' />
-                    </button>
+              {userRole === 'ADMIN' ? (
+                adminNotifications.length === 0 ? (
+                  <div className='p-8 text-center'>
+                    <Bell className='w-8 h-8 text-gray-200 mx-auto mb-2' />
+                    <p className='text-gray-400 text-sm'>No security notifications</p>
                   </div>
-                ))
+                ) : (
+                  adminNotifications.map((n: any) => (
+                    <div key={n.id} className='flex items-start gap-3 p-4 hover:bg-cream-50 transition-colors border-b border-cream-100 last:border-0'>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-red-100 text-red-500`}>
+                        <Bell className='w-4 h-4' />
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p className='text-sm font-medium text-dark-800'>{n.title}</p>
+                        <p className='text-xs text-gray-400 truncate mt-0.5'>{n.body}</p>
+                        <p className='text-xs text-gray-300 mt-1'>{n.createdAt}</p>
+                      </div>
+                      <button
+                        onClick={() => setDismissed(prev => [...prev, n.id])}
+                        className='text-gray-300 hover:text-gray-500 shrink-0'>
+                        <X className='w-3 h-3' />
+                      </button>
+                    </div>
+                  ))
+                )
+              ) : (
+                notifications.length === 0 ? (
+                  <div className='p-8 text-center'>
+                    <Bell className='w-8 h-8 text-gray-200 mx-auto mb-2' />
+                    <p className='text-gray-400 text-sm'>No notifications</p>
+                  </div>
+                ) : (
+                  notifications.map(n => (
+                    <div key={n.id} className='flex items-start gap-3 p-4 hover:bg-cream-50 transition-colors border-b border-cream-100 last:border-0'>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${n.color}`}>
+                        <n.icon className='w-4 h-4' />
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p className='text-sm font-medium text-dark-800'>{n.title}</p>
+                        <p className='text-xs text-gray-400 truncate mt-0.5'>{n.description}</p>
+                        <p className='text-xs text-gray-300 mt-1'>{n.time}</p>
+                      </div>
+                      <button
+                        onClick={() => setDismissed(prev => [...prev, n.id])}
+                        className='text-gray-300 hover:text-gray-500 shrink-0'>
+                        <X className='w-3 h-3' />
+                      </button>
+                    </div>
+                  ))
+                )
               )}
             </div>
           </div>

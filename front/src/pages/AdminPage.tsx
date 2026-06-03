@@ -1,12 +1,13 @@
 import { NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Box, Card, CardContent, Stack, Tab, Tabs, Typography, Chip } from '@mui/material';
-import { ShieldCheck, Activity, Users, FileText } from 'lucide-react';
+import { ShieldCheck, Activity, Users, FileText, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const tabs = [
   { to: 'dashboard', label: 'Dashboard', icon: ShieldCheck },
   { to: 'tasks', label: 'Tasks', icon: Activity },
   { to: 'users', label: 'Users', icon: Users },
+  { to: 'security', label: 'Security', icon: ShieldAlert },
   { to: 'audit', label: 'Audit', icon: FileText },
 ] as const;
 

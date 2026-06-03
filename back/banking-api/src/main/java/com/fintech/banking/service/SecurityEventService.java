@@ -3,11 +3,13 @@ package com.fintech.banking.service;
 import com.fintech.banking.domain.entity.*;
 import com.fintech.banking.domain.enums.SecurityEventType;
 import com.fintech.banking.domain.enums.UserStatus;
+import com.fintech.banking.domain.enums.UserRole;
 import com.fintech.banking.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,7 +34,8 @@ public class SecurityEventService {
 
     /**
      * Detects and handles token reuse (critical security event)
-     * Business Rule: REUSE_DETECTED → revoke all RefreshTokens, set User.status = BLOCKED
+     * Business Rule: REUSE_DETECTED → revoke all RefreshTokens, set User.status =
+     * BLOCKED
      */
     @Transactional
     public void handleTokenReuse(User user, String ipAddress, String deviceId) {
@@ -40,12 +43,12 @@ public class SecurityEventService {
 
         // Create security event
         SecurityEvent event = SecurityEvent.builder()
-            .userId(user.getId())
-            .type(SecurityEventType.REUSE_DETECTED)
-            .ipAddress(ipAddress)
-            .deviceId(deviceId)
-            .resolved(false)
-            .build();
+                .userId(user.getId())
+                .type(SecurityEventType.REUSE_DETECTED)
+                .ipAddress(ipAddress)
+                .deviceId(deviceId)
+                .resolved(false)
+                .build();
         securityEventRepository.save(event);
 
         // Revoke all refresh tokens
@@ -61,20 +64,25 @@ public class SecurityEventService {
         userRepository.save(user);
 
         // Create audit log
-        createAuditLog(user.getId(), "SECURITY_EVENT", "Token reuse detected - account blocked", 
-                      "SECURITY_EVENT", user.getId().toString(), null);
+        createAuditLog(user.getId(), "SECURITY_EVENT", "Token reuse detected - account blocked",
+                "SECURITY_EVENT", user.getId().toString(), null);
 
         // Send notification
-        notificationService.notifySecurityAlert(user.getId(), 
-            "Your account has been blocked due to unauthorized access attempt");
+        notificationService.notifySecurityAlert(user.getId(),
+                "Your account has been blocked due to unauthorized access attempt");
     }
 
     /**
      * Records failed login attempt and locks account if threshold exceeded
-     * Business Rule: Failed login > 5 → User.status = BLOCKED, lockedUntil = now + 30min
+     * Business Rule: Failed login > 5 → User.status = BLOCKED, lockedUntil = now +
+     * 30min
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordFailedLoginAttempt(User user, String ipAddress) {
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            return;
+        }
+
         user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
 
         if (user.getFailedLoginAttempts() >= MAX_FAILED_LOGIN_ATTEMPTS) {
@@ -85,16 +93,22 @@ public class SecurityEventService {
 
             // Create security event
             SecurityEvent event = SecurityEvent.builder()
-                .userId(user.getId())
-                .type(SecurityEventType.ACCOUNT_LOCKED)
-                .ipAddress(ipAddress)
-                .resolved(false)
-                .build();
+                    .userId(user.getId())
+                    .type(SecurityEventType.ACCOUNT_LOCKED)
+                    .ipAddress(ipAddress)
+                    .resolved(false)
+                    .build();
             securityEventRepository.save(event);
 
             // Send notification
             notificationService.notifySecurityAlert(user.getId(),
-                "Your account has been locked due to multiple failed login attempts. Try again in 30 minutes.");
+                    "Your account has been locked due to multiple failed login attempts. Try again in 30 minutes.");
+
+            // Also notify all admins so they see a small alert in the admin UI
+            String adminMessage = "User " + user.getEmail() + " was locked due to failed logins";
+            userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == UserRole.ADMIN)
+                    .forEach(admin -> notificationService.notifySecurityAlert(admin.getId(), adminMessage));
         }
 
         userRepository.save(user);
@@ -112,8 +126,7 @@ public class SecurityEventService {
 
         // Count failed attempts from this IP in the last 5 minutes
         long failedAttempts = securityEventRepository.countByUserIdAndTypeAndTimestampAfter(
-            null, SecurityEventType.BRUTE_FORCE, recentTime
-        );
+                null, SecurityEventType.BRUTE_FORCE, recentTime);
 
         return failedAttempts >= BRUTE_FORCE_THRESHOLD;
     }
@@ -124,12 +137,12 @@ public class SecurityEventService {
     @Transactional
     public void recordSuspiciousActivity(UUID userId, String ipAddress, String deviceId, String reason) {
         SecurityEvent event = SecurityEvent.builder()
-            .userId(userId)
-            .type(SecurityEventType.SUSPICIOUS_ACTIVITY)
-            .ipAddress(ipAddress)
-            .deviceId(deviceId)
-            .resolved(false)
-            .build();
+                .userId(userId)
+                .type(SecurityEventType.SUSPICIOUS_ACTIVITY)
+                .ipAddress(ipAddress)
+                .deviceId(deviceId)
+                .resolved(false)
+                .build();
         securityEventRepository.save(event);
 
         createAuditLog(userId, "SUSPICIOUS_ACTIVITY", reason, "User", userId.toString(), null);
@@ -141,7 +154,7 @@ public class SecurityEventService {
     @Transactional
     public void unlockUser(UUID userId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setStatus(UserStatus.ACTIVE);
         user.setFailedLoginAttempts(0);
@@ -151,17 +164,17 @@ public class SecurityEventService {
         log.info("User account unlocked: {}", userId);
     }
 
-    private void createAuditLog(UUID userId, String action, String details, 
-                                 String entity, String entityId, UUID sessionId) {
+    private void createAuditLog(UUID userId, String action, String details,
+            String entity, String entityId, UUID sessionId) {
         AuditLog log = AuditLog.builder()
-            .userEmail("system")
-            .action(action)
-            .entity(entity)
-            .entityId(entityId)
-            .details(details)
-            .status("SECURITY_EVENT")
-            .sessionId(sessionId)
-            .build();
+                .userEmail("system")
+                .action(action)
+                .entity(entity)
+                .entityId(entityId)
+                .details(details)
+                .status("SECURITY_EVENT")
+                .sessionId(sessionId)
+                .build();
         auditLogRepository.save(log);
     }
 }

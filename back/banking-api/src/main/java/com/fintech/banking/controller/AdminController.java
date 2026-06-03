@@ -131,4 +131,22 @@ public class AdminController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(PageResponse.from(adminService.getAuditLogs(pageable)));
     }
+
+    @GetMapping("/security-events")
+    public ResponseEntity<PageResponse<AdminService.SecurityEventResponse>> securityEvents(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        requireAdmin(authentication);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"));
+        return ResponseEntity.ok(PageResponse.from(adminService.getSecurityEvents(pageable)));
+    }
+
+    @PostMapping("/security-events/{eventId}/resolve")
+    public ResponseEntity<AdminService.SecurityEventResponse> resolveSecurityEvent(
+            Authentication authentication,
+            @PathVariable UUID eventId) {
+        requireAdmin(authentication);
+        return ResponseEntity.ok(adminService.resolveSecurityEvent(eventId, resolveAdminEmail(authentication)));
+    }
 }

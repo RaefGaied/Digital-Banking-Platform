@@ -29,7 +29,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const urlPath = error.config?.url || '';
+    const publicPrefixes = ['/auth', '/public', '/actuator', '/v3/api-docs', '/swagger-ui.html'];
+    const isPublic = publicPrefixes.some((p) => urlPath.startsWith(p) || urlPath.includes(p));
+
+    if (error.response?.status === 401 && !isPublic) {
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
       localStorage.removeItem('userName');

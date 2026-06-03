@@ -4,6 +4,7 @@ import com.fintech.banking.domain.entity.Account;
 import com.fintech.banking.domain.entity.Card;
 import com.fintech.banking.domain.entity.Investment;
 import com.fintech.banking.domain.entity.Notification;
+import com.fintech.banking.domain.entity.SecurityEvent;
 import com.fintech.banking.domain.entity.SupportTicket;
 import com.fintech.banking.domain.entity.Transaction;
 import com.fintech.banking.domain.entity.User;
@@ -44,6 +45,7 @@ public class LocalDemoDataBootstrap implements ApplicationRunner {
     private final TransactionRepository transactionRepository;
     private final NotificationRepository notificationRepository;
     private final com.fintech.banking.repository.WorkflowTaskRepository workflowTaskRepository;
+    private final com.fintech.banking.repository.SecurityEventRepository securityEventRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -73,6 +75,7 @@ public class LocalDemoDataBootstrap implements ApplicationRunner {
         seedTransactions(primaryUser, partnerUser);
         seedSupportTicket(primaryUser, adminUser);
         seedAdminTasks(adminUser, primaryUser);
+        seedSecurityEvents(primaryUser, partnerUser);
         seedNotifications(primaryUser);
 
         log.info("Seeded local demo data for {} and {}", PRIMARY_EMAIL, PARTNER_EMAIL);
@@ -317,6 +320,46 @@ public class LocalDemoDataBootstrap implements ApplicationRunner {
                     .ticketType(TicketType.DATA_UPDATE)
                     .flowableProcessId("seed-ticket-002")
                     .build());
+        }
+    }
+
+    private void seedSecurityEvents(User primaryUser, User partnerUser) {
+        List<SecurityEvent> existing = securityEventRepository.findAll();
+        if (existing.size() >= 10) {
+            return;
+        }
+
+        SecurityEventType[] eventTypes = SecurityEventType.values();
+        String[] descriptions = {
+                "192.168.1.100",
+                "10.0.0.50",
+                "172.16.0.25",
+                "203.0.113.45",
+                "198.51.100.80"
+        };
+
+        // Create security events for primary user
+        for (int i = 0; i < 5; i++) {
+            SecurityEvent event = SecurityEvent.builder()
+                    .userId(primaryUser.getId())
+                    .type(eventTypes[i % eventTypes.length])
+                    .ipAddress(descriptions[i])
+                    .deviceId("device-" + i)
+                    .resolved(i < 2) // First 2 are resolved
+                    .build();
+            securityEventRepository.save(event);
+        }
+
+        // Create security events for partner user
+        for (int i = 0; i < 5; i++) {
+            SecurityEvent event = SecurityEvent.builder()
+                    .userId(partnerUser.getId())
+                    .type(eventTypes[(i + 1) % eventTypes.length])
+                    .ipAddress(descriptions[(i + 1) % descriptions.length])
+                    .deviceId("device-partner-" + i)
+                    .resolved(i % 3 == 0) // Every 3rd one is resolved
+                    .build();
+            securityEventRepository.save(event);
         }
     }
 

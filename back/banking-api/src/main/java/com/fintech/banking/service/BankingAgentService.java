@@ -28,7 +28,6 @@ public class BankingAgentService {
     private final SessionRepository sessionRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
-    private final SensitiveLineService sensitiveLineService;
 
     /**
      * Creates a new banking agent for a session
@@ -135,7 +134,17 @@ public class BankingAgentService {
             return agent.getDefaultPolicy() != null ? agent.getDefaultPolicy() : AgentDecision.REQUEST_INFO;
         }
 
-        return sensitiveLineService.evaluate(intentResult);
+        // Check confidence level
+        if (intentResult.getConfidence() == null || intentResult.getConfidence() < 0.7) {
+            return AgentDecision.REQUEST_INFO;
+        }
+
+        // Check if intent is sensitive
+        if (intentResult.getIsSensitive() != null && intentResult.getIsSensitive()) {
+            return AgentDecision.TRIGGER_BPMN;
+        }
+
+        return AgentDecision.AUTO_EXECUTE;
     }
 
     /**

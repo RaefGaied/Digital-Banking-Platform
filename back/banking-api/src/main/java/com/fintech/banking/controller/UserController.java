@@ -33,6 +33,7 @@ public class UserController {
                 .email(user.getEmail())
                 .agency(account != null ? account.getAgency() : null)
                 .accountNumber(account != null ? account.getNumber() : null)
+                .twoFactorEnabled(user.getTwoFactorEnabled())
                 .createdAt(user.getCreatedAt())
                 .build());
     }

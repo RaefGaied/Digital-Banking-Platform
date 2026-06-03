@@ -78,3 +78,14 @@ logging:
     com.fintech.banking: DEBUG
     org.springframework.security: INFO
     org.springframework.security.web.authentication.Http403ForbiddenEntryPoint: INFO
+
+azure:
+  client-id: ${AZURE_CLIENT_ID:}
+  client-secret: ${AZURE_CLIENT_SECRET:}
+  tenant-id: ${AZURE_TENANT_ID:}
+  openai:
+    endpoint: ${AZURE_OPENAI_ENDPOINT:}
+    deployment-name: ${AZURE_OPENAI_CHAT_DEPLOYMENT_NAME:}
+    api-version: ${AZURE_OPENAI_API_VERSION:2024-06-01}
+    api-key: ${AZURE_OPENAI_API_KEY:}
+    model: ${AZURE_OPENAI_MODEL:gpt-4o}

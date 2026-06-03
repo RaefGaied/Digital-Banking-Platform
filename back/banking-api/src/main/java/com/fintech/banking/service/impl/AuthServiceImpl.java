@@ -14,11 +14,15 @@ import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.security.service.JwtService;
 import com.fintech.banking.service.AuditLogService;
 import com.fintech.banking.service.AuthService;
+import com.fintech.banking.service.SecurityEventService;
 import com.fintech.banking.util.TotpUtil;
+import com.fintech.banking.exception.AccountLockedException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final AuditLogService auditLogService;
+    private final SecurityEventService securityEventService;
 
     private String getClientIp() {
         try {
@@ -49,7 +54,8 @@ public class AuthServiceImpl implements AuthService {
                 String xff = request.getHeader("X-Forwarded-For");
                 return xff != null ? xff.split(",")[0].trim() : request.getRemoteAddr();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return "unknown";
     }
 
@@ -66,10 +72,10 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(refreshToken);
 
         return ClientResponse.builder()
-            .uuid(user.getId())
-            .name(user.getName())
-            .role(user.getRole() != null ? user.getRole().name() : null)
-            .accessToken(accessToken)
+                .uuid(user.getId())
+                .name(user.getName())
+                .role(user.getRole() != null ? user.getRole().name() : null)
+                .accessToken(accessToken)
                 .refreshToken(refreshTokenValue)
                 .tokenType("Bearer")
                 .expiresIn(86400000L)
@@ -85,10 +91,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = User.builder()
-            .name(request.getName())
-            .email(request.getEmail())
-            .password(passwordEncoder.encode(request.getPassword()))
-            .build();
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .build();
 
         userRepository.save(user);
 
@@ -100,19 +106,42 @@ public class AuthServiceImpl implements AuthService {
 
         accountRepository.save(account);
 
-        auditLogService.log(user.getEmail(), "REGISTER", "User", user.getId().toString(), "New user registered", getClientIp());
+        auditLogService.log(user.getEmail(), "REGISTER", "User", user.getId().toString(), "New user registered",
+                getClientIp());
 
         return buildTokenResponse(user);
     }
 
     @Override
-    @Transactional
     public LoginResponse login(LoginRequest request) {
+        User existingUser = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (existingUser != null && existingUser.getStatus() == com.fintech.banking.domain.enums.UserStatus.BLOCKED
+                && existingUser.getLockedUntil() != null
+                && LocalDateTime.now().isAfter(existingUser.getLockedUntil())) {
+            existingUser.setStatus(com.fintech.banking.domain.enums.UserStatus.ACTIVE);
+            existingUser.setFailedLoginAttempts(0);
+            existingUser.setLockedUntil(null);
+            userRepository.save(existingUser);
+        }
+
+        if (existingUser != null && !existingUser.isAccountNonLocked()) {
+            throw new AccountLockedException(existingUser.getLockedUntil());
+        }
+
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
-        } catch (Exception e) {
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        } catch (AuthenticationException e) {
+            if (e instanceof BadCredentialsException) {
+                User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+                if (user != null) {
+                    securityEventService.recordFailedLoginAttempt(user, getClientIp());
+                    User refreshedUser = userRepository.findByEmail(request.getEmail()).orElse(user);
+                    if (!refreshedUser.isAccountNonLocked()) {
+                        throw new AccountLockedException(refreshedUser.getLockedUntil());
+                    }
+                }
+            }
             auditLogService.logFailure(request.getEmail(), "LOGIN", "Invalid credentials", getClientIp());
             throw e;
         }
@@ -124,7 +153,7 @@ public class AuthServiceImpl implements AuthService {
         if (user.getTwoFactorEnabled() != null && user.getTwoFactorEnabled()) {
             // Generate a temporary token valid for 5 minutes for 2FA verification
             String tempToken = jwtService.generateTemporaryToken(user);
-            
+
             // Generate a new secret if one doesn't exist
             String secret = user.getTwoFactorSecret();
             if (secret == null || secret.isEmpty()) {
@@ -132,16 +161,18 @@ public class AuthServiceImpl implements AuthService {
                 user.setTwoFactorSecret(secret);
                 userRepository.save(user);
             }
-            
-            auditLogService.log(user.getEmail(), "LOGIN_2FA_REQUIRED", "User", user.getId().toString(), "2FA required", getClientIp());
-            
+
+            auditLogService.log(user.getEmail(), "LOGIN_2FA_REQUIRED", "User", user.getId().toString(), "2FA required",
+                    getClientIp());
+
             return new LoginResponse(true, null, tempToken);
         }
 
         // If 2FA is not enabled or already verified, proceed with normal login
         refreshTokenRepository.revokeAllByUserId(user.getId());
 
-        auditLogService.log(user.getEmail(), "LOGIN", "User", user.getId().toString(), "Login successful", getClientIp());
+        auditLogService.log(user.getEmail(), "LOGIN", "User", user.getId().toString(), "Login successful",
+                getClientIp());
 
         return new LoginResponse(false, buildTokenResponse(user), null);
     }
@@ -153,7 +184,8 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
 
         if (!refreshToken.isValid()) {
-            auditLogService.logFailure(refreshToken.getUser().getEmail(), "REFRESH_TOKEN", "Token expired or revoked", getClientIp());
+            auditLogService.logFailure(refreshToken.getUser().getEmail(), "REFRESH_TOKEN", "Token expired or revoked",
+                    getClientIp());
             throw new IllegalArgumentException("Refresh token expired or revoked");
         }
 
@@ -161,7 +193,8 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(refreshToken);
 
         User user = refreshToken.getUser();
-        auditLogService.log(user.getEmail(), "REFRESH_TOKEN", "User", user.getId().toString(), "Token refreshed", getClientIp());
+        auditLogService.log(user.getEmail(), "REFRESH_TOKEN", "User", user.getId().toString(), "Token refreshed",
+                getClientIp());
 
         return buildTokenResponse(user);
     }
@@ -175,7 +208,8 @@ public class AuthServiceImpl implements AuthService {
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
 
-        auditLogService.log(refreshToken.getUser().getEmail(), "LOGOUT", "User", refreshToken.getUser().getId().toString(), "Logout successful", getClientIp());
+        auditLogService.log(refreshToken.getUser().getEmail(), "LOGOUT", "User",
+                refreshToken.getUser().getId().toString(), "Logout successful", getClientIp());
     }
 
     @Override
@@ -198,7 +232,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 2FA verified successfully, issue normal tokens
-        auditLogService.log(user.getEmail(), "2FA_VERIFY_SUCCESS", "User", user.getId().toString(), "2FA verified successfully", getClientIp());
+        auditLogService.log(user.getEmail(), "2FA_VERIFY_SUCCESS", "User", user.getId().toString(),
+                "2FA verified successfully", getClientIp());
 
         return buildTokenResponse(user);
     }

@@ -9,7 +9,7 @@ import LanguageToggle from '../ui/LanguageToggle';
 import ThemeToggle from '../ui/ThemeToggle';
 
 export default function AppLayout() {
-  const { isAuthenticated, userName, userRole } = useAuth();
+  const { isAuthenticated, userName } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
 
@@ -73,7 +73,7 @@ export default function AppLayout() {
             <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <LanguageToggle />
               <ThemeToggle />
-              {userRole !== 'ADMIN' && <Notifications />}
+              <Notifications />
               <IconButton
                 onClick={() => navigate('/profile')}
                 sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider', boxShadow: 1 }}
