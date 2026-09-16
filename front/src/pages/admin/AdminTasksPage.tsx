@@ -2,22 +2,33 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { adminApi } from '../../api/admin';
-import { Box, Card, CardContent, Chip, IconButton, Table, TableBody, TableCell, TableHead, TablePagination, TableRow, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Chip, IconButton, Stack, Table, TableBody, TableCell, TableHead, TablePagination, TableRow, Typography } from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
 
 export default function AdminTasksPage() {
   const queryClient = useQueryClient();
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const tasksQuery = useQuery({ queryKey: ['admin-tasks', page, rowsPerPage], queryFn: () => adminApi.getTasks(page, rowsPerPage) });
   const selectedTaskQuery = useQuery({
     queryKey: ['admin-task', selectedTaskId],
-    queryFn: () => adminApi.getTask(selectedTaskId as number),
+    queryFn: () => adminApi.getTask(selectedTaskId as string),
     enabled: selectedTaskId !== null,
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
+
+  const actMutation = useMutation({
+    mutationFn: ({ taskId, action }: { taskId: string; action: 'APPROVE' | 'REJECT' }) =>
+      adminApi.actOnTask(taskId, { action }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-task', selectedTaskId] });
+      setSelectedTaskId(null);
+    },
+  });
 
   return (
     <Box sx={{ display: 'grid', gap: 3 }}>
@@ -87,7 +98,7 @@ export default function AdminTasksPage() {
         </CardContent>
       </Card>
 
-      {selectedTaskId && selectedTaskQuery.data?.task && (
+          {selectedTaskId && selectedTaskQuery.data?.task && (
         <Card sx={{ borderRadius: 4 }}>
           <CardContent>
             <Typography variant='h6' sx={{ fontWeight: 800 }}>
@@ -96,6 +107,24 @@ export default function AdminTasksPage() {
             <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
               {selectedTaskQuery.data.task.description || selectedTaskQuery.data.task.ticket?.description}
             </Typography>
+                <Stack direction='row' spacing={2} sx={{ mt: 2 }}>
+                  <Button
+                    variant='contained'
+                    color='success'
+                    onClick={() => actMutation.mutate({ taskId: selectedTaskId, action: 'APPROVE' })}
+                    disabled={actMutation.status === 'pending'}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    variant='outlined'
+                    color='error'
+                    onClick={() => actMutation.mutate({ taskId: selectedTaskId, action: 'REJECT' })}
+                    disabled={actMutation.status === 'pending'}
+                  >
+                    Reject
+                  </Button>
+                </Stack>
           </CardContent>
         </Card>
       )}

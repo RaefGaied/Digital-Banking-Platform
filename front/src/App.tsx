@@ -24,6 +24,9 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage.tsx'));
 const CardsPage = lazy(() => import('./pages/CardsPage.tsx'));
 const InvestPage = lazy(() => import('./pages/InvestPage.tsx'));
 const HelpPage = lazy(() => import('./pages/HelpPage.tsx'));
+const SessionsPage = lazy(() => import('./pages/SessionsPage.tsx'));
+const AgentsPage = lazy(() => import('./pages/AgentsPage.tsx'));
+const ChatPage = lazy(() => import('./pages/ChatPage.tsx'));
 
 
 const queryClient = new QueryClient({
@@ -73,6 +76,9 @@ export default function App() {
                       <Route path='analytics' element={<RequireRole allowedRoles={["USER"]}><AnalyticsPage /></RequireRole>} />
                       <Route path='profile' element={<RequireRole allowedRoles={["USER"]}><ProfilePage /></RequireRole>} />
                       <Route path='help' element={<HelpPage />} />
+                      <Route path='sessions' element={<RequireRole allowedRoles={["USER"]}><SessionsPage /></RequireRole>} />
+                      <Route path='sessions/:id/chat' element={<RequireRole allowedRoles={["USER"]}><ChatPage /></RequireRole>} />
+                      <Route path='agents' element={<RequireRole allowedRoles={["USER"]}><AgentsPage /></RequireRole>} />
                     </Route>
                     <Route path='*' element={<Navigate to='/login' replace />} />
                   </Routes>

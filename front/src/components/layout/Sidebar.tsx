@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Box, Divider, Stack, Paper, Tooltip, IconButton } from '@mui/material';
-import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, LogOut, ShieldCheck, Activity, Users, FileText, ShieldAlert } from 'lucide-react';
+import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, LogOut, ShieldCheck, Activity, Users, FileText, ShieldAlert, MessageCircle, History, Bot } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -10,7 +10,10 @@ const userNavItems = [
   { to: '/transactions', icon: ArrowLeftRight, key: 'sidebar.transfer' },
   { to: '/invest', icon: TrendingUp, key: 'sidebar.invest' },
   { to: '/analytics', icon: PieChart, key: 'sidebar.analytics' },
+  { to: '/sessions', icon: History, key: 'sidebar.sessions' },
+  { to: '/agents', icon: Bot, key: 'sidebar.agents' },
   { to: '/profile', icon: User, key: 'sidebar.profile' },
+  { to: '/help', icon: MessageCircle, key: 'sidebar.helpSupport' },
 ] as const;
 
 const adminNavItems = [

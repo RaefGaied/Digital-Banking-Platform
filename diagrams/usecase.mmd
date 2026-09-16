@@ -1,0 +1,150 @@
+%% Use Case - rendered as flowchart for compatibility with mermaid-cli
+flowchart LR
+  subgraph Actors
+    AClient[Client]
+    AAdmin[Admin / agent support humain]
+    AIA[Assistant IA / OpenAI]
+    AFlow[Flowable / BPMN]
+    APay[Passerelle de paiement]
+    ANotif[Service de notifications]
+  end
+
+  subgraph ClientUseCases [Use cases client]
+    UCRegister[(S'inscrire)]
+    UCAuth[(S'authentifier / gérer la session)]
+    UC2FA[(Vérifier / activer la 2FA)]
+    UCDashboard[(Consulter le tableau de bord)]
+    UCBalance[(Consulter le solde)]
+    UCHistory[(Consulter l'historique des transactions)]
+    UCTransfer[(Effectuer un virement)]
+    UCPix[(Gérer les clés PIX (PaymentKey) et virements PIX)]
+    UCCards[(Gérer les cartes)]
+    UCInvest[(Gérer les investissements)]
+    UCProfile[(Gérer le profil et la sécurité)]
+    UCSessions[(Gérer les sessions)]
+    UCMessages[(Gérer la conversation et les messages)]
+    UCTickets[(Soumettre et suivre un ticket)]
+    UCNotifications[(Consulter les notifications)]
+    UCHelp[(Consulter l'aide / FAQ)]
+    UCAnalytics[(Consulter les analytics)]
+    UCAgentTrace[(Consulter les traces de l'agent conversationnel)]
+  end
+
+  subgraph AdminUseCases [Use cases admin]
+    UCDashboardAdmin[(Consulter le dashboard admin)]
+    UCTasks[(Consulter et traiter les tâches Flowable)]
+    UCFlowableTasks[(Lister les tâches Flowable)]
+    UCFlowableTaskDetail[(Consulter le détail d'une tâche Flowable)]
+    UCFlowableComplete[(Compléter une tâche Flowable)]
+    UCUsers[(Gérer les utilisateurs)]
+    UCAudit[(Consulter les logs d'audit)]
+    UCSecurityEvents[(Consulter et résoudre les événements de sécurité)]
+    UCTicketsAdmin[(Gérer les tickets support)]
+    UCSupervise[(Superviser les workflows de tickets)]
+    UCAgentAdmin[(Consulter les sessions, les agents et les décisions)]
+  end
+
+  subgraph SystemUseCases [Use cases système]
+    UCIntent[(Détecter l'intention avec l'IA)]
+    UCContext[(Construire le contexte conversationnel)]
+    UCClarify[(Demander une clarification)]
+    UCSensitive[(Appliquer la Sensitive Line)]
+    UCReply[(Générer la réponse IA)]
+    UCPayment[(Exécuter ou simuler le paiement)]
+    UCWorkflow[(Déclencher un workflow BPMN)]
+    UCAuditTrail[(Tracer les actions sensibles)]
+    UCNotify[(Notifier le client)]
+  end
+
+  %% Client to use cases
+  AClient --> UCRegister
+  AClient --> UCAuth
+  AClient --> UC2FA
+  AClient --> UCDashboard
+  AClient --> UCBalance
+  AClient --> UCHistory
+  AClient --> UCTransfer
+  AClient --> UCPix
+  AClient --> UCCards
+  AClient --> UCInvest
+  AClient --> UCProfile
+  AClient --> UCSessions
+  AClient --> UCMessages
+  AClient --> UCTickets
+  AClient --> UCNotifications
+  AClient --> UCHelp
+  AClient --> UCAnalytics
+  AClient --> UCAgentTrace
+
+  %% Admin to use cases
+  AAdmin --> UCAuth
+  AAdmin --> UCDashboardAdmin
+  AAdmin --> UCTasks
+  AAdmin --> UCUsers
+  AAdmin --> UCAudit
+  AAdmin --> UCSecurityEvents
+  AAdmin --> UCTicketsAdmin
+  AAdmin --> UCSupervise
+  AAdmin --> UCAgentAdmin
+
+  %% System and external services
+  AIA --> UCIntent
+  AIA --> UCContext
+  AIA --> UCClarify
+  AIA --> UCReply
+  AFlow --> UCWorkflow
+  AFlow --> UCFlowableTasks
+  AFlow --> UCFlowableTaskDetail
+  AFlow --> UCFlowableComplete
+  APay --> UCPayment
+  ANotif --> UCNotify
+
+  %% Core includes and extensions
+  UCRegister ---|include| UCAuth
+  UC2FA ---|include| UCAuth
+  UCDashboard ---|include| UCAuth
+  UCBalance ---|include| UCAuth
+  UCHistory ---|include| UCAuth
+  UCTransfer ---|include| UCAuth
+  UCPix ---|include| UCAuth
+  UCCards ---|include| UCAuth
+  UCInvest ---|include| UCAuth
+  UCProfile ---|include| UCAuth
+  UCSessions ---|include| UCAuth
+  UCMessages ---|include| UCAuth
+  UCTickets ---|include| UCAuth
+  UCNotifications ---|include| UCAuth
+  UCAnalytics ---|include| UCAuth
+  UCAgentTrace ---|include| UCAuth
+
+  UCTransfer ---|include| UCIntent
+  UCTransfer ---|include| UCSensitive
+  UCTransfer -.->|si montant > 5000 € ou intention critique| UCWorkflow
+  UCTransfer -.->|si montant <= 5000 €| UCPayment
+
+  UCPix -.->|paiement / transfert PIX| UCPayment
+  UCTickets -.->|escalade sensible| UCWorkflow
+  UCTickets -.->|notification de suivi| UCNotify
+  UCProfile -.->|validation sécurité| UC2FA
+  UCMessages -.->|analyse du message| UCIntent
+  UCMessages -.->|réponse| UCReply
+  UCIntent -.->|faible confiance| UCClarify
+  UCIntent -.->|intentions détectées| UCSensitive
+  UCSensitive -.->|escalade| UCWorkflow
+  UCSensitive -.->|trace d'audit| UCAuditTrail
+  UCWorkflow -.->|assignation et suivi| UCFlowableTasks
+  UCWorkflow -.->|complétion administrative| UCFlowableComplete
+  UCTasks -.->|exploitation des tâches| UCFlowableTaskDetail
+  UCTasks -.->|traitement| UCFlowableComplete
+  UCTicketsAdmin -.->|mise à jour du statut| UCNotify
+  UCSecurityEvents -.->|résolution| UCAuditTrail
+
+  %% External systems used by the business flows
+  UCTransfer --> APay
+  UCPix --> APay
+  UCReply --> ANotif
+  UCNotify --> ANotif
+
+  %% Note about BPMN
+  click UCSupervise "#" "Orchestration BPMN (Flowable) — voir fichiers BPMN"
+

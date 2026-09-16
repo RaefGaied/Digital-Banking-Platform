@@ -4,6 +4,7 @@ import com.fintech.banking.domain.entity.Message;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.SenderType;
 import com.fintech.banking.repository.UserRepository;
+import com.fintech.banking.service.ChatService;
 import com.fintech.banking.service.MessageService;
 import com.fintech.banking.service.IntentDetectionService;
 import com.fintech.banking.domain.vo.IntentResult;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MessageController {
 
+    private final ChatService chatService;
     private final MessageService messageService;
     private final IntentDetectionService intentDetectionService;
     private final UserRepository userRepository;
@@ -57,35 +59,39 @@ public class MessageController {
                 return ResponseEntity.badRequest().body(new ErrorResponse("Message content is required"));
             }
 
-            // If client did not supply an intent, run rule-based detection
-            IntentResult detected = null;
-            String intentToSave = request.getIntent();
-            JsonNode paramsToSave = request.getParameters();
-            if (intentToSave == null || intentToSave.isBlank()) {
-                try {
-                    detected = intentDetectionService.detectIntent(request.getContent());
-                } catch (Exception ex) {
-                    log.warn("Intent detection failed, continuing without detected intent", ex);
+            Message message;
+            if (request.getSenderType() == null || request.getSenderType() == SenderType.USER) {
+                message = chatService.handleUserMessage(sessionId, userId, request.getContent());
+            } else {
+                IntentResult detected = null;
+                String intentToSave = request.getIntent();
+                JsonNode paramsToSave = request.getParameters();
+                if (intentToSave == null || intentToSave.isBlank()) {
+                    try {
+                        detected = intentDetectionService.detectIntent(request.getContent());
+                    } catch (Exception ex) {
+                        log.warn("Intent detection failed, continuing without detected intent", ex);
+                    }
+
+                    if (detected != null) {
+                        if (detected.getIntent() != null) {
+                            intentToSave = detected.getIntent().name();
+                        }
+                        if (detected.getParameters() != null) {
+                            paramsToSave = detected.getParameters();
+                        }
+                    }
                 }
 
-                if (detected != null) {
-                    if (detected.getIntent() != null) {
-                        intentToSave = detected.getIntent().name();
-                    }
-                    if (detected.getParameters() != null) {
-                        paramsToSave = detected.getParameters();
-                    }
-                }
+                message = messageService.createMessage(
+                        sessionId,
+                        userId,
+                        request.getSenderType(),
+                        request.getContent(),
+                        request.getIsInternal(),
+                        intentToSave,
+                        paramsToSave);
             }
-
-            Message message = messageService.createMessage(
-                    sessionId,
-                    userId,
-                    request.getSenderType() != null ? request.getSenderType() : SenderType.USER,
-                    request.getContent(),
-                    request.getIsInternal(),
-                    intentToSave,
-                    paramsToSave);
 
             log.info("Message created in session: {}", sessionId);
 

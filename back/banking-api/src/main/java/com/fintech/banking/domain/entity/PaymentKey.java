@@ -1,6 +1,6 @@
 package com.fintech.banking.domain.entity;
 
-import com.fintech.banking.domain.enums.PixKeyType;
+import com.fintech.banking.domain.enums.PaymentKeyType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,13 +8,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "pix_keys")
+@Table(name = "payment_keys")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PixKey {
+public class PaymentKey {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -25,9 +25,8 @@ public class PixKey {
     private User user;
 
     @Enumerated(EnumType.STRING)
-@Column(name = "key_type", nullable = false, columnDefinition = "pix_key_type")
-@org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.NAMED_ENUM)
-private PixKeyType keyType;
+    @Column(name = "key_type", nullable = false)
+    private PaymentKeyType keyType;
 
     @Column(name = "key_value", nullable = false, unique = true, length = 255)
     private String keyValue;
@@ -35,6 +34,16 @@ private PixKeyType keyType;
     @Column(nullable = false)
     @Builder.Default
     private Boolean active = true;
+
+    @Column(name = "verified")
+    @Builder.Default
+    private Boolean verified = false;
+
+    @Column(name = "verification_method", length = 100)
+    private String verificationMethod;
+
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

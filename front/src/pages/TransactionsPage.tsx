@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountApi } from '../api/account';
 import { userApi } from '../api/user';
+import { sessionsApi } from '../api/sessions';
 import {
   TrendingUp, TrendingDown, ArrowLeftRight, Loader2, CheckCircle,
   Zap, QrCode, Check, ShieldCheck, Clock, Info,
@@ -10,8 +11,9 @@ import { formatCurrency } from '../utils/formatters';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n/I18nContext';
+import { useAuth } from '../hooks/useAuth';
 
-type TabType = 'deposit' | 'withdraw' | 'transfer' | 'pix' | 'qrcode';
+type TabType = 'deposit' | 'withdraw' | 'transfer' | 'payment' | 'qrcode';
 
 const TAB_META: Record<TabType, {
   label: string; icon: React.ElementType; color: string; bg: string;
@@ -38,17 +40,17 @@ const TAB_META: Record<TabType, {
     limits: 'Min: R$ 0,01.',
     time: 'Instant',
   },
-  pix: {
-    label: 'PIX', icon: Zap,
+  payment: {
+    label: 'Payment', icon: Zap,
     color: '#e8611a', bg: '#fff7ed',
-    tip: 'PIX works 24/7, including weekends and holidays.',
+    tip: 'Payments work 24/7, including weekends and holidays.',
     limits: 'Daily limit: R$ 20.000,00.',
     time: 'Instant (24/7)',
   },
   qrcode: {
     label: 'QR Code', icon: QrCode,
     color: '#7c3aed', bg: '#f5f3ff',
-    tip: 'Share your QR Code to receive PIX payments from any bank.',
+    tip: 'Share your QR Code to receive payments from any bank.',
     limits: 'No limits to receive.',
     time: 'Instant',
   },
@@ -57,39 +59,47 @@ const TAB_META: Record<TabType, {
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
   const { locale } = useI18n();
+  const { isAuthenticated, userRole } = useAuth();
+  const canLoadTransactions = isAuthenticated && userRole === 'USER';
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState<TabType>((searchParams.get('tab') as TabType) || 'deposit');
+  const parseTabParam = (value: string | null): TabType => {
+    if (value === 'pix') return 'payment';
+    if (value === 'deposit' || value === 'withdraw' || value === 'transfer' || value === 'payment' || value === 'qrcode') return value;
+    return 'deposit';
+  };
+  const [tab, setTab] = useState<TabType>(parseTabParam(searchParams.get('tab')));
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [targetAccount, setTargetAccount] = useState('');
-  const [pixKey, setPixKey] = useState('');
+  const [paymentKey, setPaymentKey] = useState('');
   const [success, setSuccess] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
 
   const text = locale === 'fr'
     ? {
         pageTitle: 'Virements et paiements',
         pageSubtitle: 'Deplacez votre argent rapidement et en securite',
-        myPixQrCode: 'Mon QR Code PIX',
+        myPaymentQrCode: 'Mon QR Code de paiement',
         shareReceive: 'Partagez pour recevoir des paiements de toute banque',
-        pixKeyAccount: 'Cle PIX (numero de compte)',
+        paymentKeyAccount: 'Cle de paiement (numero de compte)',
         name: 'Nom',
         agency: 'Agence',
         copied: 'Copie !',
-        copyPixKey: 'Copier la cle PIX',
+        copyPaymentKey: 'Copier la cle de paiement',
         transactionSuccess: 'Transaction effectuee avec succes !',
         transactionFailed: 'La transaction a echoue',
         amount: 'Montant',
         destinationAccount: 'Compte destinataire',
         accountNumber: 'Numero de compte',
-        pixKey: 'Cle PIX',
-        pixKeyPlaceholder: 'E-mail, telephone ou cle aleatoire',
+        paymentKey: 'Cle de paiement',
+        paymentKeyPlaceholder: 'E-mail, telephone ou cle aleatoire',
         description: 'Description',
         optional: '(optionnel)',
         descriptionPlaceholder: 'ex: Loyer, courses, services...',
         confirmDeposit: 'Confirmer le depot',
         confirmWithdrawal: 'Confirmer le retrait',
         confirmTransfer: 'Confirmer le virement',
-        sendPix: 'Envoyer PIX',
+        sendPayment: 'Envoyer le paiement',
         availableBalance: 'Solde disponible',
         fundsProtected: 'Fonds proteges par chiffrement 256 bits',
         processingTime: 'Delai de traitement',
@@ -102,22 +112,22 @@ export default function TransactionsPage() {
     : {
         pageTitle: 'Transfer & Payments',
         pageSubtitle: 'Move your money quickly and securely',
-        myPixQrCode: 'My PIX QR Code',
+        myPaymentQrCode: 'My QR Code',
         shareReceive: 'Share to receive payments from any bank',
         transactionSuccess: 'Transaction completed successfully!',
         transactionFailed: 'Transaction failed',
         amount: 'Amount',
         destinationAccount: 'Destination account',
         accountNumber: 'Account number',
-        pixKey: 'PIX Key',
-        pixKeyPlaceholder: 'Email, phone or random key',
+        paymentKey: 'Payment Key',
+        paymentKeyPlaceholder: 'Email, phone or random key',
         description: 'Description',
         optional: '(optional)',
         descriptionPlaceholder: 'e.g. Rent, groceries, services...',
         confirmDeposit: 'Confirm Deposit',
         confirmWithdrawal: 'Confirm Withdrawal',
         confirmTransfer: 'Confirm Transfer',
-        sendPix: 'Send PIX',
+        sendPayment: 'Send payment',
         availableBalance: 'Available balance',
         fundsProtected: 'Funds protected by 256-bit encryption',
         processingTime: 'Processing time',
@@ -128,31 +138,54 @@ export default function TransactionsPage() {
         sec3: 'Transaction confirmation',
       };
 
-  const { data: account } = useQuery({ queryKey: ['account'], queryFn: accountApi.getMyAccount });
-  const { data: user }    = useQuery({ queryKey: ['user'],    queryFn: userApi.getMe });
+  const { data: account } = useQuery({ queryKey: ['account'], queryFn: accountApi.getMyAccount, enabled: canLoadTransactions, retry: false, refetchOnWindowFocus: false });
+  const { data: user }    = useQuery({ queryKey: ['user'],    queryFn: userApi.getMe, enabled: canLoadTransactions, retry: false, refetchOnWindowFocus: false });
+  const { data: activeSessions = [] } = useQuery({ queryKey: ['my-active-sessions'], queryFn: sessionsApi.getActive, enabled: canLoadTransactions, retry: false, refetchOnWindowFocus: false });
 
-  const pixPayload = account
+  if (!canLoadTransactions) {
+    return (
+      <div className='card p-6'>
+        <h1 className='text-2xl font-bold text-dark-800'>Transfers & Payments</h1>
+        <p className='text-gray-400 text-sm mt-1'>Transfer tools are available for user sessions only.</p>
+      </div>
+    );
+  }
+
+  const paymentPayload = account
     ? `00020126330014BR.GOV.BCB.PIX0111${account.number}5204000053039865802BR5913${(user?.name || 'Usuario').slice(0, 13)}6009SAO PAULO62070503***6304`
     : '';
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const data = { amount: parseFloat(amount), description, targetAccountNumber: tab === 'transfer' ? targetAccount : undefined };
+      const activeSession = activeSessions.find((session) => session.agentId) ?? activeSessions[0];
+      const data = {
+        amount: parseFloat(amount),
+        description,
+        targetAccountNumber: tab === 'transfer' ? targetAccount : undefined,
+        sessionId: tab === 'transfer' ? activeSession?.id : undefined,
+      };
       if (tab === 'deposit') return accountApi.deposit(data);
       if (tab === 'withdraw') return accountApi.withdraw(data);
       return accountApi.transfer(data);
     },
-    onSuccess: () => {
+    onSuccess: (transaction) => {
       queryClient.invalidateQueries({ queryKey: ['account'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['my-agents'] });
+      queryClient.invalidateQueries({ queryKey: ['my-sessions'] });
       setSuccess(true);
-      setAmount(''); setDescription(''); setTargetAccount(''); setPixKey('');
+      setValidationMessage(
+        transaction.agentDecision === 'TRIGGER_BPMN'
+          ? `Validation required. Flowable process: ${transaction.flowableProcessId ?? 'pending'}`
+          : ''
+      );
+      setAmount(''); setDescription(''); setTargetAccount(''); setPaymentKey('');
       setTimeout(() => setSuccess(false), 3000);
     },
   });
 
   const meta = TAB_META[tab];
-  const tabs: TabType[] = ['deposit', 'withdraw', 'transfer', 'pix', 'qrcode'];
+  const tabs: TabType[] = ['deposit', 'withdraw', 'transfer', 'payment', 'qrcode'];
 
   return (
     <div className='space-y-6'>
@@ -166,7 +199,7 @@ export default function TransactionsPage() {
         {tabs.map(key => {
           const { label, icon: Icon } = TAB_META[key];
           return (
-            <button key={key} onClick={() => { setTab(key); setSuccess(false); }}
+            <button key={key} onClick={() => { setTab(key); setSuccess(false); setValidationMessage(''); }}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all ${
                 tab === key ? 'bg-primary-500 text-white shadow-sm' : 'text-gray-500 hover:text-primary-500 hover:bg-primary-50'
               }`}>
@@ -185,13 +218,13 @@ export default function TransactionsPage() {
           {tab === 'qrcode' ? (
             <div className='card p-6'>
               <div className='text-center'>
-                <h3 className='font-semibold text-dark-800 mb-1'>{text.myPixQrCode}</h3>
+                <h3 className='font-semibold text-dark-800 mb-1'>{text.myPaymentQrCode}</h3>
                 <p className='text-gray-400 text-sm mb-6'>{text.shareReceive}</p>
 
                 <div className='flex justify-center mb-6'>
                   <div className='p-5 bg-white rounded-2xl shadow-sm border border-cream-200 inline-block'>
                     {account ? (
-                      <QRCodeSVG value={pixPayload} size={180} level='M' includeMargin={true} fgColor='#2d2d2d' />
+                      <QRCodeSVG value={paymentPayload} size={180} level='M' includeMargin={true} fgColor='#2d2d2d' />
                     ) : (
                       <div className='w-44 h-44 bg-cream-100 rounded-xl animate-pulse' />
                     )}
@@ -210,7 +243,7 @@ export default function TransactionsPage() {
               {success && (
                 <div className='flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-4'>
                   <CheckCircle className='w-5 h-5 text-green-500 shrink-0' />
-                  <p className='text-green-600 text-sm font-medium'>{text.transactionSuccess}</p>
+                  <p className='text-green-600 text-sm font-medium'>{validationMessage || text.transactionSuccess}</p>
                 </div>
               )}
 
@@ -255,13 +288,13 @@ export default function TransactionsPage() {
                 </div>
               )}
 
-              {/* PIX key */}
-              {tab === 'pix' && (
+              {/* Payment key */}
+              {tab === 'payment' && (
                 <div>
-                  <label htmlFor='txn-pixKey' className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.pixKey}</label>
-                  <input id='txn-pixKey' name='pixKey' type='text' value={pixKey} onChange={e => setPixKey(e.target.value)}
+                  <label htmlFor='txn-paymentKey' className='block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2'>{text.paymentKey}</label>
+                  <input id='txn-paymentKey' name='paymentKey' type='text' value={paymentKey} onChange={e => setPaymentKey(e.target.value)}
                     className='w-full bg-cream-100 border border-cream-200 rounded-xl px-4 py-3.5 text-dark-800 placeholder-gray-300 focus:outline-none focus:border-primary-500 transition-colors'
-                    placeholder={text.pixKeyPlaceholder} />
+                    placeholder={text.paymentKeyPlaceholder} />
                 </div>
               )}
 
@@ -283,7 +316,7 @@ export default function TransactionsPage() {
                     {tab === 'deposit'  && <><TrendingUp className='w-4 h-4' /> {text.confirmDeposit}</>}
                     {tab === 'withdraw' && <><TrendingDown className='w-4 h-4' /> {text.confirmWithdrawal}</>}
                     {tab === 'transfer' && <><ArrowLeftRight className='w-4 h-4' /> {text.confirmTransfer}</>}
-                    {tab === 'pix'      && <><Zap className='w-4 h-4' /> {text.sendPix}</>}
+                    {tab === 'payment' && <><Zap className='w-4 h-4' /> {text.sendPayment}</>}
                   </>
                 )}
               </button>
@@ -331,6 +364,13 @@ export default function TransactionsPage() {
             <div className='bg-cream-100 rounded-xl p-3'>
               <p className='text-xs text-gray-500 leading-relaxed'>{meta.tip}</p>
             </div>
+            {tab === 'transfer' && (
+              <div className='bg-orange-50 border border-orange-200 rounded-xl p-3'>
+                <p className='text-xs text-orange-700 leading-relaxed'>
+                  Transfers above 5000 are routed to the Sensitive Line. Use an active session with an agent, then check the Agents page for the trace.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Security */}

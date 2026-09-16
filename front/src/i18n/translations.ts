@@ -25,6 +25,8 @@ export const translations = {
       transfer: 'Transfer',
       invest: 'Invest',
       analytics: 'Analytics',
+      sessions: 'Sessions',
+      agents: 'Agents',
       profile: 'Profile',
       admin: 'Admin',
       tasks: 'Tasks',
@@ -61,6 +63,8 @@ export const translations = {
       transfer: 'Virement',
       invest: 'Investir',
       analytics: 'Analytique',
+      sessions: 'Sessions',
+      agents: 'Agents',
       profile: 'Profil',
       admin: 'Admin',
       tasks: 'Taches',
@@ -92,6 +96,8 @@ export type TranslationKey =
   | 'sidebar.transfer'
   | 'sidebar.invest'
   | 'sidebar.analytics'
+  | 'sidebar.sessions'
+  | 'sidebar.agents'
   | 'sidebar.profile'
   | 'sidebar.admin'
   | 'sidebar.tasks'

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -37,8 +38,17 @@ public class BankingAgentService {
         Session session = sessionRepository.findById(sessionId)
             .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!session.getUserId().equals(userId)) {
+            throw new RuntimeException("Session does not belong to user");
+        }
+
+        Optional<BankingAgent> existingAgent = bankingAgentRepository.findBySessionIdAndUserId(sessionId, userId);
+        if (existingAgent.isPresent()) {
+            return existingAgent.get();
+        }
 
         BankingAgent agent = BankingAgent.builder()
             .sessionId(sessionId)
@@ -47,8 +57,19 @@ public class BankingAgentService {
             .build();
 
         agent = bankingAgentRepository.save(agent);
+        session.setAgentId(agent.getId());
+        sessionRepository.save(session);
         log.info("Banking agent created for session: {}", sessionId);
         return agent;
+    }
+
+    public List<BankingAgent> getAgentsByUserId(UUID userId) {
+        return bankingAgentRepository.findByUserId(userId);
+    }
+
+    public Optional<BankingAgent> getAgentByIdAndUserId(UUID agentId, UUID userId) {
+        return bankingAgentRepository.findById(agentId)
+            .filter(agent -> agent.getUserId().equals(userId));
     }
 
     /**

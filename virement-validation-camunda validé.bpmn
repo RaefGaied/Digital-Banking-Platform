@@ -176,6 +176,12 @@
           <dc:Bounds x="166" y="435" width="84" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endRejectedSolde_sh" bpmnElement="endRejectedSolde">
+        <dc:Bounds x="522" y="442" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="507" y="485" width="62" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="endRejectedBenef_sh" bpmnElement="endRejectedBenef">
         <dc:Bounds x="1052" y="472" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -226,6 +232,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="taskNotifySoldeInsuffisant_sh" bpmnElement="taskNotifySoldeInsuffisant">
         <dc:Bounds x="620" y="380" width="160" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="taskNotifyBeneficiaireInvalide_sh" bpmnElement="taskNotifyBeneficiaireInvalide">
+        <dc:Bounds x="870" y="370" width="160" height="60" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="taskExecuteVirement_sh" bpmnElement="taskExecuteVirement">
         <dc:Bounds x="1090" y="260" width="160" height="60" />
@@ -288,15 +297,6 @@
         <dc:Bounds x="1450" y="605" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1431" y="665" width="87" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="taskNotifyBeneficiaireInvalide_sh" bpmnElement="taskNotifyBeneficiaireInvalide">
-        <dc:Bounds x="870" y="370" width="160" height="60" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="endRejectedSolde_sh" bpmnElement="endRejectedSolde">
-        <dc:Bounds x="522" y="442" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="507" y="485" width="62" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="boundaryTimerAdmin_sh" bpmnElement="boundaryTimerAdmin">
@@ -385,6 +385,9 @@
         <di:waypoint x="1080" y="290" />
         <di:waypoint x="1080" y="650" />
         <di:waypoint x="1210" y="650" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1086" y="460" width="18" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="sf05_e" bpmnElement="sf05">
         <di:waypoint x="1330" y="650" />

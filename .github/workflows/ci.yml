@@ -2,6 +2,75 @@ name: CI
 
 on:
   push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build backend (Maven)
+        working-directory: back/banking-api
+        run: |
+          chmod +x mvnw || true
+          ./mvnw -B -DskipTests=false clean package
+
+      - name: Start backend
+        run: |
+          ls back/banking-api/target || true
+          nohup java -jar back/banking-api/target/*.jar > backend.log 2>&1 &
+          sleep 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Build frontend
+        working-directory: front
+        run: |
+          npm ci
+          npm run build
+
+      - name: Serve frontend (static)
+        working-directory: front
+        run: |
+          npx serve -s dist -l 5173 &
+          sleep 3
+
+      - name: Run Playwright E2E
+        working-directory: front
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 'false'
+        run: |
+          npx playwright install --with-deps
+          npx playwright test --reporter=list
+name: CI
+
+on:
+  push:
     branches: [ main ]
   pull_request:
     branches: [ main ]

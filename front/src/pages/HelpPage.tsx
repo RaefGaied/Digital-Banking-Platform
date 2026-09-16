@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ChevronDown, ChevronUp, MessageCircle, Phone, Mail,
   FileText, Shield, CreditCard, Zap, TrendingUp,
   ArrowRight, Clock,
 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
+import { supportTicketsApi } from '../api/supportTickets';
+import type { CreateSupportTicketRequest, SupportTicket } from '../types';
 
 type HelpTopic = { icon: React.ElementType; label: string; description: string; route: string };
 type HelpFaq = { question: string; answer: string };
@@ -13,7 +16,49 @@ type HelpFaq = { question: string; answer: string };
 export default function HelpPage() {
   const navigate = useNavigate();
   const { locale } = useI18n();
+  const queryClient = useQueryClient();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [subject, setSubject] = useState('');
+  const [description, setDescription] = useState('');
+  const [ticketType, setTicketType] = useState('GENERAL');
+  const [priority, setPriority] = useState('MEDIUM');
+  const [formMessage, setFormMessage] = useState<string | null>(null);
+
+  const ticketsQuery = useQuery({
+    queryKey: ['my-support-tickets'],
+    queryFn: () => supportTicketsApi.listMine(0, 20),
+  });
+
+  const createTicketMutation = useMutation({
+    mutationFn: (payload: CreateSupportTicketRequest) => supportTicketsApi.create(payload),
+    onSuccess: () => {
+      setSubject('');
+      setDescription('');
+      setTicketType('GENERAL');
+      setPriority('MEDIUM');
+      setFormMessage(locale === 'fr' ? 'Ticket créé avec succès.' : 'Ticket created successfully.');
+      void queryClient.invalidateQueries({ queryKey: ['my-support-tickets'] });
+    },
+    onError: () => {
+      setFormMessage(locale === 'fr' ? 'Impossible de créer le ticket.' : 'Unable to create the ticket.');
+    },
+  });
+
+  const ticketTypeChoices = useMemo(() => (
+    locale === 'fr'
+      ? [
+          { value: 'GENERAL', label: 'Général' },
+          { value: 'CLAIM', label: 'Réclamation' },
+          { value: 'FRAUD', label: 'Fraude' },
+          { value: 'DATA_UPDATE', label: 'Mise à jour données' },
+        ]
+      : [
+          { value: 'GENERAL', label: 'General' },
+          { value: 'CLAIM', label: 'Claim' },
+          { value: 'FRAUD', label: 'Fraud' },
+          { value: 'DATA_UPDATE', label: 'Data update' },
+        ]
+  ), [locale]);
 
   const text = locale === 'fr'
     ? {
@@ -46,8 +91,8 @@ export default function HelpPage() {
   const faqs: HelpFaq[] = locale === 'fr'
     ? [
         {
-          question: 'Comment effectuer un virement PIX ?',
-          answer: 'Allez dans Virements & Paiements, choisissez l\'onglet PIX, saisissez la cle PIX du destinataire (email, telephone ou cle aleatoire), le montant et confirmez.',
+          question: 'Comment effectuer un paiement ?',
+          answer: 'Allez dans Virements & Paiements, choisissez l\'onglet Paiement, saisissez la cle de paiement du destinataire (email, telephone ou cle aleatoire), le montant et confirmez.',
         },
         {
           question: 'Comment ajouter une nouvelle carte ?',
@@ -62,7 +107,7 @@ export default function HelpPage() {
           answer: 'Oui. Toutes les transactions sont chiffrees en SSL 256 bits. Vos donnees sont protegees et les operations sont journalisees.',
         },
         {
-          question: 'Comment partager mon QR Code PIX ?',
+          question: 'Comment partager mon QR Code de paiement ?',
           answer: 'Allez dans Virements & Paiements et ouvrez l\'onglet QR Code. Vous verrez votre QR Code personnalise a partager pour recevoir des paiements instantanes.',
         },
         {
@@ -72,8 +117,8 @@ export default function HelpPage() {
       ]
     : [
         {
-          question: 'How do I make a PIX transfer?',
-          answer: "Go to Transfer & Payments, select the PIX tab, enter the recipient's PIX key (email, phone or random key), enter the amount and confirm.",
+          question: 'How do I make a payment transfer?',
+          answer: "Go to Transfer & Payments, select the Payment tab, enter the recipient's payment key (email, phone or random key), enter the amount and confirm.",
         },
         {
           question: 'How do I add a new card?',
@@ -88,7 +133,7 @@ export default function HelpPage() {
           answer: 'Yes! All transactions are encrypted with 256-bit SSL. Your data is protected and all operations are logged in our audit system.',
         },
         {
-          question: 'How do I share my PIX QR Code?',
+          question: 'How do I share my payment QR Code?',
           answer: 'Go to Transfer & Payments and click on the QR Code tab. You will see your personalized QR Code that you can share to receive payments instantly.',
         },
         {
@@ -100,7 +145,7 @@ export default function HelpPage() {
   const topics: HelpTopic[] = locale === 'fr'
     ? [
         { icon: CreditCard,    label: 'Cartes',             description: 'Ajouter, gerer et bloquer des cartes', route: '/cards' },
-        { icon: Zap,           label: 'PIX et virements',   description: 'Cles, QR codes et virements', route: '/transactions?tab=pix' },
+        { icon: Zap,           label: 'Paiements et virements',   description: 'Cles, QR codes et virements', route: '/transactions?tab=payment' },
         { icon: TrendingUp,    label: 'Investissements',    description: 'Produits, rendements et rachats', route: '/invest' },
         { icon: Shield,        label: 'Securite',           description: 'Mot de passe, 2FA et protection', route: '/profile' },
         { icon: FileText,      label: 'Releves',            description: 'Historique et rapports', route: '/history' },
@@ -108,7 +153,7 @@ export default function HelpPage() {
       ]
     : [
         { icon: CreditCard,    label: 'Cards',           description: 'Add, manage and block cards',      route: '/cards' },
-        { icon: Zap,           label: 'PIX & Transfers', description: 'Keys, QR codes and transfers',     route: '/transactions?tab=pix' },
+        { icon: Zap,           label: 'Payments & Transfers', description: 'Keys, QR codes and transfers',     route: '/transactions?tab=payment' },
         { icon: TrendingUp,    label: 'Investments',     description: 'Products, returns and redemptions', route: '/invest' },
         { icon: Shield,        label: 'Security',        description: 'Password, 2FA and protection',     route: '/profile' },
         { icon: FileText,      label: 'Statements',      description: 'History and reports',              route: '/history' },
@@ -180,6 +225,76 @@ export default function HelpPage() {
         {/* ── COLUNA DIREITA (1/3) ── */}
         <div className='space-y-4'>
 
+          <div className='card p-5'>
+            <h3 className='font-semibold text-dark-800 mb-4'>{locale === 'fr' ? 'Créer un ticket' : 'Create a ticket'}</h3>
+            <div className='space-y-3'>
+              <input
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                placeholder={locale === 'fr' ? 'Sujet' : 'Subject'}
+                className='w-full px-3 py-2.5 rounded-xl border border-cream-200 bg-white text-sm text-dark-800 outline-none focus:border-primary-300'
+              />
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder={locale === 'fr' ? 'Décrivez votre demande' : 'Describe your request'}
+                rows={5}
+                className='w-full px-3 py-2.5 rounded-xl border border-cream-200 bg-white text-sm text-dark-800 outline-none focus:border-primary-300 resize-none'
+              />
+              <div className='grid grid-cols-2 gap-3'>
+                <select
+                  value={ticketType}
+                  onChange={(event) => setTicketType(event.target.value)}
+                  className='w-full px-3 py-2.5 rounded-xl border border-cream-200 bg-white text-sm text-dark-800 outline-none focus:border-primary-300'
+                >
+                  {ticketTypeChoices.map((choice) => (
+                    <option key={choice.value} value={choice.value}>{choice.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value)}
+                  className='w-full px-3 py-2.5 rounded-xl border border-cream-200 bg-white text-sm text-dark-800 outline-none focus:border-primary-300'
+                >
+                  <option value='LOW'>{locale === 'fr' ? 'Basse' : 'Low'}</option>
+                  <option value='MEDIUM'>{locale === 'fr' ? 'Moyenne' : 'Medium'}</option>
+                  <option value='HIGH'>{locale === 'fr' ? 'Haute' : 'High'}</option>
+                </select>
+              </div>
+              <button
+                disabled={createTicketMutation.isPending || !subject.trim() || !description.trim()}
+                onClick={() => createTicketMutation.mutate({ subject, description, ticketType, priority })}
+                className='w-full rounded-xl bg-primary-500 text-white py-3 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-600 transition-colors'
+              >
+                {createTicketMutation.isPending ? (locale === 'fr' ? 'Création...' : 'Creating...') : (locale === 'fr' ? 'Créer le ticket' : 'Create ticket')}
+              </button>
+              {formMessage && <p className='text-xs text-gray-500'>{formMessage}</p>}
+            </div>
+          </div>
+
+          <div className='card p-5'>
+            <h3 className='font-semibold text-dark-800 mb-4'>{locale === 'fr' ? 'Mes tickets' : 'My tickets'}</h3>
+            <div className='space-y-3'>
+              {ticketsQuery.isLoading && <p className='text-sm text-gray-400'>Loading...</p>}
+              {!ticketsQuery.isLoading && (ticketsQuery.data?.content ?? []).length === 0 && (
+                <p className='text-sm text-gray-400'>{locale === 'fr' ? 'Aucun ticket pour le moment.' : 'No tickets yet.'}</p>
+              )}
+              {(ticketsQuery.data?.content ?? []).map((ticket: SupportTicket) => (
+                <div key={ticket.id} className='rounded-xl border border-cream-200 p-3 bg-cream-50'>
+                  <div className='flex items-start justify-between gap-3'>
+                    <div>
+                      <p className='text-sm font-medium text-dark-800'>{ticket.subject}</p>
+                      <p className='text-xs text-gray-500 mt-1 line-clamp-2'>{ticket.description}</p>
+                    </div>
+                    <span className='text-[11px] px-2 py-1 rounded-full bg-white border border-cream-200 text-gray-500'>
+                      {ticket.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Contact options */}
           <div className='card p-5'>
             <h3 className='font-semibold text-dark-800 mb-4'>{text.contactUs}</h3>
@@ -190,6 +305,11 @@ export default function HelpPage() {
                 { icon: Mail,          label: 'Email',     sub: 'support@vaultly.com', color: '#2563eb', bg: '#eff6ff' },
               ].map(({ icon: Icon, label, sub, color, bg }) => (
                 <button key={label}
+                  onClick={() => {
+                    if (label === 'Live Chat') {
+                      navigate('/sessions');
+                    }
+                  }}
                   className='w-full flex items-center justify-between p-3.5 rounded-xl bg-cream-100 hover:bg-primary-50 border border-cream-200 hover:border-primary-200 transition-all group'>
                   <div className='flex items-center gap-3'>
                     <div className='w-9 h-9 rounded-xl flex items-center justify-center shrink-0' style={{ background: bg }}>
@@ -212,7 +332,7 @@ export default function HelpPage() {
             <div className='space-y-1'>
               {[
                 { label: 'My Cards',        route: '/cards' },
-                { label: 'PIX & Transfers', route: '/transactions?tab=pix' },
+                { label: 'Payments & Transfers', route: '/transactions?tab=payment' },
                 { label: 'Investments',     route: '/invest' },
                 { label: 'Analytics',       route: '/analytics' },
                 { label: 'My Profile',      route: '/profile' },
@@ -232,7 +352,7 @@ export default function HelpPage() {
             <div className='space-y-3'>
               {[
                 { label: 'API & Transactions', ok: true },
-                { label: 'PIX Network',        ok: true },
+                { label: 'Payment Network',        ok: true },
                 { label: 'Investments',        ok: true },
                 { label: 'Notifications',      ok: true },
               ].map(({ label, ok }) => (

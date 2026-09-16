@@ -48,4 +48,21 @@ docker compose up --build
 ./mvnw spring-boot:run
 ```
 
-### 4. Acesse a documentação
+### 4. MCP runtime
+
+Para validar o transporte MCP exposto pelo backend:
+
+```powershell
+.\mvnw -DskipTests package
+java -jar .\target\banking-api-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
+cmd /c "cd /d . && .\mvnw.cmd -Dspring-boot.run.profiles=local spring-boot:run"
+```
+
+Observações de ambiente:
+
+- Em perfil local, o app pode subir com H2 mesmo sem PostgreSQL.
+- Se Redis não estiver ativo, `/actuator/health` pode mostrar `DOWN`.
+- Se Kafka não estiver ativo, aparecem warnings de conexão em `localhost:9092`.
+- Se a porta 8080 já estiver ocupada, pare a outra instância antes de executar o launcher.
+
+### 5. Acesse a documentação

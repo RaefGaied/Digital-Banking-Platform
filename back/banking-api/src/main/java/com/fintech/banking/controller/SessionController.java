@@ -231,6 +231,7 @@ public class SessionController {
     public static class SessionResponse {
         private UUID id;
         private UUID userId;
+        private UUID agentId;
         private String status;
         private String ipAddress;
         private String createdAt;
@@ -240,6 +241,7 @@ public class SessionController {
         public SessionResponse(Session session) {
             this.id = session.getId();
             this.userId = session.getUserId();
+            this.agentId = session.getAgentId();
             this.status = session.getStatus().toString();
             this.ipAddress = session.getIpAddress();
             this.createdAt = session.getCreatedAt().toString();

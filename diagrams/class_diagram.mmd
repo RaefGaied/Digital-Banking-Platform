@@ -1,0 +1,232 @@
+%% Classe de domaine backend - diagramme Mermaid
+classDiagram
+    class User {
+        UUID id
+        String name
+        String email
+        String password
+        UserRole role
+        UserStatus status
+        Boolean active
+        Integer failedLoginAttempts
+        LocalDateTime lockedUntil
+        String deviceFingerprint
+        Boolean twoFactorEnabled
+        String twoFactorSecret
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+
+    class Account {
+        UUID id
+        String agency
+        String number
+        BigDecimal balance
+        AccountStatus status
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+
+    class Transaction {
+        UUID id
+        BigDecimal amount
+        TransactionType type
+        TransactionStatus status
+        String description
+        String flowableProcessId
+        LocalDateTime createdAt
+    }
+
+    class SupportTicket {
+        Long id
+        UUID userId
+        String subject
+        String description
+        TicketStatus status
+        TicketPriority priority
+        TicketType ticketType
+        UUID assignedAdminId
+        UUID ownerId
+        String flowableProcessId
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+        LocalDateTime resolvedAt
+        LocalDateTime closedAt
+    }
+
+    class Message {
+        Long id
+        UUID sessionId
+        UUID senderId
+        SenderType senderType
+        String content
+        Boolean isInternal
+        String intent
+        JsonNode parameters
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+
+    class Notification {
+        UUID id
+        UUID userId
+        NotificationType type
+        NotificationChannel channel
+        String title
+        String body
+        Long referenceId
+        String referenceType
+        Boolean isRead
+        LocalDateTime createdAt
+        LocalDateTime readAt
+    }
+
+    class AuditLog {
+        UUID id
+        String userEmail
+        String action
+        String entity
+        String entityId
+        String details
+        String ipAddress
+        UUID sessionId
+        String status
+        LocalDateTime createdAt
+    }
+
+    class AuthToken {
+        UUID id
+        UUID userId
+        String token
+        LocalDateTime expiresAt
+        Boolean revoked
+        String deviceId
+        String ipAddress
+        LocalDateTime lastUsed
+        LocalDateTime createdAt
+    }
+
+    class RefreshToken {
+        UUID id
+        String token
+        LocalDateTime expiresAt
+        Boolean revoked
+        LocalDateTime createdAt
+    }
+
+    class PaymentKey {
+        UUID id
+        PaymentKeyType keyType
+        String keyValue
+        Boolean active
+        Boolean verified
+        String verificationMethod
+        LocalDateTime verifiedAt
+        LocalDateTime createdAt
+    }
+
+    class Session {
+        UUID id
+        UUID userId
+        SessionStatus status
+        String ipAddress
+        UUID agentId
+        LocalDateTime createdAt
+        LocalDateTime lastActivityAt
+        LocalDateTime closedAt
+    }
+
+    class SecurityEvent {
+        UUID id
+        UUID userId
+        SecurityEventType type
+        String ipAddress
+        String deviceId
+        Boolean resolved
+        LocalDateTime timestamp
+    }
+
+    class BankingAgent {
+        UUID id
+        UUID sessionId
+        UUID userId
+        JsonNode context
+        UUID lastTransactionId
+        AgentDecision decision
+        AgentDecision defaultPolicy
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+
+    class WorkflowTask {
+        Long id
+        String processInstanceId
+        Long supportTicketId
+        WorkflowTaskStatus status
+        TaskType taskType
+        String description
+        UUID assignedTo
+        ActionType actionType
+        LocalDateTime dueDate
+        LocalDateTime breachedAt
+        Integer escalationLevel
+        Map<String,Object> metadata
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+        LocalDateTime completedAt
+    }
+
+    class Card {
+        UUID id
+        CardType cardType
+        CardBrand brand
+        String holderName
+        String lastFour
+        Integer expiryMonth
+        Integer expiryYear
+        BigDecimal creditLimit
+        BigDecimal availableLimit
+        Boolean active
+        LocalDateTime createdAt
+    }
+
+    class Investment {
+        UUID id
+        InvestmentType investmentType
+        BigDecimal amount
+        BigDecimal annualRate
+        BigDecimal currentValue
+        InvestmentStatus status
+        LocalDateTime investedAt
+        LocalDateTime redeemedAt
+    }
+
+    User "1" o-- "0..*" Account : owns
+    User "1" o-- "0..*" Card : owns
+    User "1" o-- "0..*" Investment : owns
+    User "1" o-- "0..*" RefreshToken : owns
+    User "1" o-- "0..*" PaymentKey : owns
+
+    User "1" o-- "0..*" Notification : receives
+    User "1" o-- "0..*" SecurityEvent : generates
+    User "1" o-- "0..*" SupportTicket : raises
+
+    Account "1" o-- "0..*" Transaction : sourceAccount
+    Account "1" o-- "0..*" Transaction : targetAccount
+
+    Message "*" --> "1" Session : belongsTo
+    Message "*" --> "1" User : sender
+
+    RefreshToken --> User : userId
+    AuthToken --> User : userId
+    Notification --> User : userId
+    SecurityEvent --> User : userId
+    Session --> User : userId
+    SupportTicket --> User : userId
+    BankingAgent --> User : userId
+    BankingAgent --> Session : sessionId
+    WorkflowTask --> SupportTicket : supportTicketId
+    WorkflowTask --> User : assignedTo
+    AuditLog --> Session : sessionId
+    Transaction --> Account : sourceAccount
+    Transaction --> Account : targetAccount

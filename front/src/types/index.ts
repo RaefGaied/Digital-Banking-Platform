@@ -23,6 +23,8 @@ export interface Transaction {
   description: string;
   sourceAccountNumber: string | null;
   targetAccountNumber: string | null;
+  flowableProcessId?: string | null;
+  agentDecision?: AgentDecision | null;
   createdAt: string;
 }
 
@@ -91,7 +93,7 @@ export interface AdminTicketSummary {
 }
 
 export interface AdminTaskSummary {
-  id: number;
+  id: string;
   processInstanceId: string;
   supportTicketId: number | null;
   taskType: string | null;
@@ -165,4 +167,84 @@ export interface TransactionRequest {
   amount: number;
   description?: string;
   targetAccountNumber?: string;
+  sessionId?: string;
+}
+
+export interface SupportTicket {
+  id: number;
+  userId: string;
+  subject: string;
+  description: string;
+  status: string;
+  ticketType: string;
+  priority: string;
+  assignedAdminId: string | null;
+  ownerId: string | null;
+  flowableProcessId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  closedAt: string | null;
+}
+
+export interface SessionRecord {
+  id: string;
+  userId: string;
+  agentId: string | null;
+  status: string;
+  ipAddress: string | null;
+  createdAt: string;
+  lastActivityAt: string;
+  closedAt: string | null;
+}
+
+export interface CreateSessionRequest {
+  ipAddress?: string;
+}
+
+export type AgentDecision = 'AUTO_EXECUTE' | 'TRIGGER_BPMN' | 'REQUEST_INFO' | 'BLOCK';
+
+export interface BankingAgent {
+  id: string;
+  sessionId: string;
+  userId: string;
+  context: Record<string, unknown> | null;
+  lastTransactionId: string | null;
+  decision: AgentDecision | null;
+  defaultPolicy: AgentDecision | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentDecisionTrace {
+  agentId: string;
+  intent: string | null;
+  confidence: number | null;
+  decision: AgentDecision;
+  reason: string;
+  threshold: number;
+  parameters: Record<string, unknown> | null;
+}
+
+export interface AgentDecisionResult {
+  decision: AgentDecision;
+  reason: string;
+  trace: AgentDecisionTrace;
+  agent: BankingAgent;
+}
+
+export interface DetermineAgentDecisionRequest {
+  agentId: string;
+  intent?: string;
+  confidence: number;
+  message?: string;
+  parameters?: Record<string, unknown>;
+  isSensitive?: boolean;
+}
+
+export interface CreateSupportTicketRequest {
+  subject: string;
+  description: string;
+  ticketType?: string;
+  priority?: string;
 }

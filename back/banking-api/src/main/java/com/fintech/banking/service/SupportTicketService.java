@@ -2,8 +2,10 @@ package com.fintech.banking.service;
 
 import com.fintech.banking.domain.entity.SupportTicket;
 import com.fintech.banking.domain.entity.WorkflowTask;
+import com.fintech.banking.domain.enums.TaskType;
 import com.fintech.banking.domain.enums.TicketStatus;
 import com.fintech.banking.domain.enums.TicketType;
+import com.fintech.banking.domain.enums.WorkflowTaskStatus;
 import com.fintech.banking.repository.SupportTicketRepository;
 import com.fintech.banking.repository.WorkflowTaskRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,6 +31,7 @@ public class SupportTicketService {
     private final SupportTicketRepository supportTicketRepository;
     private final WorkflowTaskRepository workflowTaskRepository;
     private final NotificationService notificationService;
+    private final FlowableService flowableService;
 
     /**
      * Creates a new support ticket
@@ -49,6 +54,51 @@ public class SupportTicketService {
         // Send notification
         notificationService.notifyTicketCreated(ticket.getUserId(), ticket.getId(), subject);
         return ticket;
+    }
+
+    /**
+     * Creates a support ticket and starts a workflow instance.
+     */
+    @Transactional
+    public SupportTicket createTicketWithWorkflow(UUID userId, String subject, String description,
+                                                  TicketType ticketType, UUID ownerId,
+                                                  String processKey, Map<String, Object> variables) {
+        SupportTicket ticket = createTicket(userId, subject, description, ticketType, ownerId);
+        String processInstanceId = null;
+
+        try {
+            if (processKey != null && !processKey.isBlank()) {
+                processInstanceId = flowableService.startProcessInstance(processKey, variables);
+            }
+        } catch (Exception e) {
+            log.warn("Flowable process not started for ticket {}: {}", ticket.getId(), e.getMessage());
+        }
+
+        if (processInstanceId != null) {
+            ticket = associateWithWorkflow(ticket.getId(), processInstanceId);
+        } else {
+            WorkflowTask task = WorkflowTask.builder()
+                    .processInstanceId("FALLBACK_" + UUID.randomUUID())
+                    .supportTicketId(ticket.getId())
+                    .status(WorkflowTaskStatus.PENDING)
+                    .taskType(getTaskTypeForTicketType(ticketType))
+                    .description(description)
+                    .build();
+            workflowTaskRepository.save(task);
+            ticket.setFlowableProcessId(task.getProcessInstanceId());
+            ticket = supportTicketRepository.save(ticket);
+        }
+
+        return ticket;
+    }
+
+    private TaskType getTaskTypeForTicketType(TicketType ticketType) {
+        return switch (ticketType) {
+            case FRAUD -> TaskType.FRAUD_CHECK;
+            case DATA_UPDATE -> TaskType.COMPLIANCE_REVIEW;
+            case CLAIM -> TaskType.COMPLIANCE_REVIEW;
+            default -> TaskType.TRANSFER_VALIDATION;
+        };
     }
 
     /**

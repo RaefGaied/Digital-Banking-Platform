@@ -14,16 +14,14 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
         format_sql: true
 
   flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: true
+    enabled: false
 
   data:
     redis:
@@ -70,7 +68,7 @@ management:
 
 jwt:
   secret: sua-chave-secreta-super-segura-aqui-minimo-256-bits-para-hs256
-  expiration: 86400000
+  expiration: 900000
   refresh-expiration: 604800000
 
 logging:
@@ -89,3 +87,8 @@ azure:
     api-version: ${AZURE_OPENAI_API_VERSION:2024-06-01}
     api-key: ${AZURE_OPENAI_API_KEY:}
     model: ${AZURE_OPENAI_MODEL:gpt-4o}
+
+flowable:
+  database-schema-update: true
+  async-executor-activate: true
+  process-definition-location-prefix: classpath:/processes/

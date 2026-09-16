@@ -27,8 +27,7 @@ public class Investment {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "investment_type", nullable = false, columnDefinition = "investment_type")
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.NAMED_ENUM)
+    @Column(name = "investment_type", nullable = false)
     private InvestmentType investmentType;
 
     @Column(nullable = false, precision = 19, scale = 2)
@@ -41,8 +40,7 @@ public class Investment {
     private BigDecimal currentValue;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "investment_status")
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.NAMED_ENUM)
+    @Column(nullable = false)
     @Builder.Default
     private InvestmentStatus status = InvestmentStatus.ACTIVE;
 

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 public class TransactionRequest {
@@ -16,4 +17,6 @@ public class TransactionRequest {
     private String description;
 
     private String targetAccountNumber;
+
+    private UUID sessionId;
 }

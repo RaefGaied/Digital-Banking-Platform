@@ -135,7 +135,10 @@ public class OpenAIIntentDetectionService implements IntentDetectionService {
                 result.setParameters(params.isMissingNode() ? null : params);
                 result.setConfidence(Double.isNaN(confidence) ? null : confidence);
                 result.setMessage(message);
-                result.setIsSensitive(null);
+                result.setIsSensitive(intent == IntentType.FRAUD
+                        || intent == IntentType.STOLEN_CARD
+                        || intent == IntentType.CLAIM
+                        || intent == IntentType.UPDATE_DATA);
 
             return result;
         } catch (Exception e) {

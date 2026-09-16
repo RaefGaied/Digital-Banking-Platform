@@ -1,3 +1,92 @@
+# Plateforme bancaire digitale — Documentation complète
+
+Ce dépôt contient une application full-stack (Java Spring Boot backend + React/TypeScript frontend) destinée à la gestion bancaire (comptes, virements, sessions, notifications). Ce README fournit une analyse complète A→Z utile pour un rapport de stage technique.
+
+## Présentation
+- **Nom du projet**: Digital Banking Platform
+- **Langages**: Java (Spring Boot) pour le backend, TypeScript + React (Vite) pour le frontend
+- **But**: démontrer un service bancaire web avec workflows métier (BPMN), API REST, et interfaces utilisateur modernes.
+
+## Objectifs du stage
+- Comprendre l’architecture applicative
+- Ajouter / maintenir des fonctionnalités métier (virements, sessions)
+- Mettre en place automatisation (build, tests, déploiement)
+- Améliorer sécurité et observabilité
+
+## Structure du dépôt
+- `back/banking-api/` : service backend Java (Spring Boot)
+- `front/` : application frontend React + TypeScript
+- `docker/postgres/` : Dockerfile et script d'initialisation de la base
+- `docker-compose.yml` : orchestration locale
+- `postman_collection.json`, `run-newman.ps1` : tests API automatisés
+
+## Installation (développement)
+Prérequis: Java 17+, Node.js 18+, Docker & Docker Compose, Maven (optionnel: utiliser `mvnw`).
+
+Backend:
+```bash
+cd back/banking-api
+./mvnw clean package    # Windows: mvnw.cmd
+```
+
+Frontend:
+```bash
+cd front
+npm install
+npm run dev    # ou npm run build pour build de production
+```
+
+Lancer l’ensemble en local (Docker):
+```bash
+docker-compose up --build
+```
+
+## Exécution des tests
+- Tests unitaires backend: `cd back/banking-api && ./mvnw test`
+- Tests Postman (collection fournie): `./run-newman.ps1` ou `newman run postman_collection.json -e postman_env.json`
+
+## Architecture & flux
+- Frontend: pages, composants, contexte d’authentification (`AuthContext.tsx`), hooks (`useAuth.ts`)
+- Backend: contrôleurs REST, services métiers, persistance JPA (voir `pom.xml`)
+- DB: PostgreSQL, initialisation via `docker/postgres/init.sql`
+
+Profiles and local DB notes:
+
+- Production / default: PostgreSQL (`spring.datasource.url=jdbc:postgresql://localhost:5432/banking_db`).
+- Local development: H2 in-memory is used when running with profile `local` — URL example: `jdbc:h2:mem:banking_db;MODE=PostgreSQL;INIT=RUNSCRIPT FROM 'classpath:h2-init.sql'`. H2 is configured to run in PostgreSQL compatibility mode to ease local runs.
+- Tests: Testcontainers Postgres is used in CI/tests (`jdbc:tc:postgresql:16-alpine:///banking_db`).
+- BPMN: workflows de validation des virements présents sous la racine (`*.bpmn`)
+
+Voir le diagramme d’architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+
+## Sécurité
+- Auth: vérifier JWT / tokens et expiration
+- Ne pas logger d’informations sensibles
+- Scanner dépendances: `mvn dependency:check`, `npm audit` ou Snyk
+
+## Observabilité
+- Exposer endpoints santé et metrics
+- Centraliser logs (ELK, Azure Monitor)
+- Ajouter traces distribuées (OpenTelemetry)
+
+## Déploiement recommandé
+1. CI: build → tests → image Docker → scan dépendances
+2. Registry: push image (Azure ACR / Docker Hub)
+3. Orchestration: Kubernetes + secrets manager
+
+## Qualité & recommandations
+- Mettre en place CI (GitHub Actions/GitLab CI)
+- Ajouter tests d’intégration E2E pour flux critiques (auth, virements)
+- Ajouter scanning SAST/DAST et dependency scanning en CI
+- Améliorer gestion des secrets (vault / provider cloud)
+
+## Annexes utiles
+- Collection Postman: `postman_collection.json`
+- Env Postman: `postman_env.json`
+- Rapport d'exécution Newman: `newman-report.json`
+
+---
+Pour tout détail supplémentaire (diagrammes PNG, génération d’un rapport Word/Markdown structuré, mise en place CI), répondez avec l’option souhaitée.
 # 🏦 Vaultly — Digital Banking Platform
 
 <div align="center">
@@ -75,7 +164,10 @@ FinBank is a production-ready digital banking platform that demonstrates modern 
 | Transfer | `POST /transactions/transfer` | Inter-account transfer with validation |
 | History | `GET /transactions/history` | Full transaction history |
 
-### ⚡ PIX — Instant Payments
+### ⚡ PIX — Instant Payments (external API name)
+
+Note: the public API and UI keep the historic "PIX" naming to preserve compatibility with demos and external clients. Internally the domain has been renamed to `PaymentKey` (database objects: `payment_keys`, enum `payment_key_type`, Java types `PaymentKey`/`PaymentKeyType`). The endpoints remain under `/pix` and request/response payloads still accept legacy fields such as `pixKey` (the backend maps these via `@JsonAlias`).
+
 - Key registration: EMAIL, TAXID, PHONE, RANDOM
 - Instant transfer simulation
 - QR Code generation with EMV payload format
@@ -281,7 +373,7 @@ Controller (authenticated)
     │                                     │
     │ *                                   │ *
 ┌───▼──────────────┐         ┌────────────▼────────┐
-│   transactions   │         │      pix_keys        │
+│   transactions   │         │      payment_keys     │
 ├──────────────────┤         ├─────────────────────┤
 │ id (UUID) PK     │         │ id (UUID) PK         │
 │ account_id FK    │         │ user_id (UUID) FK    │
@@ -330,8 +422,8 @@ Controller (authenticated)
 | V1 | Create users, accounts, transactions tables |
 | V2 | Create audit_logs table |
 | V3 | Create refresh_tokens table |
-| V4 | Create pix_keys table with enum type |
-| V5 | Fix pix_keys — change enum to VARCHAR |
+| V4 | Create payment_keys table with enum type |
+| V5 | Fix payment_keys — change enum to VARCHAR |
 | V6 | Create cards table with card_type and card_brand enums |
 | V7 | Create investments table with investment_type and investment_status enums |
 
@@ -921,7 +1013,7 @@ fintech/
 │       │   │   │   │   ├── AuthController.java       # /auth/*
 │       │   │   │   │   ├── AccountController.java    # /accounts/*
 │       │   │   │   │   ├── TransactionController.java# /transactions/*
-│       │   │   │   │   ├── PixController.java        # /pix/*
+│       │   │   │   │   ├── PaymentKeyController.java # /pix/*
 │       │   │   │   │   ├── CardController.java       # /cards/*
 │       │   │   │   │   ├── InvestmentController.java # /investments/*
 │       │   │   │   │   └── UserController.java       # /users/*
@@ -930,7 +1022,7 @@ fintech/
 │       │   │   │   │   │   ├── User.java
 │       │   │   │   │   │   ├── Account.java
 │       │   │   │   │   │   ├── Transaction.java
-│       │   │   │   │   │   ├── PixKey.java
+│       │   │   │   │   │   ├── PaymentKey.java
 │       │   │   │   │   │   ├── Card.java
 │       │   │   │   │   │   ├── Investment.java
 │       │   │   │   │   │   ├── RefreshToken.java
@@ -938,7 +1030,7 @@ fintech/
 │       │   │   │   │   └── enums/
 │       │   │   │   │       ├── TransactionType.java
 │       │   │   │   │       ├── TransactionStatus.java
-│       │   │   │   │       ├── PixKeyType.java
+│       │   │   │   │       ├── PaymentKeyType.java
 │       │   │   │   │       ├── CardType.java
 │       │   │   │   │       ├── CardBrand.java
 │       │   │   │   │       ├── InvestmentType.java

@@ -53,7 +53,10 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
         result.setParameters(params);
         result.setConfidence(confidence);
         result.setMessage("rule-based");
-        result.setIsSensitive(false);
+        result.setIsSensitive(intent == IntentType.FRAUD
+                || intent == IntentType.STOLEN_CARD
+                || intent == IntentType.CLAIM
+                || intent == IntentType.UPDATE_DATA);
 
         return result;
     }

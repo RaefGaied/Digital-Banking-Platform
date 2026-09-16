@@ -21,28 +21,28 @@ public class JwtService {
     private String secret;
 
     @Value("${jwt.expiration}")
-    private Long expiration;
+    private Long expirationMillis;
 
     @Value("${jwt.refresh-expiration}")
-    private Long refreshExpiration;
+    private Long refreshExpirationMillis;
 
-    @Value("${jwt.temp-expiration:300}")
-    private Long tempExpiration; // 5 minutes in seconds
+    @Value("${jwt.temp-expiration:300000}")
+    private Long tempExpirationMillis; // 5 minutes in ms
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails, expiration);
+        return generateToken(new HashMap<>(), userDetails, expirationMillis);
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails, refreshExpiration);
+        return generateToken(new HashMap<>(), userDetails, refreshExpirationMillis);
     }
 
     public String generateTemporaryToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails, tempExpiration);
+        return generateToken(new HashMap<>(), userDetails, tempExpirationMillis);
     }
 
     private String generateToken(Map<String, Object> claims, UserDetails userDetails, Long expirationTime) {
@@ -50,7 +50,7 @@ public class JwtService {
                 .claims(claims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationTime * 1000))
+                .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey())
                 .compact();
     }

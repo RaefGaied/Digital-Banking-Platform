@@ -21,12 +21,12 @@ export const adminApi = {
     return response.data;
   },
 
-  getTask: async (taskId: number): Promise<AdminTaskDetail> => {
+  getTask: async (taskId: string): Promise<AdminTaskDetail> => {
     const response = await api.get<AdminTaskDetail>(`/admin/tasks/${taskId}`);
     return response.data;
   },
 
-  actOnTask: async (taskId: number, request: TaskActionRequest): Promise<AdminTaskDetail> => {
+  actOnTask: async (taskId: string, request: TaskActionRequest): Promise<AdminTaskDetail> => {
     const response = await api.post<AdminTaskDetail>(`/admin/tasks/${taskId}/action`, request);
     return response.data;
   },

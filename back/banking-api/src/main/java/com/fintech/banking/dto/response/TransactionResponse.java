@@ -24,5 +24,7 @@ public class TransactionResponse {
     private String description;
     private String sourceAccountNumber;
     private String targetAccountNumber;
+    private String flowableProcessId;
+    private String agentDecision;
     private LocalDateTime createdAt;
 }

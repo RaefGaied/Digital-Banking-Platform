@@ -5,6 +5,7 @@ import type { InvestmentType } from '../api/investments';
 import { accountApi } from '../api/account';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { TrendingUp, TrendingDown, Plus, Loader2, X, DollarSign, BarChart2, Percent, Clock } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const investmentOptions: {
   type: InvestmentType; label: string; rate: string; rateNum: number;
@@ -19,6 +20,8 @@ const investmentOptions: {
 
 export default function InvestPage() {
   const queryClient = useQueryClient();
+  const { isAuthenticated, userRole } = useAuth();
+  const canLoadInvestments = isAuthenticated && userRole === 'USER';
   const [showForm, setShowForm] = useState(false);
   const [selectedType, setSelectedType] = useState<InvestmentType>('CDB');
   const [amount, setAmount] = useState('');
@@ -26,11 +29,17 @@ export default function InvestPage() {
   const { data: investments = [], isLoading } = useQuery({
     queryKey: ['investments'],
     queryFn: investmentsApi.getMyInvestments,
+    enabled: canLoadInvestments,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const { data: account } = useQuery({
     queryKey: ['account'],
     queryFn: accountApi.getMyAccount,
+    enabled: canLoadInvestments,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const investMutation = useMutation({
@@ -59,6 +68,15 @@ export default function InvestPage() {
   const totalProfitPct = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
 
   const selectedOption = investmentOptions.find(o => o.type === selectedType)!;
+
+  if (!canLoadInvestments) {
+    return (
+      <div className='card p-6'>
+        <h1 className='text-2xl font-bold text-dark-800'>Investments</h1>
+        <p className='text-gray-400 text-sm mt-1'>Investment tools are available for user sessions only.</p>
+      </div>
+    );
+  }
 
   return (
     <div className='grid grid-cols-3 gap-6'>

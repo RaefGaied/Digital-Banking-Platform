@@ -27,13 +27,11 @@ public class Card {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "card_type", nullable = false, columnDefinition = "card_type")
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.NAMED_ENUM)
+    @Column(name = "card_type", nullable = false)
     private CardType cardType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "brand", nullable = false, columnDefinition = "card_brand")
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.NAMED_ENUM)
+    @Column(name = "brand", nullable = false)
     private CardBrand brand;
 
     @Column(name = "holder_name", nullable = false, length = 100)

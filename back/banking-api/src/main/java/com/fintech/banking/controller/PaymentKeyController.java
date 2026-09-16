@@ -1,10 +1,10 @@
 package com.fintech.banking.controller;
 
-import com.fintech.banking.dto.request.PixTransferRequest;
-import com.fintech.banking.dto.request.RegisterPixKeyRequest;
-import com.fintech.banking.dto.response.PixKeyResponse;
+import com.fintech.banking.dto.request.PaymentTransferRequest;
+import com.fintech.banking.dto.request.RegisterPaymentKeyRequest;
+import com.fintech.banking.dto.response.PaymentKeyResponse;
 import com.fintech.banking.dto.response.TransactionResponse;
-import com.fintech.banking.service.PixService;
+import com.fintech.banking.service.PaymentKeyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,35 +18,35 @@ import java.util.List;
 @RestController
 @RequestMapping("/pix")
 @RequiredArgsConstructor
-public class PixController {
+public class PaymentKeyController {
 
-    private final PixService pixService;
+    private final PaymentKeyService paymentKeyService;
 
 
     @PostMapping("/keys")
-    public ResponseEntity<PixKeyResponse> registerKey(
+    public ResponseEntity<PaymentKeyResponse> registerKey(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody RegisterPixKeyRequest request) {
+            @Valid @RequestBody RegisterPaymentKeyRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(pixService.registerKey(userDetails.getUsername(), request));
+                .body(paymentKeyService.registerKey(userDetails.getUsername(), request));
     }
 
     @GetMapping("/keys")
-    public ResponseEntity<List<PixKeyResponse>> getMyKeys(
+    public ResponseEntity<List<PaymentKeyResponse>> getMyKeys(
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(pixService.getMyKeys(userDetails.getUsername()));
+        return ResponseEntity.ok(paymentKeyService.getMyKeys(userDetails.getUsername()));
     }
 
     @GetMapping("/keys/{pixKey}")
-    public ResponseEntity<PixKeyResponse> findKey(@PathVariable String pixKey) {
-        return ResponseEntity.ok(pixService.findKey(pixKey));
+    public ResponseEntity<PaymentKeyResponse> findKey(@PathVariable("pixKey") String keyValue) {
+        return ResponseEntity.ok(paymentKeyService.findKey(keyValue));
     }
 
     @PostMapping("/transfer")
     public ResponseEntity<TransactionResponse> transfer(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @RequestBody PixTransferRequest request) {
+            @Valid @RequestBody PaymentTransferRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(pixService.transfer(userDetails.getUsername(), request));
+                .body(paymentKeyService.transfer(userDetails.getUsername(), request));
     }
 }

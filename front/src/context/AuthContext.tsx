@@ -198,6 +198,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	};
 
 	const logout = () => {
+		console.warn('AuthContext.logout() called — clearing local auth state', { time: new Date().toISOString() });
+		try { (window as any).__copilot_lastLogoutStack = new Error().stack; } catch (e) {}
+		console.trace();
 		localStorage.removeItem('token');
 		localStorage.removeItem('userId');
 		localStorage.removeItem('userName');
