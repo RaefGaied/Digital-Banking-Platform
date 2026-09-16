@@ -10,6 +10,8 @@ import com.fintech.banking.repository.SessionRepository;
 import com.fintech.banking.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -63,6 +65,10 @@ public class BankingAgentService {
         return agent;
     }
 
+    public List<BankingAgent> getAllAgents() {
+        return bankingAgentRepository.findAll();
+    }
+
     public List<BankingAgent> getAgentsByUserId(UUID userId) {
         return bankingAgentRepository.findByUserId(userId);
     }
@@ -70,6 +76,13 @@ public class BankingAgentService {
     public Optional<BankingAgent> getAgentByIdAndUserId(UUID agentId, UUID userId) {
         return bankingAgentRepository.findById(agentId)
             .filter(agent -> agent.getUserId().equals(userId));
+    }
+
+    public Optional<BankingAgent> getAgentByIdForAdminOrOwner(UUID agentId, UUID userId, boolean isAdmin) {
+        if (isAdmin) {
+            return bankingAgentRepository.findById(agentId);
+        }
+        return getAgentByIdAndUserId(agentId, userId);
     }
 
     /**
@@ -105,6 +118,85 @@ public class BankingAgentService {
     public BankingAgent updateContext(UUID agentId, Object contextObject) {
         JsonNode context = objectMapper.valueToTree(contextObject);
         return updateContext(agentId, context);
+    }
+
+    @Transactional
+    public BankingAgent updateContextFields(UUID agentId, java.util.Map<String, Object> fields) {
+        BankingAgent agent = bankingAgentRepository.findById(agentId)
+            .orElseThrow(() -> new RuntimeException("Agent not found"));
+
+        ObjectNode root;
+        if (agent.getContext() != null && agent.getContext().isObject()) {
+            root = objectMapper.convertValue(agent.getContext(), ObjectNode.class);
+        } else {
+            root = objectMapper.createObjectNode();
+        }
+
+        fields.forEach((key, value) -> {
+            if (value == null) {
+                root.putNull(key);
+            } else {
+                root.set(key, objectMapper.valueToTree(value));
+            }
+        });
+
+        agent.setContext(root);
+        return bankingAgentRepository.save(agent);
+    }
+
+    @Transactional
+    public BankingAgent clearPendingToolAction(UUID agentId) {
+        BankingAgent agent = bankingAgentRepository.findById(agentId)
+            .orElseThrow(() -> new RuntimeException("Agent not found"));
+
+        if (agent.getContext() == null || !agent.getContext().isObject()) {
+            return agent;
+        }
+
+        ObjectNode root = objectMapper.convertValue(agent.getContext(), ObjectNode.class);
+        root.remove("pendingToolAction");
+        root.remove("pendingToolArguments");
+        agent.setContext(root);
+        return bankingAgentRepository.save(agent);
+    }
+
+    public boolean hasPendingToolAction(BankingAgent agent) {
+        return agent != null && agent.getContext() != null
+            && agent.getContext().hasNonNull("pendingToolAction");
+    }
+
+    public String getPendingToolAction(BankingAgent agent) {
+        return hasPendingToolAction(agent) ? agent.getContext().get("pendingToolAction").asText() : null;
+    }
+
+    public JsonNode getPendingToolArguments(BankingAgent agent) {
+        return agent != null && agent.getContext() != null ? agent.getContext().get("pendingToolArguments") : null;
+    }
+
+    /**
+     * Appends an activity trace to the agent context while preserving history.
+     */
+    @Transactional
+    public BankingAgent appendActivityTrace(UUID agentId, java.util.Map<String, Object> trace) {
+        BankingAgent agent = bankingAgentRepository.findById(agentId)
+            .orElseThrow(() -> new RuntimeException("Agent not found"));
+
+        ObjectNode root;
+        if (agent.getContext() != null && agent.getContext().isObject()) {
+            root = objectMapper.convertValue(agent.getContext(), ObjectNode.class);
+        } else {
+            root = objectMapper.createObjectNode();
+        }
+
+        trace.put("timestamp", java.time.LocalDateTime.now().toString());
+        ObjectNode entry = objectMapper.valueToTree(trace);
+        root.set("lastTrace", entry);
+
+        ArrayNode activities = root.withArray("activities");
+        activities.add(entry);
+
+        agent.setContext(root);
+        return bankingAgentRepository.save(agent);
     }
 
     /**

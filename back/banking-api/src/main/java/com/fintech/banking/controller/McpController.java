@@ -16,6 +16,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.task.api.Task;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -38,6 +39,9 @@ public class McpController {
     private final FlowableTaskCompletionService flowableTaskCompletionService;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+
+    @Value("${app.sensitive-line.threshold:5000}")
+    private BigDecimal sensitiveThreshold;
 
     private UUID resolveAuthenticatedUserId(Authentication authentication) {
         String email = authentication.getName();
@@ -142,7 +146,7 @@ public class McpController {
             trace.put("confidence", intentResult.getConfidence());
             trace.put("decision", decision.name());
             trace.put("reason", determineReason(intentResult, request.getParameters(), decision));
-            trace.put("threshold", 5000);
+            trace.put("threshold", sensitiveThreshold);
             trace.put("parameters", request.getParameters());
 
             BankingAgent updated = bankingAgentService.updateContext(agent.getId(), trace);
@@ -221,12 +225,12 @@ public class McpController {
             return false;
         }
 
-        if (List.of(IntentType.FRAUD, IntentType.STOLEN_CARD, IntentType.CLAIM, IntentType.UPDATE_DATA).contains(intentResult.getIntent())) {
+        if (List.of(IntentType.FRAUD, IntentType.STOLEN_CARD, IntentType.CLAIM, IntentType.UPDATE_SENSITIVE_DATA).contains(intentResult.getIntent())) {
             return true;
         }
 
         BigDecimal amount = extractAmount(parameters);
-        return amount != null && amount.compareTo(new BigDecimal("5000")) > 0;
+        return amount != null && amount.compareTo(sensitiveThreshold) > 0;
     }
 
     private String determineReason(IntentResult intentResult, Map<String, Object> parameters, AgentDecision decision) {

@@ -22,6 +22,7 @@ export default function HelpPage() {
   const [description, setDescription] = useState('');
   const [ticketType, setTicketType] = useState('GENERAL');
   const [priority, setPriority] = useState('MEDIUM');
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [formMessage, setFormMessage] = useState<string | null>(null);
 
   const ticketsQuery = useQuery({
@@ -36,6 +37,7 @@ export default function HelpPage() {
       setDescription('');
       setTicketType('GENERAL');
       setPriority('MEDIUM');
+      setAttachment(null);
       setFormMessage(locale === 'fr' ? 'Ticket créé avec succès.' : 'Ticket created successfully.');
       void queryClient.invalidateQueries({ queryKey: ['my-support-tickets'] });
     },
@@ -261,9 +263,17 @@ export default function HelpPage() {
                   <option value='HIGH'>{locale === 'fr' ? 'Haute' : 'High'}</option>
                 </select>
               </div>
+              <label className='block text-sm text-gray-500'>
+                <span className='block mb-2'>{locale === 'fr' ? 'Pièce jointe' : 'Attachment'}</span>
+                <input
+                  type='file'
+                  onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
+                  className='w-full text-sm text-dark-800 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100'
+                />
+              </label>
               <button
                 disabled={createTicketMutation.isPending || !subject.trim() || !description.trim()}
-                onClick={() => createTicketMutation.mutate({ subject, description, ticketType, priority })}
+                onClick={() => createTicketMutation.mutate({ subject, description, ticketType, priority, attachment })}
                 className='w-full rounded-xl bg-primary-500 text-white py-3 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-600 transition-colors'
               >
                 {createTicketMutation.isPending ? (locale === 'fr' ? 'Création...' : 'Creating...') : (locale === 'fr' ? 'Créer le ticket' : 'Create ticket')}
@@ -285,6 +295,9 @@ export default function HelpPage() {
                     <div>
                       <p className='text-sm font-medium text-dark-800'>{ticket.subject}</p>
                       <p className='text-xs text-gray-500 mt-1 line-clamp-2'>{ticket.description}</p>
+                      {ticket.attachmentName && (
+                        <p className='text-[11px] mt-2 text-primary-600'>{locale === 'fr' ? 'Pièce jointe incluse' : 'Attachment included'}</p>
+                      )}
                     </div>
                     <span className='text-[11px] px-2 py-1 rounded-full bg-white border border-cream-200 text-gray-500'>
                       {ticket.status}

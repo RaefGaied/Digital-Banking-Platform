@@ -17,7 +17,7 @@ export default function SessionsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, userRole } = useAuth();
-  const canLoadSessions = isAuthenticated && userRole === 'USER';
+  const canLoadSessions = isAuthenticated && (userRole === 'USER' || userRole === 'ADMIN');
   const [ipAddress, setIpAddress] = useState('');
 
   const sessionsQuery = useQuery({
@@ -76,7 +76,7 @@ export default function SessionsPage() {
     return (
       <Box sx={{ display: 'grid', gap: 2 }}>
         <Typography variant='h5' sx={{ fontWeight: 800 }}>Banking Sessions</Typography>
-        <Typography variant='body2' color='text.secondary'>Session tools are available for user sessions only.</Typography>
+        <Typography variant='body2' color='text.secondary'>Session tools are available for authenticated users and admins.</Typography>
       </Box>
     );
   }

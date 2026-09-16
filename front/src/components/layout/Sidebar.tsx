@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Box, Divider, Stack, Paper, Tooltip, IconButton } from '@mui/material';
-import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, LogOut, ShieldCheck, Activity, Users, FileText, ShieldAlert, MessageCircle, History, Bot } from 'lucide-react';
+import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, LogOut, ShieldCheck, Activity, Users, FileText, ShieldAlert, MessageCircle, History, Bot, Database, SearchCode } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -12,6 +12,7 @@ const userNavItems = [
   { to: '/analytics', icon: PieChart, key: 'sidebar.analytics' },
   { to: '/sessions', icon: History, key: 'sidebar.sessions' },
   { to: '/agents', icon: Bot, key: 'sidebar.agents' },
+  { to: '/rag', icon: SearchCode, key: 'sidebar.ragTest' },
   { to: '/profile', icon: User, key: 'sidebar.profile' },
   { to: '/help', icon: MessageCircle, key: 'sidebar.helpSupport' },
 ] as const;
@@ -22,6 +23,8 @@ const adminNavItems = [
   { to: '/admin/users', icon: Users, key: 'sidebar.users' },
   { to: '/admin/security', icon: ShieldAlert, key: 'sidebar.security' },
   { to: '/admin/audit', icon: FileText, key: 'sidebar.audit' },
+  { to: '/admin/rag', icon: Database, key: 'sidebar.rag' },
+  { to: '/rag', icon: SearchCode, key: 'sidebar.ragTest' },
 ] as const;
 
 // icon-only nav items handled inline for modern compact layout

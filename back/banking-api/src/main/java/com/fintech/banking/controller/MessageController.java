@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -50,7 +51,8 @@ public class MessageController {
     public ResponseEntity<?> createMessage(
             @PathVariable UUID sessionId,
             @RequestBody CreateMessageRequest request,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
         try {
             UUID userId = resolveAuthenticatedUserId(authentication);
 
@@ -61,7 +63,11 @@ public class MessageController {
 
             Message message;
             if (request.getSenderType() == null || request.getSenderType() == SenderType.USER) {
-                message = chatService.handleUserMessage(sessionId, userId, request.getContent());
+                message = chatService.handleUserMessage(
+                        sessionId,
+                        userId,
+                        request.getContent(),
+                        httpRequest.getHeader("Authorization"));
             } else {
                 IntentResult detected = null;
                 String intentToSave = request.getIntent();

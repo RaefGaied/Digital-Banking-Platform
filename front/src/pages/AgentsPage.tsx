@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Box, Button, Card, CardContent, Checkbox, FormControlLabel, Stack, TextField, Typography, MenuItem, Alert } from '@mui/material';
 import { agentsApi } from '../api/agents';
@@ -12,7 +12,8 @@ export default function AgentsPage() {
   const [search] = useSearchParams();
   const selected = search.get('selected') ?? undefined;
   const { isAuthenticated, userRole } = useAuth();
-  const canLoadAgents = isAuthenticated && userRole === 'USER';
+  const isAdmin = userRole === 'ADMIN';
+  const canLoadAgents = isAuthenticated && (userRole === 'USER' || userRole === 'ADMIN');
   const [contextText, setContextText] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [decision, setDecision] = useState<string>('AUTO_EXECUTE');
@@ -46,11 +47,25 @@ export default function AgentsPage() {
   const agents = agentsQuery.data ?? [];
   const agent: BankingAgent | undefined = agentQuery.data as BankingAgent | undefined;
 
+  useEffect(() => {
+    if (agent) {
+      try {
+        setContextText(agent.context ? JSON.stringify(agent.context, null, 2) : '');
+      } catch (e) {
+        setContextText(String(agent.context ?? ''));
+      }
+      setTransactionId(agent.lastTransactionId ?? '');
+    } else {
+      setContextText('');
+      setTransactionId('');
+    }
+  }, [agent]);
+
   if (!canLoadAgents) {
     return (
       <Box sx={{ display: 'grid', gap: 2 }}>
         <Typography variant='h5' sx={{ fontWeight: 800 }}>Banking Agents</Typography>
-        <Typography variant='body2' color='text.secondary'>Agent tools are available for user sessions only.</Typography>
+        <Typography variant='body2' color='text.secondary'>Agent tools are available for authenticated users and admins.</Typography>
       </Box>
     );
   }
@@ -60,21 +75,33 @@ export default function AgentsPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant='h5' sx={{ fontWeight: 800 }}>Banking Agents</Typography>
-          <Typography variant='body2' color='text.secondary'>Manage your session-linked banking agents and their policies.</Typography>
+          <Typography variant='body2' color='text.secondary'>
+            {isAdmin
+              ? 'Review all system agents and their BPMN policy decisions.'
+              : 'Manage your session-linked banking agents and their policies.'}
+          </Typography>
         </Box>
         <Button onClick={() => void queryClient.invalidateQueries({ queryKey: ['my-agents'] })}>Refresh</Button>
       </Box>
 
       <Card>
         <CardContent>
-          <Typography variant='h6' sx={{ fontWeight: 700 }}>Your agents</Typography>
+          <Typography variant='h6' sx={{ fontWeight: 700 }}>{isAdmin ? 'System agents' : 'Your agents'}</Typography>
           <Stack spacing={2} sx={{ mt: 2 }}>
-            {agents.length === 0 && <Typography variant='body2' color='text.secondary'>No agents yet. Create a session and link an agent from the Sessions page.</Typography>}
+            {agents.length === 0 && (
+              <Typography variant='body2' color='text.secondary'>
+                {isAdmin
+                  ? 'No agents are currently linked in the system.'
+                  : 'No agents yet. Create a session and link an agent from the Sessions page.'}
+              </Typography>
+            )}
             {agents.map((a) => (
               <Box key={a.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, borderRadius: 2, border: 1, borderColor: 'divider' }}>
                 <Box>
                   <Typography variant='subtitle2' sx={{ fontWeight: 700, wordBreak: 'break-word' }}>{a.id}</Typography>
-                  <Typography variant='body2' color='text.secondary'>Session: {a.sessionId} · Decision: {a.decision ?? a.defaultPolicy}</Typography>
+                  <Typography variant='body2' color='text.secondary'>
+                    {isAdmin ? `User: ${a.userId} · ` : ''}Session: {a.sessionId} · Decision: {a.decision ?? a.defaultPolicy}
+                  </Typography>
                 </Box>
                 <Stack direction='row' spacing={1}>
                   <Button size='small' variant='outlined' onClick={() => navigate(`/agents?selected=${a.id}`)}>Open</Button>
@@ -133,7 +160,7 @@ export default function AgentsPage() {
                       <MenuItem value='FRAUD'>FRAUD</MenuItem>
                       <MenuItem value='STOLEN_CARD'>STOLEN_CARD</MenuItem>
                       <MenuItem value='CLAIM'>CLAIM</MenuItem>
-                      <MenuItem value='UPDATE_DATA'>UPDATE_DATA</MenuItem>
+                      <MenuItem value='UPDATE_SENSITIVE_DATA'>UPDATE_SENSITIVE_DATA</MenuItem>
                     </TextField>
                     <TextField label='Confidence' type='number' value={confidence} onChange={(e) => setConfidence(e.target.value)} />
                   </Box>

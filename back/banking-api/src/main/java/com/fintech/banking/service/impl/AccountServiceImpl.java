@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -41,5 +43,14 @@ public class AccountServiceImpl implements AccountService {
                 .ownerName(user.getName())
                 .createdAt(account.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    public List<String> getAvailableAccountNumbers() {
+        return accountRepository.findAll().stream()
+                .filter(account -> account.getStatus() == com.fintech.banking.domain.enums.AccountStatus.ACTIVE)
+                .map(Account::getNumber)
+                .sorted()
+                .toList();
     }
 }

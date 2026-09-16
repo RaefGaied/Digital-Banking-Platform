@@ -1,0 +1,7 @@
+Customer: Lucas Martin
+Email: lucas.martin@banking.example
+Phone: +33 6 12 34 56 78
+Address: 14 Rue de la Paix, Paris
+Document type: Card blocked
+Product: Credit card
+Issue: Card is blocked after suspicious activity

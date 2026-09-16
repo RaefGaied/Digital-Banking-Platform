@@ -36,6 +36,7 @@ public class LocalDemoDataBootstrap implements ApplicationRunner {
     private static final String ADMIN_EMAIL = "admin@finbank.local";
     private static final String PRIMARY_EMAIL = "demo@finbank.local";
     private static final String PARTNER_EMAIL = "partner@finbank.local";
+    private static final String SYSTEM_EMAIL = "system@finbank.local";
 
     private final UserRepository userRepository;
     private final AccountRepository accountRepository;
@@ -72,6 +73,15 @@ public class LocalDemoDataBootstrap implements ApplicationRunner {
         );
 
         User adminUser = userRepository.findByEmail(ADMIN_EMAIL).orElse(null);
+        User systemUser = ensureUser(
+            "System Assistant",
+            SYSTEM_EMAIL,
+            "System@1234!",
+            UserRole.ADMIN,
+            null,
+            null,
+            null
+        );
         seedCards(primaryUser);
         seedPaymentKeys(primaryUser, partnerUser);
         seedInvestments(primaryUser);
@@ -139,16 +149,21 @@ public class LocalDemoDataBootstrap implements ApplicationRunner {
             .active(true)
             .build()));
 
+        if (agency == null || accountNumber == null) {
+            return user;
+        }
+
+        BigDecimal expectedBalance = balance != null ? balance : BigDecimal.ZERO;
         Account account = accountRepository.findByNumber(accountNumber).orElseGet(() -> accountRepository.save(Account.builder()
             .user(user)
             .agency(agency)
             .number(accountNumber)
-            .balance(balance)
+            .balance(expectedBalance)
             .status(AccountStatus.ACTIVE)
             .build()));
 
-        if (account.getBalance() == null || account.getBalance().compareTo(balance) != 0) {
-            account.setBalance(balance);
+        if (account.getBalance() == null || account.getBalance().compareTo(expectedBalance) != 0) {
+            account.setBalance(expectedBalance);
             accountRepository.save(account);
         }
 

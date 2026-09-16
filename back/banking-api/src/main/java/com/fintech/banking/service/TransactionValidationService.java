@@ -7,6 +7,7 @@ import com.fintech.banking.domain.enums.TicketType;
 import com.fintech.banking.domain.vo.IntentResult;
 import com.fintech.banking.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,9 +31,11 @@ public class TransactionValidationService {
     private final FlowableService flowableService;
     private final BankingAgentRepository bankingAgentRepository;
 
-    private static final BigDecimal HIGH_RISK_THRESHOLD = new BigDecimal("5000");
+    @Value("${app.sensitive-line.threshold:5000}")
+    private BigDecimal highRiskThreshold;
+
     private static final List<IntentType> HIGH_RISK_INTENTS = List.of(
-        IntentType.FRAUD, IntentType.STOLEN_CARD, IntentType.CLAIM, IntentType.UPDATE_DATA
+        IntentType.FRAUD, IntentType.STOLEN_CARD, IntentType.CLAIM, IntentType.UPDATE_SENSITIVE_DATA
     );
 
     /**
@@ -53,7 +56,7 @@ public class TransactionValidationService {
             UUID sessionId) {
 
         // Check amount threshold
-        boolean exceedsAmountThreshold = transaction.getAmount().compareTo(HIGH_RISK_THRESHOLD) > 0;
+        boolean exceedsAmountThreshold = transaction.getAmount().compareTo(highRiskThreshold) > 0;
 
         // Check intent risk
         boolean isHighRiskIntent = intentResult != null 
@@ -68,8 +71,8 @@ public class TransactionValidationService {
         if (exceedsAmountThreshold || isHighRiskIntent) {
             Map<String, Object> trace = createBPMNWorkflow(transaction, userId);
             trace.put("decision", AgentDecision.TRIGGER_BPMN.name());
-            trace.put("reason", exceedsAmountThreshold ? "TRANSFER_AMOUNT_ABOVE_5000" : "SENSITIVE_INTENT");
-            trace.put("threshold", HIGH_RISK_THRESHOLD);
+            trace.put("reason", exceedsAmountThreshold ? "TRANSFER_AMOUNT_ABOVE_THRESHOLD" : "SENSITIVE_INTENT");
+            trace.put("threshold", highRiskThreshold);
             trace.put("evaluatedAt", LocalDateTime.now().toString());
             recordAgentTrace(sessionId, userId, transaction, AgentDecision.TRIGGER_BPMN, trace);
             return AgentDecision.TRIGGER_BPMN;

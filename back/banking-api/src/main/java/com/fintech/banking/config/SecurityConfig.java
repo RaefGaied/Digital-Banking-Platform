@@ -55,7 +55,6 @@ public class SecurityConfig {
                     // Admin-only endpoints
                     .requestMatchers("/admin/**").hasRole("ADMIN")
                     .requestMatchers("/agents/**").hasAnyRole("USER", "ADMIN")
-                    // User-only endpoints (defense-in-depth)
                     .requestMatchers(
                         "/accounts/**",
                         "/transactions/**",
@@ -67,8 +66,9 @@ public class SecurityConfig {
                         "/users/**",
                         "/profile/**",
                         "/notifications/**",
-                        "/pix/**"
-                    ).hasRole("USER")
+                        "/pix/**",
+                        "/ai/**"
+                    ).authenticated()
                     .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

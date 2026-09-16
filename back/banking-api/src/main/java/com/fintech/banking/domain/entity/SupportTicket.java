@@ -5,6 +5,8 @@ import com.fintech.banking.domain.enums.TicketStatus;
 import com.fintech.banking.domain.enums.TicketType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -53,6 +55,16 @@ public class SupportTicket {
 
     @Column(name = "flowable_process_id", length = 255)
     private String flowableProcessId;
+
+    @Column(name = "attachment_name", length = 255)
+    private String attachmentName;
+
+    @Column(name = "attachment_type", length = 100)
+    private String attachmentType;
+
+    @JdbcTypeCode(SqlTypes.BINARY)
+    @Column(name = "attachment_data", columnDefinition = "BYTEA")
+    private byte[] attachmentData;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

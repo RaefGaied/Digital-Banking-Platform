@@ -1,0 +1,142 @@
+🔹 ACCOUNT & BALANCE
+
+You can check your account balance from the dashboard or by asking the AI assistant.
+
+Example:
+"What is my balance?"
+
+The system will securely fetch your latest balance from your account.
+
+
+🔹 DEPOSIT MONEY
+
+To deposit money:
+
+1. Click on "Deposit" on the dashboard
+2. A popup will appear
+3. Enter the amount
+4. Click "Confirm Deposit"
+
+The amount will be added instantly to your account.
+
+
+🔹 WITHDRAW MONEY
+
+To withdraw money:
+
+1. Click on "Withdraw"
+2. Enter the amount in the popup
+3. Click "Confirm Withdraw"
+
+Make sure you have sufficient balance before withdrawing.
+
+
+🔹 TRANSFER MONEY
+
+To transfer money:
+
+1. Click on "Transfer"
+2. Enter:
+   - Receiver Account Number
+   - Amount
+3. Click "Confirm Transfer"
+
+Rules:
+- Amount must be greater than 0
+- You cannot transfer to your own account
+- If amount is very high, confirmation is required
+- If balance is insufficient, transfer will be blocked
+
+
+🔹 TRANSACTION HISTORY
+
+You can view transactions in two ways:
+
+1. Click "Transactions" from the header
+2. Click "Transactions" card on dashboard
+
+Features:
+- View recent transactions
+- Filter by amount
+- View today's transactions
+- See sent vs received insights
+
+
+🔹 PROFILE MANAGEMENT
+
+To view or edit profile:
+
+1. Click on your profile icon (top right)
+2. Open profile card
+3. Click "Edit Profile"
+
+You can update:
+- Name
+- Profile picture
+
+
+🔹 SUPPORT / TICKET SYSTEM
+
+If you face any issue:
+
+1. Type: "create ticket"
+2. Describe your issue
+3. Confirm the ticket
+
+Example:
+"I am unable to see transactions"
+
+System will:
+- Create a support ticket
+- Assign an agent
+- Track status
+
+
+🔹 TRANSACTION FAILURE
+
+If a transaction fails:
+- Money is automatically refunded
+- Refund may take up to 24 hours
+
+
+🔹 LIMITS & RULES
+
+- Minimum balance for savings account is ₹2000
+- ATM withdrawal limit per day is ₹50000
+- Charges after ATM limit: ₹20 per transaction
+- NEFT works from 8 AM to 7 PM (working days)
+- IMPS works 24x7
+
+
+🔹 AI ASSISTANT CAPABILITIES
+
+The AI assistant can:
+
+- Check balance
+- Show transactions
+- Transfer money
+- Detect unusual transactions
+- Create support tickets
+- Answer banking questions
+
+It understands:
+- English
+- Hindi
+- Mixed language queries
+
+
+🔹 SECURITY & SAFETY
+
+- All transactions require validation
+- High-value transactions need confirmation
+- Fraud detection is applied before transfer
+- User must confirm critical actions
+
+
+🔹 EXAMPLES OF USER QUERIES
+
+- "Mera balance bata"
+- "Send 500 to account 2"
+- "Last 5 transactions dikha"
+- "Create ticket"
+- "Mujhe recent paise ka record chahiye"

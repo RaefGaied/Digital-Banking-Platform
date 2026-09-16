@@ -1,0 +1,351 @@
+23:48:22.943 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.fintech.banking.controller.AuthControllerTest]: AuthControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+23:48:23.696 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.fintech.banking.BankingApiApplication for test class com.fintech.banking.controller.AuthControllerTest
+23:48:24.507 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+23:48:25.480 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+23:48:25.485 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+23:48:25.513 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.6.1
+  API Version: 1.55
+  Operating System: Docker Desktop
+  Total Memory: 7531 MB
+23:48:25.532 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+23:48:25.535 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+23:48:25.692 [main] INFO tc.testcontainers/ryuk:0.6.0 -- Creating container for image: testcontainers/ryuk:0.6.0
+23:48:25.996 [main] INFO org.testcontainers.utility.RegistryAuthLocator -- Credential helper/store (docker-credential-desktop) does not have credentials for https://index.docker.io/v1/
+23:48:26.233 [main] INFO tc.testcontainers/ryuk:0.6.0 -- Container testcontainers/ryuk:0.6.0 is starting: 6aef9d7c588d6a655b101993f5111a67a79b554f295e125864b1e6f6873fb641
+23:48:26.732 [main] INFO tc.testcontainers/ryuk:0.6.0 -- Container testcontainers/ryuk:0.6.0 started in PT1.0390701S
+23:48:26.746 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+23:48:26.746 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+23:48:26.747 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+23:48:26.751 [main] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+23:48:26.866 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: 788005234a72b576d15d6b724ab1cd38172f48e57136b554561bc84d4f2b6696
+23:48:29.019 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT2.2683493S
+23:48:29.020 [main] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:59279/banking_db?loggerLevel=OFF)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.14)
+
+2026-09-10T23:48:29.599+01:00  INFO 1384 --- [banking-api] [           main] c.f.b.controller.AuthControllerTest      : Starting AuthControllerTest using Java 21.0.12.1 with PID 1384 (started by lenovo in c:\Users\lenovo\Desktop\PFE\Digital-Banking-Platform-main\back\banking-api)
+2026-09-10T23:48:29.600+01:00 DEBUG 1384 --- [banking-api] [           main] c.f.b.controller.AuthControllerTest      : Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-09-10T23:48:29.601+01:00  INFO 1384 --- [banking-api] [           main] c.f.b.controller.AuthControllerTest      : The following 1 profile is active: "test"
+2026-09-10T23:48:32.197+01:00  INFO 1384 --- [banking-api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-10T23:48:32.201+01:00  INFO 1384 --- [banking-api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-10T23:48:32.557+01:00  INFO 1384 --- [banking-api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 335 ms. Found 17 JPA repository interfaces.
+2026-09-10T23:48:32.583+01:00  INFO 1384 --- [banking-api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-10T23:48:32.585+01:00  INFO 1384 --- [banking-api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-09-10T23:48:32.617+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.AccountRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.618+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.AuditLogRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.618+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.AuthTokenRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.619+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.BankingAgentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.619+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.CardRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.619+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.InvestmentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.620+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.MessageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.620+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.NotificationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.620+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.PaymentKeyRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.620+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.RagDocumentRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.621+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.RefreshTokenRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.621+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.SecurityEventRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.621+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.SessionRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.621+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.SupportTicketRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.622+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.TransactionRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.622+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.UserRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.622+01:00  INFO 1384 --- [banking-api] [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.fintech.banking.repository.WorkflowTaskRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-10T23:48:32.622+01:00  INFO 1384 --- [banking-api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 21 ms. Found 0 Redis repository interfaces.
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (C:\Users\lenovo\.m2\repository\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+2026-09-10T23:48:35.973+01:00  INFO 1384 --- [banking-api] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 0 (http)
+2026-09-10T23:48:36.022+01:00  INFO 1384 --- [banking-api] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-09-10T23:48:36.023+01:00  INFO 1384 --- [banking-api] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-09-10T23:48:36.305+01:00  INFO 1384 --- [banking-api] [           main] o.a.c.c.C.[.[localhost].[/api/v1]        : Initializing Spring embedded WebApplicationContext
+2026-09-10T23:48:36.308+01:00  INFO 1384 --- [banking-api] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 6678 ms
+2026-09-10T23:48:37.221+01:00  INFO 1384 --- [banking-api] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-10T23:48:37.484+01:00  INFO 1384 --- [banking-api] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.49.Final
+2026-09-10T23:48:37.572+01:00  INFO 1384 --- [banking-api] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-10T23:48:37.798+01:00  INFO 1384 --- [banking-api] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-09-10T23:48:38.103+01:00  INFO 1384 --- [banking-api] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@37bafef8
+2026-09-10T23:48:38.108+01:00  INFO 1384 --- [banking-api] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-09-10T23:48:38.268+01:00  INFO 1384 --- [banking-api] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 16.14
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-10T23:48:38.494+01:00  INFO 1384 --- [banking-api] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-10T23:48:40.870+01:00  INFO 1384 --- [banking-api] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: set client_min_messages = WARNING
+Hibernate: alter table if exists accounts drop constraint if exists FKnjuop33mo69pd79ctplkck40n
+Hibernate: alter table if exists cards drop constraint if exists FKcmanafgwbibfijy2o5isfk3d5
+Hibernate: alter table if exists investments drop constraint if exists FKrakwjgyxmbuqla8038e25qbu1
+Hibernate: alter table if exists payment_keys drop constraint if exists FKgchsgs4chgs98ank9ih7o3fch
+Hibernate: alter table if exists refresh_tokens drop constraint if exists FK1lih5y2npsf8u5o3vhdb9y0os
+Hibernate: alter table if exists transactions drop constraint if exists FKr5dnv4t6f45ltol1wu5u27cqu
+Hibernate: alter table if exists transactions drop constraint if exists FKkvx6snvmgcrkoexe3yvyakiud
+Hibernate: drop table if exists accounts cascade
+Hibernate: drop table if exists audit_logs cascade
+Hibernate: drop table if exists auth_tokens cascade
+Hibernate: drop table if exists banking_agents cascade
+Hibernate: drop table if exists cards cascade
+Hibernate: drop table if exists investments cascade
+Hibernate: drop table if exists messages cascade
+Hibernate: drop table if exists notifications cascade
+Hibernate: drop table if exists payment_keys cascade
+Hibernate: drop table if exists rag_documents cascade
+Hibernate: drop table if exists refresh_tokens cascade
+Hibernate: drop table if exists security_events cascade
+Hibernate: drop table if exists sessions cascade
+Hibernate: drop table if exists support_tickets cascade
+Hibernate: drop table if exists transactions cascade
+Hibernate: drop table if exists users cascade
+Hibernate: drop table if exists workflow_tasks cascade
+Hibernate: create table accounts (balance numeric(19,2) not null, created_at timestamp(6) not null, updated_at timestamp(6) not null, agency varchar(10) not null, id uuid not null, user_id uuid not null, number varchar(20) not null unique, status varchar(20) not null check (status in ('ACTIVE','INACTIVE','BLOCKED')), primary key (id))
+Hibernate: create table audit_logs (created_at timestamp(6) not null, id uuid not null, session_id uuid, status varchar(20) not null, entity varchar(50), ip_address varchar(50), action varchar(100) not null, entity_id varchar(100), user_email varchar(150), details TEXT, primary key (id))
+Hibernate: create table auth_tokens (revoked boolean, created_at timestamp(6) not null, expires_at timestamp(6) not null, last_used timestamp(6), id uuid not null, user_id uuid not null, ip_address varchar(50), token varchar(500) not null, device_id varchar(255), primary key (id))
+Hibernate: create table banking_agents (created_at timestamp(6) not null, updated_at timestamp(6) not null, id uuid not null, last_transaction_id uuid, session_id uuid not null unique, user_id uuid not null, decision varchar(50) check (decision in ('AUTO_EXECUTE','TRIGGER_BPMN','REQUEST_INFO','BLOCK')), default_policy varchar(50) check (default_policy in ('AUTO_EXECUTE','TRIGGER_BPMN','REQUEST_INFO','BLOCK')), context jsonb, primary key (id))
+Hibernate: create table cards (active boolean not null, available_limit numeric(19,2), credit_limit numeric(19,2), expiry_month integer not null, expiry_year integer not null, last_four varchar(4) not null, created_at timestamp(6) not null, id uuid not null, user_id uuid not null, holder_name varchar(100) not null, brand varchar(255) not null check (brand in ('VISA','MASTERCARD','ELO','AMEX')), card_type varchar(255) not null check (card_type in ('CREDIT','DEBIT')), primary key (id))
+Hibernate: create table investments (amount numeric(19,2) not null, annual_rate numeric(5,2) not null, current_value numeric(19,2) not null, invested_at timestamp(6) not null, redeemed_at timestamp(6), id uuid not null, user_id uuid not null, investment_type varchar(255) not null check (investment_type in ('CDB','LCI','LCA','TESOURO_DIRETO','ACOES')), status varchar(255) not null check (status in ('ACTIVE','REDEEMED')), primary key (id))
+Hibernate: create table messages (is_internal boolean, created_at timestamp(6) not null, id bigint generated by default as identity, updated_at timestamp(6) not null, sender_id uuid not null, session_uuid uuid not null, sender_type varchar(50) not null check (sender_type in ('USER','BOT','SYSTEM')), intent varchar(100), content TEXT not null, parameters jsonb, primary key (id))
+Hibernate: create table notifications (is_read boolean, created_at timestamp(6) not null, read_at timestamp(6), reference_id bigint, id uuid not null, user_id uuid not null, channel varchar(50) not null check (channel in ('IN_APP','EMAIL')), type varchar(50) not null check (type in ('TICKET_CREATED','TICKET_UPDATED','TICKET_RESOLVED','TRANSFER_APPROVED','TRANSFER_REJECTED','TRANSFER_EXECUTED','INFO_REQUESTED','SECURITY_ALERT','ACCOUNT_LOCKED','SESSION_EXPIRED')), reference_type varchar(100), body text not null, title varchar(255) not null, primary key (id))
+Hibernate: create table payment_keys (active boolean not null, verified boolean, created_at timestamp(6) not null, verified_at timestamp(6), id uuid not null, user_id uuid not null, verification_method varchar(100), key_type varchar(255) not null check (key_type in ('TAX_ID','EMAIL','PHONE','RANDOM')), key_value varchar(255) not null unique, primary key (id))
+Hibernate: create table rag_documents (active boolean not null, created_at timestamp(6) not null, id bigint generated by default as identity, updated_at timestamp(6) not null, title varchar(200) not null, content TEXT not null, source varchar(255), primary key (id))
+Hibernate: create table refresh_tokens (revoked boolean not null, created_at timestamp(6) not null, expires_at timestamp(6) not null, id uuid not null, user_id uuid not null, token varchar(500) not null unique, primary key (id))
+Hibernate: create table security_events (resolved boolean, timestamp timestamp(6) not null, id uuid not null, user_id uuid not null, ip_address varchar(50), type varchar(50) not null check (type in ('REUSE_DETECTED','BRUTE_FORCE','ACCOUNT_LOCKED','SUSPICIOUS_ACTIVITY')), device_id varchar(255), primary key (id))
+Hibernate: create table sessions (closed_at timestamp(6), created_at timestamp(6) not null, last_activity_at timestamp(6), agent_id uuid, id uuid not null, user_id uuid not null, ip_address varchar(50), status varchar(50) not null check (status in ('OPENED','ACTIVE','EXPIRED','CLOSED')), primary key (id))
+Hibernate: create table support_tickets (closed_at timestamp(6), created_at timestamp(6) not null, id bigint generated by default as identity, resolved_at timestamp(6), updated_at timestamp(6) not null, assigned_admin_id uuid, owner_id uuid, user_id uuid not null, priority varchar(50) not null check (priority in ('LOW','MEDIUM','HIGH','CRITICAL')), status varchar(50) not null check (status in ('OPEN','IN_PROGRESS','RESOLVED','CLOSED')), attachment_type varchar(100), ticket_type varchar(100) not null check (ticket_type in ('TRANSFER_VALIDATION','FRAUD','CLAIM','DATA_UPDATE','GENERAL')), attachment_name varchar(255), description TEXT not null, flowable_process_id varchar(255), subject varchar(255) not null, attachment_data BYTEA, primary key (id))
+Hibernate: create table transactions (amount numeric(19,2) not null, created_at timestamp(6) not null, id uuid not null, source_account_id uuid, target_account_id uuid, status varchar(20) not null check (status in ('PENDING','COMPLETED','FAILED','REVERSED')), type varchar(30) not null check (type in ('DEPOSIT','WITHDRAWAL','TRANSFER')), description varchar(255), flowable_process_id varchar(255), primary key (id))
+Hibernate: create table users (active boolean not null, failed_login_attempts integer, two_factor_enabled boolean, created_at timestamp(6) not null, locked_until timestamp(6), updated_at timestamp(6) not null, id uuid not null, role varchar(20) not null check (role in ('USER','ADMIN')), status varchar(50) not null check (status in ('ACTIVE','INACTIVE','BLOCKED')), name varchar(100) not null, email varchar(150) not null unique, device_fingerprint varchar(255), password varchar(255) not null, two_factor_secret varchar(255), primary key (id))
+Hibernate: create table workflow_tasks (escalation_level integer, breached_at timestamp(6), completed_at timestamp(6), created_at timestamp(6) not null, due_date timestamp(6), id bigint generated by default as identity, support_ticket_id bigint, updated_at timestamp(6) not null, assigned_to uuid, status varchar(50) not null check (status in ('PENDING','IN_PROGRESS','COMPLETED','REJECTED','CANCELLED')), action_type varchar(100) check (action_type in ('APPROVE','REJECT','REVIEW','ESCALATE')), task_type varchar(100) not null check (task_type in ('TRANSFER_VALIDATION','FRAUD_CHECK','COMPLIANCE_REVIEW','ESCALATION')), description TEXT, process_instance_id varchar(255) not null, metadata jsonb, primary key (id))
+Hibernate: alter table if exists accounts add constraint FKnjuop33mo69pd79ctplkck40n foreign key (user_id) references users
+Hibernate: alter table if exists cards add constraint FKcmanafgwbibfijy2o5isfk3d5 foreign key (user_id) references users
+Hibernate: alter table if exists investments add constraint FKrakwjgyxmbuqla8038e25qbu1 foreign key (user_id) references users
+Hibernate: alter table if exists payment_keys add constraint FKgchsgs4chgs98ank9ih7o3fch foreign key (user_id) references users
+Hibernate: alter table if exists refresh_tokens add constraint FK1lih5y2npsf8u5o3vhdb9y0os foreign key (user_id) references users
+Hibernate: alter table if exists transactions add constraint FKr5dnv4t6f45ltol1wu5u27cqu foreign key (source_account_id) references accounts
+Hibernate: alter table if exists transactions add constraint FKkvx6snvmgcrkoexe3yvyakiud foreign key (target_account_id) references accounts
+2026-09-10T23:48:41.130+01:00  INFO 1384 --- [banking-api] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-10T23:48:42.027+01:00 DEBUG 1384 --- [banking-api] [           main] c.f.b.s.filter.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-09-10T23:48:42.032+01:00 DEBUG 1384 --- [banking-api] [           main] c.f.b.s.ratelimit.RateLimitFilter        : Filter 'rateLimitFilter' configured for use
+2026-09-10T23:48:42.996+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.SpringProcessEngineConfiguration   : Found 2 Engine Configurators in total:
+2026-09-10T23:48:42.997+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.SpringProcessEngineConfiguration   : class org.flowable.eventregistry.spring.configurator.SpringEventRegistryConfigurator (priority:100000)
+2026-09-10T23:48:42.997+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.SpringProcessEngineConfiguration   : class org.flowable.idm.engine.configurator.IdmEngineConfigurator (priority:150000)
+2026-09-10T23:48:42.997+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.SpringProcessEngineConfiguration   : Executing beforeInit() of class org.flowable.eventregistry.spring.configurator.SpringEventRegistryConfigurator (priority:100000)
+2026-09-10T23:48:43.086+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.SpringProcessEngineConfiguration   : Executing beforeInit() of class org.flowable.idm.engine.configurator.IdmEngineConfigurator (priority:150000)
+2026-09-10T23:48:44.963+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.i.a.DefaultAsyncTaskExecutor     : Creating thread pool queue of size 100
+2026-09-10T23:48:44.964+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.i.a.DefaultAsyncTaskExecutor     : Creating thread factory with naming pattern flowable-async-task-invoker-thread-%d
+2026-09-10T23:48:44.966+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.i.a.DefaultAsyncTaskExecutor     : Creating executor service with corePoolSize 8, maxPoolSize 8 and keepAliveTime 5000
+2026-09-10T23:48:44.967+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.i.a.DefaultAsyncTaskExecutor     : Using rejectedExecutionHandler java.util.concurrent.ThreadPoolExecutor$CallerRunsPolicy@486b35d5
+2026-09-10T23:48:44.967+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.i.a.DefaultAsyncTaskExecutor     : Creating thread pool queue of size 2048
+2026-09-10T23:48:44.967+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.i.a.DefaultAsyncTaskExecutor     : Creating thread factory with naming pattern flowable-async-job-executor-thread-%d
+2026-09-10T23:48:44.967+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.i.a.DefaultAsyncTaskExecutor     : Creating executor service with corePoolSize 8, maxPoolSize 8 and keepAliveTime 5000
+2026-09-10T23:48:44.970+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.SpringProcessEngineConfiguration   : Executing configure() of class org.flowable.eventregistry.spring.configurator.SpringEventRegistryConfigurator (priority:100000)
+2026-09-10T23:48:45.111+01:00  INFO 1384 --- [banking-api] [           main] o.f.c.e.impl.db.CommonDbSchemaManager    : performing create on common with resource org/flowable/common/db/create/flowable.postgres.create.common.sql
+2026-09-10T23:48:45.325+01:00  INFO 1384 --- [banking-api] [           main] liquibase.database                       : Set default schema name to public
+2026-09-10T23:48:45.951+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Creating database history table with name: public.flw_ev_databasechangelog
+2026-09-10T23:48:46.008+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Reading from public.flw_ev_databasechangelog
+2026-09-10T23:48:46.044+01:00  INFO 1384 --- [banking-api] [           main] liquibase.snapshot                       : Creating snapshot
+2026-09-10T23:48:46.196+01:00  INFO 1384 --- [banking-api] [           main] liquibase.lockservice                    : Successfully acquired change log lock
+2026-09-10T23:48:46.199+01:00  INFO 1384 --- [banking-api] [           main] liquibase.command                        : Using deploymentId: 9080525084
+2026-09-10T23:48:46.203+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Reading from public.flw_ev_databasechangelog
+Running Changeset: org/flowable/eventregistry/db/liquibase/flowable-eventregistry-db-changelog.xml::1::flowable
+2026-09-10T23:48:46.264+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Table FLW_EVENT_DEPLOYMENT created
+2026-09-10T23:48:46.274+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Table FLW_EVENT_RESOURCE created
+2026-09-10T23:48:46.282+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Table FLW_EVENT_DEFINITION created
+2026-09-10T23:48:46.287+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Index ACT_IDX_EVENT_DEF_UNIQ created
+2026-09-10T23:48:46.297+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Table FLW_CHANNEL_DEFINITION created
+2026-09-10T23:48:46.301+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Index ACT_IDX_CHANNEL_DEF_UNIQ created
+2026-09-10T23:48:46.303+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : ChangeSet org/flowable/eventregistry/db/liquibase/flowable-eventregistry-db-changelog.xml::1::flowable ran successfully in 55ms
+Running Changeset: org/flowable/eventregistry/db/liquibase/flowable-eventregistry-db-changelog.xml::2::flowable
+2026-09-10T23:48:46.324+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Columns TYPE_(varchar(255)) added to FLW_CHANNEL_DEFINITION
+2026-09-10T23:48:46.328+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Columns IMPLEMENTATION_(varchar(255)) added to FLW_CHANNEL_DEFINITION
+2026-09-10T23:48:46.329+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : ChangeSet org/flowable/eventregistry/db/liquibase/flowable-eventregistry-db-changelog.xml::2::flowable ran successfully in 12ms
+Running Changeset: org/flowable/eventregistry/db/liquibase/flowable-eventregistry-db-changelog.xml::3::flowable
+2026-09-10T23:48:46.398+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : Set Channel Definition type and implementation columns
+2026-09-10T23:48:46.400+01:00  INFO 1384 --- [banking-api] [           main] liquibase.changelog                      : ChangeSet org/flowable/eventregistry/db/liquibase/flowable-eventregistry-db-changelog.xml::3::flowable ran successfully in 63ms
+
+UPDATE SUMMARY
+Run:                          3
+Previously run:               0
+Filtered out:                 0
+-------------------------------
+Total change sets:            3
+
+2026-09-10T23:48:46.413+01:00  INFO 1384 --- [banking-api] [           main] liquibase.util                           : UPDATE SUMMARY
+2026-09-10T23:48:46.413+01:00  INFO 1384 --- [banking-api] [           main] liquibase.util                           : Run:                          3
+2026-09-10T23:48:46.413+01:00  INFO 1384 --- [banking-api] [           main] liquibase.util                           : Previously run:               0
+2026-09-10T23:48:46.413+01:00  INFO 1384 --- [banking-api] [           main] liquibase.util                           : Filtered out:                 0
+2026-09-10T23:48:46.413+01:00  INFO 1384 --- [banking-api] [           main] liquibase.util                           : -------------------------------
+2026-09-10T23:48:46.413+01:00  INFO 1384 --- [banking-api] [           main] liquibase.util                           : Total change sets:            3
+2026-09-10T23:48:46.415+01:00  INFO 1384 --- [banking-api] [           main] liquibase.util                           : Update summary generated
+2026-09-10T23:48:46.419+01:00  INFO 1384 --- [banking-api] [           main] liquibase.command                        : Update command completed successfully.
+Liquibase: Update has been successful. Rows affected: 3
+2026-09-10T23:48:46.426+01:00  INFO 1384 --- [banking-api] [           main] liquibase.lockservice                    : Successfully released change log lock
+2026-09-10T23:48:46.430+01:00  INFO 1384 --- [banking-api] [           main] liquibase.command                        : Command execution complete
+2026-09-10T23:48:47.950+01:00  INFO 1384 --- [banking-api] [           main] o.f.e.impl.EventRegistryEngineImpl       : EventRegistryEngine default created
+2026-09-10T23:48:47.951+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.SpringProcessEngineConfiguration   : Executing configure() of class org.flowable.idm.engine.configurator.IdmEngineConfigurator (priority:150000)
+2026-09-10T23:48:47.990+01:00  INFO 1384 --- [banking-api] [           main] o.f.i.engine.impl.db.IdmDbSchemaManager  : performing create on identity with resource org/flowable/idm/db/create/flowable.postgres.create.identity.sql
+2026-09-10T23:48:48.064+01:00  INFO 1384 --- [banking-api] [           main] o.f.idm.engine.impl.IdmEngineImpl        : IdmEngine default created
+2026-09-10T23:48:48.089+01:00  INFO 1384 --- [banking-api] [           main] o.f.i.s.i.d.IdentityLinkDbSchemaManager  : performing create on identitylink with resource org/flowable/identitylink/service/db/create/flowable.postgres.create.identitylink.sql
+2026-09-10T23:48:48.108+01:00  INFO 1384 --- [banking-api] [           main] o.f.i.s.i.d.IdentityLinkDbSchemaManager  : performing create on identitylink.history with resource org/flowable/identitylink/service/db/create/flowable.postgres.create.identitylink.history.sql
+2026-09-10T23:48:48.125+01:00  INFO 1384 --- [banking-api] [           main] o.f.e.s.i.db.EntityLinkDbSchemaManager   : performing create on entitylink with resource org/flowable/entitylink/service/db/create/flowable.postgres.create.entitylink.sql
+2026-09-10T23:48:48.144+01:00  INFO 1384 --- [banking-api] [           main] o.f.e.s.i.db.EntityLinkDbSchemaManager   : performing create on entitylink.history with resource org/flowable/entitylink/service/db/create/flowable.postgres.create.entitylink.history.sql
+2026-09-10T23:48:48.162+01:00  INFO 1384 --- [banking-api] [           main] e.s.i.d.EventSubscriptionDbSchemaManager : performing create on eventsubscription with resource org/flowable/eventsubscription/service/db/create/flowable.postgres.create.eventsubscription.sql
+2026-09-10T23:48:48.182+01:00  INFO 1384 --- [banking-api] [           main] o.f.t.s.impl.db.TaskDbSchemaManager      : performing create on task with resource org/flowable/task/service/db/create/flowable.postgres.create.task.sql
+2026-09-10T23:48:48.200+01:00  INFO 1384 --- [banking-api] [           main] o.f.t.s.impl.db.TaskDbSchemaManager      : performing create on task.history with resource org/flowable/task/service/db/create/flowable.postgres.create.task.history.sql
+2026-09-10T23:48:48.222+01:00  INFO 1384 --- [banking-api] [           main] o.f.v.s.impl.db.VariableDbSchemaManager  : performing create on variable with resource org/flowable/variable/service/db/create/flowable.postgres.create.variable.sql
+2026-09-10T23:48:48.240+01:00  INFO 1384 --- [banking-api] [           main] o.f.v.s.impl.db.VariableDbSchemaManager  : performing create on variable.history with resource org/flowable/variable/service/db/create/flowable.postgres.create.variable.history.sql
+2026-09-10T23:48:48.256+01:00  INFO 1384 --- [banking-api] [           main] o.f.j.s.impl.db.JobDbSchemaManager       : performing create on job with resource org/flowable/job/service/db/create/flowable.postgres.create.job.sql
+2026-09-10T23:48:48.440+01:00  INFO 1384 --- [banking-api] [           main] o.f.b.s.impl.db.BatchDbSchemaManager     : performing create on batch with resource org/flowable/batch/service/db/create/flowable.postgres.create.batch.sql
+2026-09-10T23:48:48.475+01:00  INFO 1384 --- [banking-api] [           main] o.f.e.impl.db.ProcessDbSchemaManager     : performing create on engine with resource org/flowable/db/create/flowable.postgres.create.engine.sql
+2026-09-10T23:48:48.801+01:00  INFO 1384 --- [banking-api] [           main] o.f.e.impl.db.ProcessDbSchemaManager     : performing create on history with resource org/flowable/db/create/flowable.postgres.create.history.sql
+2026-09-10T23:48:48.883+01:00  INFO 1384 --- [banking-api] [           main] o.f.engine.impl.ProcessEngineImpl        : ProcessEngine default created
+2026-09-10T23:48:48.909+01:00  INFO 1384 --- [banking-api] [           main] o.f.e.impl.cmd.ValidateV5EntitiesCmd     : Total of v5 deployments found: 0
+2026-09-10T23:48:49.124+01:00  INFO 1384 --- [banking-api] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-10T23:48:50.000+01:00  INFO 1384 --- [banking-api] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-09-10T23:48:50.000+01:00  WARN 1384 --- [banking-api] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-10T23:48:51.496+01:00  WARN 1384 --- [banking-api] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-10T23:48:52.251+01:00  INFO 1384 --- [banking-api] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-10T23:48:53.456+01:00 DEBUG 1384 --- [banking-api] [           main] c.f.b.s.filter.JwtAuthenticationFilter   : Filter 'jwtAuthenticationFilter' configured for use
+2026-09-10T23:48:53.456+01:00 DEBUG 1384 --- [banking-api] [           main] c.f.b.s.ratelimit.RateLimitFilter        : Filter 'rateLimitFilter' configured for use
+2026-09-10T23:48:53.459+01:00  INFO 1384 --- [banking-api] [           main] o.a.c.c.C.[.[localhost].[/api/v1]        : Initializing Spring TestDispatcherServlet ''
+2026-09-10T23:48:53.459+01:00  INFO 1384 --- [banking-api] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-10T23:48:53.460+01:00  INFO 1384 --- [banking-api] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-09-10T23:48:53.818+01:00  INFO 1384 --- [banking-api] [           main] o.f.j.s.i.a.AbstractAsyncExecutor        : Starting up the async job executor [org.flowable.job.service.impl.asyncexecutor.DefaultAsyncJobExecutor] for engine bpmn
+2026-09-10T23:48:53.846+01:00  INFO 1384 --- [banking-api] [      Thread-28] o.f.j.s.i.a.AcquireAsyncJobsDueRunnable  : starting to acquire async jobs due for engine bpmn
+2026-09-10T23:48:53.846+01:00  INFO 1384 --- [banking-api] [      Thread-29] o.f.j.s.i.a.AcquireTimerJobsRunnable     : starting to acquire async jobs due for engine bpmn
+2026-09-10T23:48:53.846+01:00  INFO 1384 --- [banking-api] [      Thread-30] o.f.j.s.i.a.ResetExpiredJobsRunnable     : starting to reset expired jobs for engine bpmn
+2026-09-10T23:48:53.846+01:00  INFO 1384 --- [banking-api] [           main] o.f.s.c.DefaultAutoDeploymentStrategy    : Deploying resources [file [C:\Users\lenovo\Desktop\PFE\Digital-Banking-Platform-main\back\banking-api\target\classes\processes\data-update-validation.bpmn], file [C:\Users\lenovo\Desktop\PFE\Digital-Banking-Platform-main\back\banking-api\target\classes\processes\fraud-validation.bpmn], file [C:\Users\lenovo\Desktop\PFE\Digital-Banking-Platform-main\back\banking-api\target\classes\processes\transfer-validation.bpmn]] for engine org.flowable.engine.impl.ProcessEngineImpl@107f5239 deployment name hint SpringAutoDeployment
+2026-09-10T23:48:54.162+01:00  INFO 1384 --- [banking-api] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 59292 (http) with context path '/api/v1'
+2026-09-10T23:48:54.183+01:00  INFO 1384 --- [banking-api] [           main] c.f.b.controller.AuthControllerTest      : Started AuthControllerTest in 25.109 seconds (process running for 32.539)
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+2026-09-10T23:48:55.002+01:00  INFO 1384 --- [banking-api] [         task-1] c.f.banking.service.AuditLogService      : [AUDIT] leonardo.test@email.com - REGISTER - User - ff5d0785-ea4b-4c53-b4f0-376e9f6b87f4
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+2026-09-10T23:48:55.273+01:00  INFO 1384 --- [banking-api] [         task-2] c.f.banking.service.AuditLogService      : [AUDIT] login.test@email.com - REGISTER - User - 7542c0c8-5cca-42bc-9151-cfc2b296ee43
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: update refresh_tokens rt1_0 set revoked=true where rt1_0.user_id=?
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+2026-09-10T23:48:55.469+01:00  INFO 1384 --- [banking-api] [         task-3] c.f.banking.service.AuditLogService      : [AUDIT] login.test@email.com - LOGIN - User - 7542c0c8-5cca-42bc-9151-cfc2b296ee43
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+2026-09-10T23:48:55.566+01:00  INFO 1384 --- [banking-api] [         task-4] c.f.banking.service.AuditLogService      : [AUDIT] duplicado@email.com - REGISTER - User - dff4cd10-2722-4112-97ff-ec261300e4fe
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+2026-09-10T23:48:55.589+01:00  WARN 1384 --- [banking-api] [         task-5] c.f.banking.service.AuditLogService      : [AUDIT] FAILURE - duplicado@email.com - REGISTER - Email already registered
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+2026-09-10T23:48:55.674+01:00  INFO 1384 --- [banking-api] [         task-6] c.f.banking.service.AuditLogService      : [AUDIT] wrongpass@email.com - REGISTER - User - 213e494a-bfeb-43f2-87c2-a1ac2cecdf3d
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: update users set active=?,device_fingerprint=?,email=?,failed_login_attempts=?,locked_until=?,name=?,password=?,role=?,status=?,two_factor_enabled=?,two_factor_secret=?,updated_at=? where id=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+2026-09-10T23:48:55.788+01:00  WARN 1384 --- [banking-api] [         task-7] c.f.banking.service.AuditLogService      : [AUDIT] FAILURE - wrongpass@email.com - LOGIN - Invalid credentials
+2026-09-10T23:48:55.803+01:00  INFO 1384 --- [banking-api] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.fintech.banking.controller.SecurityConfigAccessTest]: SecurityConfigAccessTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-10T23:48:55.819+01:00  INFO 1384 --- [banking-api] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.fintech.banking.BankingApiApplication for test class com.fintech.banking.controller.SecurityConfigAccessTest
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+2026-09-10T23:48:55.916+01:00  INFO 1384 --- [banking-api] [         task-8] c.f.banking.service.AuditLogService      : [AUDIT] security-user-1789080535833@email.com - REGISTER - User - e4dd3dd3-2c89-469e-a32b-c3ca431716dc
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: update refresh_tokens rt1_0 set revoked=true where rt1_0.user_id=?
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+2026-09-10T23:48:56.073+01:00  INFO 1384 --- [banking-api] [         task-1] c.f.banking.service.AuditLogService      : [AUDIT] security-admin-1789080535927@email.com - LOGIN - User - 2e53b641-b0e6-4b37-89d8-11c54ea46514
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select a1_0.id,a1_0.agency,a1_0.balance,a1_0.created_at,a1_0.number,a1_0.status,a1_0.updated_at,a1_0.user_id from accounts a1_0 left join users u1_0 on u1_0.id=a1_0.user_id where u1_0.id=?
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+2026-09-10T23:48:56.256+01:00  INFO 1384 --- [banking-api] [         task-2] c.f.banking.service.AuditLogService      : [AUDIT] security-user-1789080536183@email.com - REGISTER - User - 161305e2-71fe-4944-bd5b-1ea380d19ef3
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: update refresh_tokens rt1_0 set revoked=true where rt1_0.user_id=?
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+2026-09-10T23:48:56.410+01:00  INFO 1384 --- [banking-api] [         task-3] c.f.banking.service.AuditLogService      : [AUDIT] security-admin-1789080536261@email.com - LOGIN - User - 03abb3d6-fa29-4c7b-b707-4ebe907615aa
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select a1_0.id,a1_0.agency,a1_0.balance,a1_0.created_at,a1_0.number,a1_0.status,a1_0.updated_at,a1_0.user_id from accounts a1_0 left join users u1_0 on u1_0.id=a1_0.user_id where u1_0.id=?
+2026-09-10T23:48:56.440+01:00  INFO 1384 --- [banking-api] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.fintech.banking.controller.TransactionControllerTest]: TransactionControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-10T23:48:56.452+01:00  INFO 1384 --- [banking-api] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.fintech.banking.BankingApiApplication for test class com.fintech.banking.controller.TransactionControllerTest
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+2026-09-10T23:48:56.530+01:00  INFO 1384 --- [banking-api] [         task-4] c.f.banking.service.AuditLogService      : [AUDIT] transaction1789080536459@email.com - REGISTER - User - d03b2ac6-221c-40f6-b5b6-c2e127eb48d6
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select a1_0.id,a1_0.agency,a1_0.balance,a1_0.created_at,a1_0.number,a1_0.status,a1_0.updated_at,a1_0.user_id from accounts a1_0 left join users u1_0 on u1_0.id=a1_0.user_id where u1_0.id=?
+Hibernate: insert into transactions (amount,created_at,description,flowable_process_id,source_account_id,status,target_account_id,type,id) values (?,?,?,?,?,?,?,?,?)
+Hibernate: update accounts set agency=?,balance=?,number=?,status=?,updated_at=?,user_id=? where id=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select a1_0.id,a1_0.agency,a1_0.balance,a1_0.created_at,a1_0.number,a1_0.status,a1_0.updated_at,a1_0.user_id from accounts a1_0 left join users u1_0 on u1_0.id=a1_0.user_id where u1_0.id=?
+Hibernate: select t1_0.id,t1_0.amount,t1_0.created_at,t1_0.description,t1_0.flowable_process_id,t1_0.source_account_id,t1_0.status,t1_0.target_account_id,t1_0.type from transactions t1_0 where t1_0.source_account_id=? or t1_0.target_account_id=? order by t1_0.created_at desc
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+2026-09-10T23:48:57.294+01:00  INFO 1384 --- [banking-api] [         task-5] c.f.banking.service.AuditLogService      : [AUDIT] transaction1789080537221@email.com - REGISTER - User - 7c217046-267e-454f-8df5-07ea270ec25c
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select a1_0.id,a1_0.agency,a1_0.balance,a1_0.created_at,a1_0.number,a1_0.status,a1_0.updated_at,a1_0.user_id from accounts a1_0 left join users u1_0 on u1_0.id=a1_0.user_id where u1_0.id=?
+Hibernate: insert into transactions (amount,created_at,description,flowable_process_id,source_account_id,status,target_account_id,type,id) values (?,?,?,?,?,?,?,?,?)
+Hibernate: update accounts set agency=?,balance=?,number=?,status=?,updated_at=?,user_id=? where id=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select a1_0.id,a1_0.agency,a1_0.balance,a1_0.created_at,a1_0.number,a1_0.status,a1_0.updated_at,a1_0.user_id from accounts a1_0 left join users u1_0 on u1_0.id=a1_0.user_id where u1_0.id=?
+Hibernate: insert into transactions (amount,created_at,description,flowable_process_id,source_account_id,status,target_account_id,type,id) values (?,?,?,?,?,?,?,?,?)
+Hibernate: update accounts set agency=?,balance=?,number=?,status=?,updated_at=?,user_id=? where id=?
+Hibernate: select u1_0.id from users u1_0 where u1_0.email=? fetch first ? rows only
+Hibernate: insert into audit_logs (action,created_at,details,entity,entity_id,ip_address,session_id,status,user_email,id) values (?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into users (active,created_at,device_fingerprint,email,failed_login_attempts,locked_until,name,password,role,status,two_factor_enabled,two_factor_secret,updated_at,id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Hibernate: insert into accounts (agency,balance,created_at,number,status,updated_at,user_id,id) values (?,?,?,?,?,?,?,?)
+2026-09-10T23:48:57.448+01:00  INFO 1384 --- [banking-api] [         task-6] c.f.banking.service.AuditLogService      : [AUDIT] transaction1789080537371@email.com - REGISTER - User - 1a6f61c0-8c72-4b27-bc71-4634721b09f4
+Hibernate: insert into refresh_tokens (created_at,expires_at,revoked,token,user_id,id) values (?,?,?,?,?,?)
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select u1_0.id,u1_0.active,u1_0.created_at,u1_0.device_fingerprint,u1_0.email,u1_0.failed_login_attempts,u1_0.locked_until,u1_0.name,u1_0.password,u1_0.role,u1_0.status,u1_0.two_factor_enabled,u1_0.two_factor_secret,u1_0.updated_at from users u1_0 where u1_0.email=?
+Hibernate: select a1_0.id,a1_0.agency,a1_0.balance,a1_0.created_at,a1_0.number,a1_0.status,a1_0.updated_at,a1_0.user_id from accounts a1_0 left join users u1_0 on u1_0.id=a1_0.user_id where u1_0.id=?
+Hibernate: insert into transactions (amount,created_at,description,flowable_process_id,source_account_id,status,target_account_id,type,id) values (?,?,?,?,?,?,?,?,?)
+Hibernate: update accounts set agency=?,balance=?,number=?,status=?,updated_at=?,user_id=? where id=?

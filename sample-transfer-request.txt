@@ -1,0 +1,8 @@
+Customer: Emma Robinson
+Email: emma.robinson@example.com
+Phone: +1 415 555 0148
+Address: 240 Market Street, San Francisco, CA
+Document type: Bank transfer
+Amount: 3500.00
+Account number: FR1420041010050000005026
+Product: Current account

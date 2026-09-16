@@ -1,6 +1,6 @@
 import { NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Box, Card, CardContent, Stack, Tab, Tabs, Typography, Chip } from '@mui/material';
-import { ShieldCheck, Activity, Users, FileText, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, Activity, Users, FileText, ShieldAlert, Database } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const tabs = [
@@ -9,6 +9,7 @@ const tabs = [
   { to: 'users', label: 'Users', icon: Users },
   { to: 'security', label: 'Security', icon: ShieldAlert },
   { to: 'audit', label: 'Audit', icon: FileText },
+  { to: 'rag', label: 'RAG', icon: Database },
 ] as const;
 
 export default function AdminPage() {

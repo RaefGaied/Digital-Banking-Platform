@@ -17,7 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -71,6 +73,65 @@ public class SupportTicketController {
             log.error("Failed to create support ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Failed to create ticket: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping(path = "/with-attachment", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createTicketWithAttachment(
+            @ModelAttribute CreateTicketRequest request,
+            @RequestPart(name = "attachment", required = false) MultipartFile attachment,
+            Authentication authentication) {
+        try {
+            UUID userId = resolveAuthenticatedUserId(authentication);
+
+            if (request.getSubject() == null || request.getSubject().isEmpty()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Subject is required"));
+            }
+
+            if (request.getDescription() == null || request.getDescription().isEmpty()) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Description is required"));
+            }
+
+            SupportTicket ticket = supportTicketService.createTicketWithAttachment(
+                    userId,
+                    request.getSubject(),
+                    request.getDescription(),
+                    request.getTicketType(),
+                    userId,
+                    attachment);
+
+            log.info("Support ticket with attachment created: {}", ticket.getId());
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new SuccessResponse("Ticket created successfully", new TicketResponse(ticket)));
+        } catch (Exception e) {
+            log.error("Failed to create support ticket with attachment", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to create ticket with attachment: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/attachment")
+    public ResponseEntity<?> downloadAttachment(@PathVariable Long id, Authentication authentication) {
+        try {
+            SupportTicket ticket = supportTicketService.getTicketById(id)
+                    .orElse(null);
+            if (ticket == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (ticket.getAttachmentData() == null || ticket.getAttachmentData().length == 0) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponse("Attachment not found"));
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(ticket.getAttachmentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : ticket.getAttachmentType()))
+                    .header("Content-Disposition", "attachment; filename=\"" + ticket.getAttachmentName() + "\"")
+                    .body(ticket.getAttachmentData());
+        } catch (Exception e) {
+            log.error("Failed to download ticket attachment", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to download attachment"));
         }
     }
 
@@ -274,6 +335,8 @@ public class SupportTicketController {
         private String status;
         private String ticketType;
         private String priority;
+        private String attachmentName;
+        private String attachmentType;
 
         public TicketResponse(SupportTicket ticket) {
             this.id = ticket.getId();
@@ -283,6 +346,8 @@ public class SupportTicketController {
             this.status = ticket.getStatus().toString();
             this.ticketType = ticket.getTicketType().toString();
             this.priority = ticket.getPriority().toString();
+            this.attachmentName = ticket.getAttachmentName();
+            this.attachmentType = ticket.getAttachmentType();
         }
     }
 

@@ -1,0 +1,144 @@
+from fastapi import FastAPI, Request, HTTPException
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+import jwt, logging, json, os, time
+from config import JWT_SECRET
+from agent import run_agent
+
+app = FastAPI()
+
+# ================= CORS =================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ================= LOGGING =================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+SECRET = JWT_SECRET
+
+# ================= RATE LIMIT =================
+rate_limit = {}
+
+def check_rate(user_id):
+    now = time.time()
+    window = rate_limit.get(user_id, [])
+
+    # keep last 10 sec
+    window = [t for t in window if now - t < 10]
+
+    if len(window) >= 20:
+        return False
+
+    window.append(now)
+    rate_limit[user_id] = window
+    return True
+
+# ================= MEMORY =================
+MEMORY_FILE = "memory.json"
+
+def save_memory(user_id, msg):
+    try:
+        data = json.load(open(MEMORY_FILE)) if os.path.exists(MEMORY_FILE) else {}
+    except:
+        data = {}
+
+    data.setdefault(str(user_id), []).append({
+        "msg": msg,
+        "time": time.time()
+    })
+
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+# ================= JWT =================
+def get_accno(token):
+    try:
+        payload = jwt.decode(token, SECRET, algorithms=["HS256"])
+        # The Spring Boot JWT identifies users with the email in `sub`.
+        return payload.get("sub") or payload.get("accno")
+    except Exception as e:
+        logging.error(f"JWT ERROR: {e}")
+        return None
+
+# ================= REQUEST MODEL =================
+class ChatRequest(BaseModel):
+    query: str = ""
+    message: str = ""
+
+# ================= HEALTH =================
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# ================= CHAT =================
+@app.post("/chat")
+async def chat(req: ChatRequest, request: Request):
+
+    start = time.time()
+    query = (req.query or req.message).strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Query is required")
+
+    logging.info(f"Incoming Query: {query}")
+
+    # ===== AUTH =====
+    auth = request.headers.get("authorization")
+    if not auth:
+        raise HTTPException(status_code=401, detail="Login required")
+
+    token = auth.replace("Bearer ", "")
+    user_id = get_accno(token)
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid session")
+
+    # ===== RATE LIMIT =====
+    if not check_rate(user_id):
+        return {
+            "reply": "⚠️ Too many requests. Please slow down.",
+            "actions": []
+        }
+
+    # ===== MEMORY =====
+    save_memory(user_id, query)
+
+    # ===== AGENT =====
+    try:
+        reply = run_agent(query, token, user_id)
+    except Exception as e:
+        logging.error(f"AGENT FAILURE: {e}")
+        reply = "⚠️ System issue, please try again later"
+
+    # ===== SMART ACTIONS =====
+    q = query.lower()
+
+    if any(x in q for x in ["balance", "bal"]):
+        actions = ["Transfer Money", "View Transactions"]
+
+    elif any(x in q for x in ["transfer", "send", "pay"]):
+        actions = ["Check Balance"]
+
+    elif "transaction" in q:
+        actions = ["Transfer Money"]
+
+    else:
+        actions = ["Check Balance", "Transfer Money"]
+
+    # ===== RESPONSE =====
+    response_time = round(time.time() - start, 2)
+
+    return {
+        "reply": reply,
+        "actions": actions,
+        "meta": {
+            "response_time": f"{response_time}s"
+        }
+    }

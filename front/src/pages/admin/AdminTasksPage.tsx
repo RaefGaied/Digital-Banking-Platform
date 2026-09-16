@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw } from 'lucide-react';
+import { Check, RefreshCw, X } from 'lucide-react';
 import { adminApi } from '../../api/admin';
 import { Box, Button, Card, CardContent, Chip, IconButton, Stack, Table, TableBody, TableCell, TableHead, TablePagination, TableRow, Typography } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
@@ -12,13 +12,17 @@ export default function AdminTasksPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const tasksQuery = useQuery({ queryKey: ['admin-tasks', page, rowsPerPage], queryFn: () => adminApi.getTasks(page, rowsPerPage) });
+  const flowableTasksQuery = useQuery({ queryKey: ['admin-flowable-tasks'], queryFn: adminApi.getFlowableTasks });
   const selectedTaskQuery = useQuery({
     queryKey: ['admin-task', selectedTaskId],
     queryFn: () => adminApi.getTask(selectedTaskId as string),
     enabled: selectedTaskId !== null,
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
+    void queryClient.invalidateQueries({ queryKey: ['admin-flowable-tasks'] });
+  };
 
   const actMutation = useMutation({
     mutationFn: ({ taskId, action }: { taskId: string; action: 'APPROVE' | 'REJECT' }) =>
@@ -28,6 +32,12 @@ export default function AdminTasksPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-task', selectedTaskId] });
       setSelectedTaskId(null);
     },
+  });
+
+  const flowableMutation = useMutation({
+    mutationFn: ({ taskId, approved }: { taskId: string; approved: boolean }) =>
+      adminApi.completeFlowableTask(taskId, approved),
+    onSuccess: refresh,
   });
 
   return (
@@ -95,6 +105,77 @@ export default function AdminTasksPage() {
             }}
             rowsPerPageOptions={[10, 25, 50]}
           />
+        </CardContent>
+      </Card>
+
+      <Card sx={{ borderRadius: 4 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Box>
+              <Typography variant='h6' sx={{ fontWeight: 800 }}>
+                BPMN validation tasks
+              </Typography>
+              <Typography variant='body2' color='text.secondary'>
+                High-value transfers waiting for an administrator decision.
+              </Typography>
+            </Box>
+            <Chip label={`${flowableTasksQuery.data?.length ?? 0} active`} color='warning' variant='outlined' />
+          </Box>
+          <Table size='small'>
+            <TableHead>
+              <TableRow>
+                <TableCell>Process</TableCell>
+                <TableCell>Task</TableCell>
+                <TableCell>Created</TableCell>
+                <TableCell align='right'>Decision</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(flowableTasksQuery.data ?? []).map((task) => (
+                <TableRow key={task.id}>
+                  <TableCell>
+                    <Typography variant='body2' sx={{ fontWeight: 700 }}>#{task.processInstanceId}</Typography>
+                    <Typography variant='caption' color='text.secondary'>Task {task.id}</Typography>
+                  </TableCell>
+                  <TableCell>{task.name}</TableCell>
+                  <TableCell>{new Date(task.createdTime).toLocaleString()}</TableCell>
+                  <TableCell align='right'>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                      <Button
+                        size='small'
+                        variant='contained'
+                        color='success'
+                        startIcon={<Check size={16} />}
+                        onClick={() => flowableMutation.mutate({ taskId: task.id, approved: true })}
+                        disabled={flowableMutation.isPending}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size='small'
+                        variant='outlined'
+                        color='error'
+                        startIcon={<X size={16} />}
+                        onClick={() => flowableMutation.mutate({ taskId: task.id, approved: false })}
+                        disabled={flowableMutation.isPending}
+                      >
+                        Reject
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {flowableTasksQuery.data?.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} align='center'>
+                    <Typography variant='body2' color='text.secondary' sx={{ py: 2 }}>
+                      No active BPMN validation tasks.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

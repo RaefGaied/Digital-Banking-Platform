@@ -22,7 +22,7 @@ import java.util.Objects;
 
 @Service
 @Primary
-@org.springframework.boot.autoconfigure.condition.ConditionalOnExpression("T(org.springframework.util.StringUtils).hasText('${azure.openai.endpoint:}')")
+@org.springframework.boot.autoconfigure.condition.ConditionalOnExpression("T(org.springframework.util.StringUtils).hasText('${azure.openai.endpoint:}') or T(org.springframework.util.StringUtils).hasText('${ai.openai.api-key:}')")
 public class OpenAIIntentDetectionService implements IntentDetectionService {
 
     private static final String AZURE_OPENAI_SCOPE = "https://cognitiveservices.azure.com/.default";
@@ -35,26 +35,31 @@ public class OpenAIIntentDetectionService implements IntentDetectionService {
     private final String clientSecret;
     private final String tenantId;
     private final String model;
+    private final String baseUrl;
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     public OpenAIIntentDetectionService(
-            @Value("${azure.openai.endpoint}") String endpoint,
-            @Value("${azure.openai.deployment-name}") String deploymentName,
+            @Value("${azure.openai.endpoint:}") String endpoint,
+            @Value("${azure.openai.deployment-name:}") String deploymentName,
             @Value("${azure.openai.api-version:2024-06-01}") String apiVersion,
             @Value("${azure.openai.api-key:}") String apiKey,
             @Value("${azure.client-id:}") String clientId,
             @Value("${azure.client-secret:}") String clientSecret,
             @Value("${azure.tenant-id:}") String tenantId,
-            @Value("${azure.openai.model:gpt-4o}") String model) {
+            @Value("${azure.openai.model:gpt-4o}") String model,
+            @Value("${ai.openai.api-key:}") String openAiApiKey,
+            @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
+            @Value("${ai.openai.model:gpt-4o-mini}") String openAiModel) {
         this.endpoint = endpoint;
         this.deploymentName = deploymentName;
         this.apiVersion = apiVersion;
-        this.apiKey = apiKey;
+        this.apiKey = (apiKey == null || apiKey.isBlank()) ? openAiApiKey : apiKey;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.tenantId = tenantId;
-        this.model = model;
+        this.model = (model == null || model.isBlank()) ? openAiModel : model;
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -71,18 +76,27 @@ public class OpenAIIntentDetectionService implements IntentDetectionService {
                             .add(mapper.createObjectNode().put("role", "user").put("content", text))
                     ).toString();
 
-                String authorizationHeaderName;
-                String authorizationHeaderValue;
-                if (apiKey != null && !apiKey.isBlank()) {
-                authorizationHeaderName = "api-key";
-                authorizationHeaderValue = apiKey;
+            String authorizationHeaderName;
+            String authorizationHeaderValue;
+            URI requestUri;
+            if (apiKey != null && !apiKey.isBlank()) {
+                if (endpoint != null && !endpoint.isBlank()) {
+                    authorizationHeaderName = "api-key";
+                    authorizationHeaderValue = apiKey;
+                    requestUri = URI.create(buildAzureOpenAiUrl());
                 } else {
+                    authorizationHeaderName = "Authorization";
+                    authorizationHeaderValue = "Bearer " + apiKey;
+                    requestUri = URI.create(baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) + "/chat/completions" : baseUrl + "/chat/completions");
+                }
+            } else {
                 authorizationHeaderName = "Authorization";
                 authorizationHeaderValue = "Bearer " + resolveAzureAccessToken();
-                }
+                requestUri = URI.create(buildAzureOpenAiUrl());
+            }
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(buildAzureOpenAiUrl()))
+                    .uri(requestUri)
                     .timeout(Duration.ofSeconds(10))
                     .header("Content-Type", "application/json")
                     .header(authorizationHeaderName, authorizationHeaderValue)
@@ -138,7 +152,7 @@ public class OpenAIIntentDetectionService implements IntentDetectionService {
                 result.setIsSensitive(intent == IntentType.FRAUD
                         || intent == IntentType.STOLEN_CARD
                         || intent == IntentType.CLAIM
-                        || intent == IntentType.UPDATE_DATA);
+                        || intent == IntentType.UPDATE_SENSITIVE_DATA);
 
             return result;
         } catch (Exception e) {

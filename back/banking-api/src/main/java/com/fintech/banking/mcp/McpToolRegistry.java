@@ -11,7 +11,9 @@ import com.fintech.banking.domain.vo.IntentResult;
 import com.fintech.banking.service.BankingAgentService;
 import com.fintech.banking.service.FlowableService;
 import com.fintech.banking.service.FlowableTaskCompletionService;
+import com.fintech.banking.service.KnowledgeBaseService;
 import org.flowable.task.api.Task;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -26,15 +28,21 @@ public class McpToolRegistry {
     private final BankingAgentService bankingAgentService;
     private final FlowableService flowableService;
     private final FlowableTaskCompletionService flowableTaskCompletionService;
+    private final KnowledgeBaseService knowledgeBaseService;
     private final ObjectMapper objectMapper;
+
+    @Value("${app.sensitive-line.threshold:5000}")
+    private BigDecimal sensitiveThreshold;
 
     public McpToolRegistry(BankingAgentService bankingAgentService,
                            FlowableService flowableService,
                            FlowableTaskCompletionService flowableTaskCompletionService,
+                           KnowledgeBaseService knowledgeBaseService,
                            ObjectMapper objectMapper) {
         this.bankingAgentService = bankingAgentService;
         this.flowableService = flowableService;
         this.flowableTaskCompletionService = flowableTaskCompletionService;
+        this.knowledgeBaseService = knowledgeBaseService;
         this.objectMapper = objectMapper;
     }
 
@@ -62,6 +70,9 @@ public class McpToolRegistry {
                 "agentId", stringSchema(),
                 "transactionId", stringSchema()
             ), List.of("agentId", "transactionId"))),
+            new ToolDefinition("agent.getKnowledge", "Search the banking FAQ knowledge base for user questions.", schema(Map.of(
+                "query", stringSchema()
+            ), List.of("query"))),
             new ToolDefinition("agent.determineDecision", "Let the backend apply the Sensitive Line rules.", schema(Map.of(
                 "agentId", stringSchema(),
                 "intent", stringSchema(),
@@ -90,6 +101,7 @@ public class McpToolRegistry {
             case "agent.updateContext" -> executeUpdateContext(arguments);
             case "agent.updateDecision" -> executeUpdateDecision(arguments);
             case "agent.recordLastTransaction" -> executeRecordLastTransaction(arguments);
+            case "agent.getKnowledge" -> executeGetKnowledge(arguments);
             case "agent.determineDecision" -> executeDetermineDecision(arguments);
             case "flowable.listAdminTasks" -> executeListAdminTasks();
             case "flowable.getTask" -> executeGetTask(arguments);
@@ -140,6 +152,17 @@ public class McpToolRegistry {
         return agentNode(agent);
     }
 
+    private JsonNode executeGetKnowledge(JsonNode arguments) {
+        String query = text(arguments, "query");
+        List<String> results = knowledgeBaseService.search(query);
+        ObjectNode response = objectMapper.createObjectNode();
+        response.put("query", query);
+        ArrayNode resultNodes = objectMapper.createArrayNode();
+        results.forEach(resultNodes::add);
+        response.set("results", resultNodes);
+        return response;
+    }
+
     private JsonNode executeDetermineDecision(JsonNode arguments) {
         UUID agentId = uuid(arguments, "agentId");
         BankingAgent agent = bankingAgentService.getAgentById(agentId)
@@ -151,7 +174,7 @@ public class McpToolRegistry {
             intentResult.setIntent(IntentType.valueOf(intentText.toUpperCase()));
         }
         intentResult.setConfidence(number(arguments, "confidence"));
-        intentResult.setMessage(text(arguments, "message"));
+        intentResult.setMessage(optionalText(arguments, "message"));
         intentResult.setParameters(arguments.path("parameters"));
         intentResult.setIsSensitive(booleanValue(arguments, "isSensitive") || isSensitiveIntent(arguments.path("parameters")));
 
@@ -162,7 +185,7 @@ public class McpToolRegistry {
         trace.put("confidence", intentResult.getConfidence());
         trace.put("decision", decision.name());
         trace.put("reason", decisionReason(intentResult, arguments.path("parameters"), decision));
-        trace.put("threshold", 5000);
+        trace.put("threshold", 5000); 
         trace.put("parameters", arguments.path("parameters"));
 
         bankingAgentService.updateContext(agentId, trace);
@@ -221,7 +244,7 @@ public class McpToolRegistry {
 
     private boolean isSensitiveIntent(JsonNode parameters) {
         BigDecimal amount = extractAmount(parameters);
-        return amount != null && amount.compareTo(new BigDecimal("5000")) > 0;
+        return amount != null && amount.compareTo(BigDecimal.valueOf(5000)) > 0;
     }
 
     private String decisionReason(IntentResult intentResult, JsonNode parameters, AgentDecision decision) {
@@ -247,6 +270,11 @@ public class McpToolRegistry {
             throw new IllegalArgumentException("Missing required field: " + field);
         }
         return node.asText();
+    }
+
+    private String optionalText(JsonNode arguments, String field) {
+        JsonNode node = arguments.get(field);
+        return node == null || node.isNull() || node.asText().isBlank() ? null : node.asText();
     }
 
     private Double number(JsonNode arguments, String field) {

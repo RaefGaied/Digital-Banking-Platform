@@ -17,6 +17,7 @@ const AdminTasksPage = lazy(() => import('./pages/admin/AdminTasksPage.tsx'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.tsx'));
 const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage.tsx'));
 const AdminSecurityEventsPage = lazy(() => import('./pages/admin/AdminSecurityEventsPage.tsx'));
+const AdminRagPage = lazy(() => import('./pages/admin/AdminRagPage.tsx'));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage.tsx'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage.tsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.tsx'));
@@ -27,6 +28,7 @@ const HelpPage = lazy(() => import('./pages/HelpPage.tsx'));
 const SessionsPage = lazy(() => import('./pages/SessionsPage.tsx'));
 const AgentsPage = lazy(() => import('./pages/AgentsPage.tsx'));
 const ChatPage = lazy(() => import('./pages/ChatPage.tsx'));
+const RagTestPage = lazy(() => import('./pages/RagTestPage.tsx'));
 
 
 const queryClient = new QueryClient({
@@ -68,6 +70,7 @@ export default function App() {
                         <Route path='users' element={<AdminUsersPage />} />
                         <Route path='security' element={<AdminSecurityEventsPage />} />
                         <Route path='audit' element={<AdminAuditPage />} />
+                        <Route path='rag' element={<AdminRagPage />} />
                       </Route>
                       <Route path='transactions' element={<RequireRole allowedRoles={["USER"]}><TransactionsPage /></RequireRole>} />
                       <Route path='history' element={<RequireRole allowedRoles={["USER"]}><HistoryPage /></RequireRole>} />
@@ -76,9 +79,10 @@ export default function App() {
                       <Route path='analytics' element={<RequireRole allowedRoles={["USER"]}><AnalyticsPage /></RequireRole>} />
                       <Route path='profile' element={<RequireRole allowedRoles={["USER"]}><ProfilePage /></RequireRole>} />
                       <Route path='help' element={<HelpPage />} />
-                      <Route path='sessions' element={<RequireRole allowedRoles={["USER"]}><SessionsPage /></RequireRole>} />
-                      <Route path='sessions/:id/chat' element={<RequireRole allowedRoles={["USER"]}><ChatPage /></RequireRole>} />
-                      <Route path='agents' element={<RequireRole allowedRoles={["USER"]}><AgentsPage /></RequireRole>} />
+                      <Route path='rag' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><RagTestPage /></RequireRole>} />
+                      <Route path='sessions' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><SessionsPage /></RequireRole>} />
+                      <Route path='sessions/:id/chat' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><ChatPage /></RequireRole>} />
+                      <Route path='agents' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><AgentsPage /></RequireRole>} />
                     </Route>
                     <Route path='*' element={<Navigate to='/login' replace />} />
                   </Routes>

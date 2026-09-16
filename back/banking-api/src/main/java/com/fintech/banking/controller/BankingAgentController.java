@@ -1,9 +1,12 @@
 package com.fintech.banking.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fintech.banking.domain.entity.BankingAgent;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.AgentDecision;
+import com.fintech.banking.domain.enums.UserRole;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.BankingAgentService;
 import lombok.AllArgsConstructor;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 
 @RestController
 @RequestMapping("/agents")
@@ -27,23 +31,29 @@ public class BankingAgentController {
     private final BankingAgentService bankingAgentService;
     private final UserRepository userRepository;
 
-    private UUID resolveAuthenticatedUserId(Authentication authentication) {
+    private User resolveAuthenticatedUser(Authentication authentication) {
         String email = authentication.getName();
         return userRepository.findByEmail(email)
-            .map(User::getId)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+    }
+
+    private UUID resolveAuthenticatedUserId(Authentication authentication) {
+        return resolveAuthenticatedUser(authentication).getId();
     }
 
     @GetMapping
     public ResponseEntity<?> listAgents(Authentication authentication) {
         try {
-            UUID userId = resolveAuthenticatedUserId(authentication);
-            List<AgentResponse> agents = bankingAgentService.getAgentsByUserId(userId)
-                .stream()
+            User currentUser = resolveAuthenticatedUser(authentication);
+            List<BankingAgent> agents = currentUser.getRole() == UserRole.ADMIN
+                ? bankingAgentService.getAllAgents()
+                : bankingAgentService.getAgentsByUserId(currentUser.getId());
+
+            List<AgentResponse> agentResponses = agents.stream()
                 .map(AgentResponse::new)
                 .toList();
 
-            return ResponseEntity.ok(new SuccessResponse("Agents retrieved", agents));
+            return ResponseEntity.ok(new SuccessResponse("Agents retrieved", agentResponses));
         } catch (Exception e) {
             log.error("Failed to retrieve agents", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -56,8 +66,9 @@ public class BankingAgentController {
             @PathVariable UUID agentId,
             Authentication authentication) {
         try {
-            UUID userId = resolveAuthenticatedUserId(authentication);
-            return bankingAgentService.getAgentByIdAndUserId(agentId, userId)
+            User currentUser = resolveAuthenticatedUser(authentication);
+            boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+            return bankingAgentService.getAgentByIdForAdminOrOwner(agentId, currentUser.getId(), isAdmin)
                 .<ResponseEntity<?>>map(agent -> ResponseEntity.ok(new SuccessResponse("Agent retrieved", new AgentResponse(agent))))
                 .orElseGet(() -> ResponseEntity.notFound().build());
         } catch (Exception e) {
@@ -72,15 +83,92 @@ public class BankingAgentController {
             @PathVariable UUID sessionId,
             Authentication authentication) {
         try {
-            UUID userId = resolveAuthenticatedUserId(authentication);
+            User currentUser = resolveAuthenticatedUser(authentication);
+            boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
             return bankingAgentService.getAgentBySessionId(sessionId)
-                .filter(agent -> agent.getUserId().equals(userId))
+                .filter(agent -> isAdmin || agent.getUserId().equals(currentUser.getId()))
                 .<ResponseEntity<?>>map(agent -> ResponseEntity.ok(new SuccessResponse("Agent retrieved", new AgentResponse(agent))))
                 .orElseGet(() -> ResponseEntity.notFound().build());
         } catch (Exception e) {
             log.error("Failed to retrieve agent by session", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("Failed to retrieve agent"));
+        }
+    }
+
+    @GetMapping("/session/{sessionId}/activity")
+    public ResponseEntity<?> getAgentActivityBySession(
+            @PathVariable UUID sessionId,
+            Authentication authentication) {
+        try {
+            User currentUser = resolveAuthenticatedUser(authentication);
+            boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+            return bankingAgentService.getAgentBySessionId(sessionId)
+                .filter(agent -> isAdmin || agent.getUserId().equals(currentUser.getId()))
+                .<ResponseEntity<?>>map(agent -> ResponseEntity.ok(new SuccessResponse("Agent activity retrieved", buildActivityList(agent))))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Failed to retrieve agent activity by session", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Failed to retrieve agent activity"));
+        }
+    }
+
+    @GetMapping("/{agentId}/activity")
+    public ResponseEntity<?> getAgentActivity(
+            @PathVariable UUID agentId,
+            Authentication authentication) {
+        try {
+            User currentUser = resolveAuthenticatedUser(authentication);
+            boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
+            return bankingAgentService.getAgentByIdForAdminOrOwner(agentId, currentUser.getId(), isAdmin)
+                .<ResponseEntity<?>>map(agent -> ResponseEntity.ok(new SuccessResponse("Agent activity retrieved", buildActivityList(agent))))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Failed to retrieve agent activity", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Failed to retrieve agent activity"));
+        }
+    }
+
+    private List<AgentActivityResponse> buildActivityList(BankingAgent agent) {
+        JsonNode context = agent.getContext();
+        if (context == null || !context.has("activities")) {
+            return List.of();
+        }
+
+        JsonNode activities = context.get("activities");
+        if (!activities.isArray()) {
+            return List.of();
+        }
+
+        return StreamSupport.stream(activities.spliterator(), false)
+            .filter(JsonNode::isObject)
+            .map(AgentActivityResponse::new)
+            .toList();
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class AgentActivityResponse {
+        private String timestamp;
+        private String action;
+        private String intent;
+        private Double confidence;
+        private Boolean isSensitive;
+        private AgentDecision decision;
+        private JsonNode parameters;
+        private String note;
+
+        public AgentActivityResponse(JsonNode json) {
+            this.timestamp = json.hasNonNull("timestamp") ? json.get("timestamp").asText() : null;
+            this.action = json.hasNonNull("action") ? json.get("action").asText() : null;
+            this.intent = json.hasNonNull("intent") ? json.get("intent").asText() : null;
+            this.confidence = json.hasNonNull("confidence") ? json.get("confidence").asDouble() : null;
+            this.isSensitive = json.hasNonNull("isSensitive") ? json.get("isSensitive").asBoolean() : null;
+            this.decision = json.hasNonNull("decision") ? AgentDecision.valueOf(json.get("decision").asText()) : null;
+            this.parameters = json.has("parameters") ? json.get("parameters") : null;
+            this.note = json.hasNonNull("note") ? json.get("note").asText() : null;
         }
     }
 

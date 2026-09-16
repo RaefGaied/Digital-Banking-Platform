@@ -115,6 +115,14 @@ export interface AdminTaskDetail {
   completedAt: string | null;
 }
 
+export interface FlowableAdminTask {
+  id: string;
+  name: string;
+  assignee: string | null;
+  createdTime: string;
+  processInstanceId: string;
+}
+
 export interface AdminAuditLog {
   id: string;
   userEmail: string | null;
@@ -145,6 +153,16 @@ export interface AdminDashboardResponse {
   pendingTasks: number;
   recentTasks: AdminTaskSummary[];
   recentAuditLogs: AdminAuditLog[];
+}
+
+export interface RagDocument {
+  id: number;
+  title: string;
+  content: string;
+  source: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TaskActionRequest {
@@ -178,6 +196,8 @@ export interface SupportTicket {
   status: string;
   ticketType: string;
   priority: string;
+  attachmentName?: string | null;
+  attachmentType?: string | null;
   assignedAdminId: string | null;
   ownerId: string | null;
   flowableProcessId: string | null;
@@ -216,6 +236,17 @@ export interface BankingAgent {
   updatedAt: string;
 }
 
+export interface AgentActivityTrace {
+  timestamp: string;
+  action: string;
+  intent?: string | null;
+  confidence?: number | null;
+  isSensitive?: boolean | null;
+  decision?: AgentDecision | null;
+  parameters?: Record<string, unknown> | null;
+  note?: string | null;
+}
+
 export interface AgentDecisionTrace {
   agentId: string;
   intent: string | null;
@@ -247,4 +278,5 @@ export interface CreateSupportTicketRequest {
   description: string;
   ticketType?: string;
   priority?: string;
+  attachment?: File | null;
 }

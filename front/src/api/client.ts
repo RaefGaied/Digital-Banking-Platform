@@ -29,6 +29,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error?.response?.status;
+    const requestUrl = error?.config?.url || '';
+    const isAuthRequest = requestUrl.startsWith('/auth');
+    if ((status === 401 || status === 403) && !isAuthRequest) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login');
+      }
+    }
     return Promise.reject(error);
   }
 );

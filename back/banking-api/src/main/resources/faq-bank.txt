@@ -1,0 +1,56 @@
+Q: Quels sont les horaires d'ouverture du service client ?
+A: Le service client est disponible 24/7 via l'application mobile et le chat bancaire.
+
+Q: Comment puis-je consulter mon solde ?
+A: Vous pouvez consulter votre solde depuis la section Compte ou en demandant au chat bancaire.
+
+Q: Comment puis-je faire un virement ?
+A: Décrivez le montant et le compte destinataire, puis confirmez l'action lorsque l'agent vous le demande.
+
+Q: Comment puis-je signaler une fraude ?
+A: Déclarez la situation via le canal de support et une validation humaine sera déclenchée.
+
+Q: Que se passe-t-il si mes données doivent être modifiées ?
+A: Une demande de validation sera envoyée au flux BPMN approprié pour une vérification humaine.
+
+Q: Comment créer une carte bancaire ou une carte de crédit ?
+A: Ouvrez la section Cartes ou demandez au chat une nouvelle carte. Le type, la marque et les informations nécessaires seront demandés avant confirmation.
+
+Q: Que faire si ma carte est bloquée ?
+A: Ne partagez jamais vos données de carte. Contactez le support depuis l'application afin de vérifier et sécuriser la carte.
+
+Q: Que faire si ma carte est perdue ou volée ?
+A: Signalez immédiatement la perte ou le vol via le support afin qu'une vérification et un blocage de sécurité puissent être déclenchés.
+
+Q: Comment consulter la limite de ma carte ?
+A: Consultez la section Cartes pour voir la limite disponible et les informations de votre carte.
+
+Q: Comment effectuer un paiement ?
+A: Indiquez le montant et le bénéficiaire ou la clé de paiement, puis confirmez l'opération lorsque l'agent vous le demande.
+
+Q: Comment effectuer un retrait ?
+A: Vérifiez votre solde et vos limites, puis indiquez le montant du retrait demandé.
+
+Q: Comment consulter mes investissements ?
+A: Consultez la section Investissements pour voir vos placements, leur valeur et leur évolution.
+
+Q: Comment investir de l'argent ?
+A: Consultez les produits disponibles dans la section Investissements et choisissez un placement adapté à votre situation.
+
+Q: Comment consulter les informations de mon compte ?
+A: La section Compte permet de consulter votre solde, votre agence et votre numéro de compte.
+
+Q: Comment utiliser une clé PIX ?
+A: Une clé PIX peut être utilisée pour recevoir ou effectuer un paiement. Saisissez la clé et le montant, puis confirmez l'opération.
+
+Q: Comment modifier mon profil ?
+A: Ouvrez la section Profil et suivez la procédure de modification. Les données sensibles peuvent nécessiter une validation supplémentaire.
+
+Q: Comment activer la double authentification ?
+A: Activez la 2FA depuis les paramètres de sécurité de votre profil, puis confirmez le code demandé.
+
+Q: Où consulter mes notifications ?
+A: Ouvrez la section Notifications pour consulter les alertes et les événements récents de votre compte.
+
+Q: Comment contacter le support ?
+A: Utilisez le chat bancaire ou créez un ticket depuis la section Support. Les demandes sensibles peuvent être transmises à un agent humain.

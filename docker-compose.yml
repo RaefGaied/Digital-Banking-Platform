@@ -78,7 +78,6 @@ services:
     build:
       context: ./back/banking-api
       dockerfile: Dockerfile
-      network: host
     container_name: banking-backend
     depends_on:
       postgres:
@@ -94,8 +93,13 @@ services:
       SPRING_DATASOURCE_USERNAME: banking_user
       SPRING_DATASOURCE_PASSWORD: banking_pass
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-in-production}
+      AI_AGENT_ENABLED: 'true'
+      AI_AGENT_BASE_URL: http://ai-agent:8001
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_FLYWAY_ENABLED: 'false'
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_TYPE_PREFERRED_ENUM_JDBC_TYPE: VARCHAR
+      SPRING_FLYWAY_ENABLED: 'true'
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATA_REDIS_HOST: redis
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -107,6 +111,29 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  ai-agent:
+    build:
+      context: ./ai-agent
+      dockerfile: Dockerfile
+    container_name: banking-ai-agent
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-in-production}
+      BASE_URL: http://backend:8080/api/v1
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build:
@@ -122,11 +149,16 @@ services:
       - banking-network
 
   pgadmin:
-    image: dpage/pgadmin4
+    build:
+      context: ./docker/pgadmin
+      dockerfile: Dockerfile
     container_name: banking-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@banking.com
       PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+      PGADMIN_REPLACE_SERVERS_ON_STARTUP: 'True'
+      PGPASS_FILE: /pgadmin4/pgpass
     ports:
       - "5050:80"
     volumes:

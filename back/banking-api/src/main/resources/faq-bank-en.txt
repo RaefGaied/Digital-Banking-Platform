@@ -1,0 +1,26 @@
+Q: How can I make a bank transfer?
+A: Provide the amount and the destination account, then confirm the action when the assistant asks for approval.
+
+Q: How do I report fraud?
+A: Report the situation through support and a human verification will be triggered.
+
+Q: What happens if my card is blocked?
+A: Never share your card details. Contact support from the app to verify and secure the card.
+
+Q: How can I check my balance?
+A: You can check your balance from the Account section or by asking the banking assistant.
+
+Q: How can I pay or withdraw money?
+A: Specify the amount and recipient, then confirm the operation when the assistant asks for approval.
+
+Q: How can I update my profile?
+A: Open the Profile section and follow the modification steps. Sensitive data may require extra validation.
+
+Q: How can I contact support?
+A: Use the banking chat or create a support ticket from the Support section. Sensitive requests may be routed to a human agent.
+
+Q: How do I access my card limits?
+A: Check the Cards section to view the available limit and latest card information.
+
+Q: How do I manage my investments?
+A: Review the investment products in the Investments section and choose the option best suited to your needs.

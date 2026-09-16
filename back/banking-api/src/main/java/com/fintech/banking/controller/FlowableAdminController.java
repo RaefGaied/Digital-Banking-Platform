@@ -37,6 +37,13 @@ public class FlowableAdminController {
         return ResponseEntity.ok(dto);
     }
 
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> status() {
+        return ResponseEntity.ok(Map.of(
+                "available", flowableService.isAvailable(),
+                "processDefinitions", flowableService.listProcessDefinitions()));
+    }
+
     @PostMapping("/tasks/{taskId}/complete")
     public ResponseEntity<?> completeTask(@PathVariable String taskId, @RequestBody Map<String, Object> body) {
         try {

@@ -27,6 +27,7 @@ export const translations = {
       analytics: 'Analytics',
       sessions: 'Sessions',
       agents: 'Agents',
+      ragTest: 'RAG test',
       profile: 'Profile',
       admin: 'Admin',
       tasks: 'Tasks',
@@ -65,6 +66,7 @@ export const translations = {
       analytics: 'Analytique',
       sessions: 'Sessions',
       agents: 'Agents',
+      ragTest: 'Test RAG',
       profile: 'Profil',
       admin: 'Admin',
       tasks: 'Taches',
@@ -98,6 +100,7 @@ export type TranslationKey =
   | 'sidebar.analytics'
   | 'sidebar.sessions'
   | 'sidebar.agents'
+  | 'sidebar.ragTest'
   | 'sidebar.profile'
   | 'sidebar.admin'
   | 'sidebar.tasks'

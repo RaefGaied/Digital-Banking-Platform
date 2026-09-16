@@ -77,7 +77,7 @@ class AuthControllerTest extends IntegrationTestConfig {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Email já cadastrado"));
+                .andExpect(jsonPath("$.error").value("Email already registered"));
     }
 
     @Test

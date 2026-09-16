@@ -4,8 +4,13 @@ import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.dto.request.LoginRequest;
 import com.fintech.banking.dto.response.LoginResponse;
 import com.fintech.banking.dto.response.ClientResponse;
+import com.fintech.banking.repository.AccountRepository;
+import com.fintech.banking.repository.RefreshTokenRepository;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.security.service.JwtService;
+import com.fintech.banking.service.AuditLogService;
+import com.fintech.banking.service.SecurityEventService;
+import com.fintech.banking.util.TotpUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +19,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,10 +34,25 @@ class AuthServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
+    private AccountRepository accountRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
     private JwtService jwtService;
 
     @Mock
     private AuthenticationManager authenticationManager;
+
+    @Mock
+    private AuditLogService auditLogService;
+
+    @Mock
+    private SecurityEventService securityEventService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -63,7 +86,7 @@ class AuthServiceImplTest {
         assertFalse(response.isTwoFactorRequired());
         assertNotNull(response.getTokenResponse());
         assertEquals("fakeAccessToken", response.getTokenResponse().getAccessToken());
-        verify(userRepository).findByEmail("test@example.com");
+        verify(userRepository, atLeastOnce()).findByEmail("test@example.com");
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtService).generateToken(testUser);
     }
@@ -90,27 +113,26 @@ class AuthServiceImplTest {
         assertTrue(response.isTwoFactorRequired());
         assertNull(response.getTokenResponse());
         assertEquals("fakeTempToken", response.getTempToken());
-        verify(userRepository).findByEmail("test@example.com");
+        verify(userRepository, atLeastOnce()).findByEmail("test@example.com");
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtService).generateTemporaryToken(testUser);
     }
 
     @Test
-    void testVerify2faSuccess() {
+    void testVerify2faSuccess() throws Exception {
         // Arrange
         String tempToken = "fakeTempToken";
         String secret = "JBSWY3DPEHPK3PXP"; // RFC 6238 example secret
         testUser.setTwoFactorSecret(secret);
-        
-        // Using RFC 6238 test values:
-        // At time 0, the TOTP value is 012345
-        
+
         when(userRepository.findByEmail("test@example.com")).thenReturn(java.util.Optional.of(testUser));
         when(jwtService.extractUsername(tempToken)).thenReturn("test@example.com");
         when(jwtService.generateToken(testUser)).thenReturn("fakeAccessToken");
 
-        // Act - test with the known value at time 0
-        ClientResponse response = authService.verify2fa(tempToken, 12345); // Note: leading zero is dropped in int representation
+        int validCode = generateValidTotpCode(secret);
+
+        // Act
+        ClientResponse response = authService.verify2fa(tempToken, validCode);
 
         // Assert
         assertNotNull(response);
@@ -118,6 +140,13 @@ class AuthServiceImplTest {
         verify(userRepository).findByEmail("test@example.com");
         verify(jwtService).extractUsername(tempToken);
         verify(jwtService).generateToken(testUser);
+    }
+
+    private int generateValidTotpCode(String secret) throws Exception {
+        var method = TotpUtil.class.getDeclaredMethod("calculateTotp", String.class, long.class);
+        method.setAccessible(true);
+        long timeStep = Instant.now().getEpochSecond() / 30;
+        return ((Number) method.invoke(null, secret, timeStep)).intValue();
     }
 
     @Test

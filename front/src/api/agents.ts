@@ -1,12 +1,12 @@
 import api from './client';
-import type { AgentDecisionResult, BankingAgent, DetermineAgentDecisionRequest } from '../types';
+import type { AgentDecisionResult, BankingAgent, DetermineAgentDecisionRequest, AgentActivityTrace } from '../types';
 
 type WrapperSingle = { message: string; data: BankingAgent };
 type WrapperList = { message: string; data: BankingAgent[] };
 
 export const agentsApi = {
   createForSession: async (sessionId: string): Promise<BankingAgent> => {
-    const response = await api.post<WrapperSingle>('/agents', { sessionId });
+    const response = await api.post<WrapperSingle>(`/agents/session/${sessionId}`);
     return response.data.data;
   },
 
@@ -21,7 +21,7 @@ export const agentsApi = {
   },
 
   getBySession: async (sessionId: string): Promise<BankingAgent> => {
-    const response = await api.get<WrapperSingle>(`/agents/by-session/${sessionId}`);
+    const response = await api.get<WrapperSingle>(`/agents/session/${sessionId}`);
     return response.data.data;
   },
 
@@ -47,6 +47,11 @@ export const agentsApi = {
 
   determineDecision: async (request: DetermineAgentDecisionRequest): Promise<AgentDecisionResult> => {
     const response = await api.post<{ message: string; data: AgentDecisionResult }>('/mcp/agent/determine-decision', request);
+    return response.data.data;
+  },
+
+  getActivityBySession: async (sessionId: string): Promise<AgentActivityTrace[]> => {
+    const response = await api.get<{ message: string; data: AgentActivityTrace[] }>(`/agents/session/${sessionId}/activity`);
     return response.data.data;
   },
 };

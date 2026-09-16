@@ -8,6 +8,7 @@ import com.fintech.banking.domain.enums.AgentDecision;
 import com.fintech.banking.service.BankingAgentService;
 import com.fintech.banking.service.FlowableService;
 import com.fintech.banking.service.FlowableTaskCompletionService;
+import com.fintech.banking.service.KnowledgeBaseService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -28,11 +29,13 @@ class McpToolRegistryTest {
     private final BankingAgentService bankingAgentService = Mockito.mock(BankingAgentService.class);
     private final FlowableService flowableService = Mockito.mock(FlowableService.class);
     private final FlowableTaskCompletionService flowableTaskCompletionService = Mockito.mock(FlowableTaskCompletionService.class);
+    private final KnowledgeBaseService knowledgeBaseService = Mockito.mock(KnowledgeBaseService.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final McpToolRegistry registry = new McpToolRegistry(
         bankingAgentService,
         flowableService,
         flowableTaskCompletionService,
+        knowledgeBaseService,
         objectMapper
     );
 
@@ -71,7 +74,10 @@ class McpToolRegistryTest {
         when(bankingAgentService.getAgentById(agentId)).thenReturn(Optional.of(agent));
         when(bankingAgentService.determineDecision(any(), any())).thenReturn(AgentDecision.AUTO_EXECUTE);
         when(bankingAgentService.updateContext(eq(agentId), any())).thenReturn(agent);
-        when(bankingAgentService.updateDecision(eq(agentId), eq(AgentDecision.AUTO_EXECUTE))).thenReturn(agent);
+        when(bankingAgentService.updateDecision(eq(agentId), eq(AgentDecision.AUTO_EXECUTE))).thenAnswer(invocation -> {
+            agent.setDecision(AgentDecision.AUTO_EXECUTE);
+            return agent;
+        });
 
         ObjectNode args = JsonNodeFactory.instance.objectNode();
         args.put("agentId", agentId.toString());
@@ -86,6 +92,20 @@ class McpToolRegistryTest {
         assertEquals("AUTO_EXECUTE", result.get("decision").asText());
         assertEquals("AUTOMATIC_DECISION", result.get("reason").asText());
         assertEquals("AUTO_EXECUTE", result.get("agent").get("decision").asText());
+    }
+
+    @Test
+    void dispatchesKnowledgeLookupTool() {
+        when(knowledgeBaseService.search("virement")).thenReturn(List.of("Q: Comment puis-je faire un virement ?\nA: Décrivez le montant et le compte destinataire."));
+
+        ObjectNode args = JsonNodeFactory.instance.objectNode();
+        args.put("query", "virement");
+
+        var result = registry.callTool("agent.getKnowledge", args);
+
+        assertEquals("virement", result.get("query").asText());
+        assertTrue(result.get("results").isArray());
+        assertEquals(1, result.get("results").size());
     }
 
     @Test

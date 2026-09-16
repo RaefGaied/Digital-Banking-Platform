@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -52,6 +53,37 @@ public class SupportTicketService {
         log.info("Support ticket created: {}", ticket.getId());
 
         // Send notification
+        notificationService.notifyTicketCreated(ticket.getUserId(), ticket.getId(), subject);
+        return ticket;
+    }
+
+    public SupportTicket createTicketWithAttachment(UUID userId,
+                                                    String subject,
+                                                    String description,
+                                                    TicketType ticketType,
+                                                    UUID ownerId,
+                                                    MultipartFile attachment) {
+        SupportTicket ticket = SupportTicket.builder()
+            .userId(userId)
+            .subject(subject)
+            .description(description)
+            .ticketType(ticketType)
+            .ownerId(ownerId)
+            .status(TicketStatus.OPEN)
+            .build();
+
+        if (attachment != null && !attachment.isEmpty()) {
+            try {
+                ticket.setAttachmentName(attachment.getOriginalFilename());
+                ticket.setAttachmentType(attachment.getContentType());
+                ticket.setAttachmentData(attachment.getBytes());
+            } catch (Exception e) {
+                log.warn("Failed to read attachment data", e);
+            }
+        }
+
+        ticket = supportTicketRepository.save(ticket);
+        log.info("Support ticket created with attachment: {}", ticket.getId());
         notificationService.notifyTicketCreated(ticket.getUserId(), ticket.getId(), subject);
         return ticket;
     }
@@ -101,9 +133,6 @@ public class SupportTicketService {
         };
     }
 
-    /**
-     * Gets a ticket by ID
-     */
     public Optional<SupportTicket> getTicketById(Long ticketId) {
         return supportTicketRepository.findById(ticketId);
     }

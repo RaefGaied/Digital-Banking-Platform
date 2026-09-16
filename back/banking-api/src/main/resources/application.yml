@@ -67,9 +67,13 @@ management:
       show-details: always
 
 jwt:
-  secret: sua-chave-secreta-super-segura-aqui-minimo-256-bits-para-hs256
+  secret: ${JWT_SECRET:sua-chave-secreta-super-segura-aqui-minimo-256-bits-para-hs256}
   expiration: 900000
   refresh-expiration: 604800000
+
+app:
+  sensitive-line:
+    threshold: 5000
 
 logging:
   level:
@@ -88,7 +92,15 @@ azure:
     api-key: ${AZURE_OPENAI_API_KEY:}
     model: ${AZURE_OPENAI_MODEL:gpt-4o}
 
+ai:
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_MODEL:gpt-4o-mini}
+    embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+
 flowable:
   database-schema-update: true
   async-executor-activate: true
   process-definition-location-prefix: classpath:/processes/
+  process-definition-location-suffix: '**.bpmn'

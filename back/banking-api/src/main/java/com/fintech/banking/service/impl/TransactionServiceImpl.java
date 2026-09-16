@@ -16,6 +16,7 @@ import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.TransactionValidationService;
 import com.fintech.banking.service.TransactionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +36,8 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionEventProducer eventProducer;
     private final TransactionValidationService transactionValidationService;
 
-    private static final BigDecimal HIGH_VALUE_TRANSFER_THRESHOLD = new BigDecimal("5000");
+    @Value("${app.sensitive-line.threshold:5000}")
+    private BigDecimal highValueTransferThreshold;
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
@@ -118,7 +120,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     @CacheEvict(value = "accounts", key = "#email")
     public TransactionResponse transfer(String email, TransactionRequest request) {
         User user = getUserByEmail(email);
@@ -126,7 +128,7 @@ public class TransactionServiceImpl implements TransactionService {
         Account target = accountRepository.findByNumber(request.getTargetAccountNumber())
             .orElseThrow(() -> new IllegalArgumentException("Destination account not found"));
 
-        if (request.getAmount().compareTo(HIGH_VALUE_TRANSFER_THRESHOLD) > 0) {
+        if (request.getAmount().compareTo(highValueTransferThreshold) > 0) {
             Transaction transaction = transactionRepository.save(Transaction.builder()
                     .sourceAccount(source)
                     .targetAccount(target)

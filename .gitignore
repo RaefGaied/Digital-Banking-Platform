@@ -34,3 +34,4 @@ front/test-results/
 
 # ── Docker local override ─────────────────
 docker-compose.override.yml
+.env
