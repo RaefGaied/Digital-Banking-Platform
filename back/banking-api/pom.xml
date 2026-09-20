@@ -17,7 +17,7 @@
     <description>Banking / Digital Wallet API — Fintech Portfolio Project</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <lombok.version>1.18.46</lombok.version>
