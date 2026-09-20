@@ -4,6 +4,8 @@ import com.fintech.banking.dto.request.LoginRequest;
 import com.fintech.banking.dto.request.RefreshTokenRequest;
 import com.fintech.banking.dto.request.RegisterRequest;
 import com.fintech.banking.dto.request.Verify2faRequest;
+import com.fintech.banking.dto.request.ForgotPasswordRequest;
+import com.fintech.banking.dto.request.ResetPasswordRequest;
 import com.fintech.banking.dto.response.LoginResponse;
 import com.fintech.banking.dto.response.ClientResponse;
 import com.fintech.banking.service.AuthService;
@@ -44,5 +46,17 @@ public class AuthController {
     @PostMapping("/verify-2fa")
     public ResponseEntity<ClientResponse> verify2fa(@Valid @RequestBody Verify2faRequest request) {
         return ResponseEntity.ok(authService.verify2fa(request.getTempToken(), request.getCode()));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.requestPasswordReset(request);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -2,19 +2,24 @@ package com.fintech.banking.service.impl;
 
 import com.fintech.banking.domain.entity.Account;
 import com.fintech.banking.domain.entity.RefreshToken;
+import com.fintech.banking.domain.entity.PasswordResetToken;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.dto.request.LoginRequest;
 import com.fintech.banking.dto.request.RefreshTokenRequest;
 import com.fintech.banking.dto.request.RegisterRequest;
+import com.fintech.banking.dto.request.ForgotPasswordRequest;
+import com.fintech.banking.dto.request.ResetPasswordRequest;
 import com.fintech.banking.dto.response.LoginResponse;
 import com.fintech.banking.dto.response.ClientResponse;
 import com.fintech.banking.repository.AccountRepository;
 import com.fintech.banking.repository.RefreshTokenRepository;
+import com.fintech.banking.repository.PasswordResetTokenRepository;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.security.service.JwtService;
 import com.fintech.banking.service.AuditLogService;
 import com.fintech.banking.service.AuthService;
 import com.fintech.banking.service.SecurityEventService;
+import com.fintech.banking.service.EmailService;
 import com.fintech.banking.util.TotpUtil;
 import com.fintech.banking.exception.AccountLockedException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +37,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.UUID;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +53,8 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final AuditLogService auditLogService;
     private final SecurityEventService securityEventService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
 
     private String getClientIp() {
         try {
@@ -108,8 +118,58 @@ public class AuthServiceImpl implements AuthService {
 
         auditLogService.log(user.getEmail(), "REGISTER", "User", user.getId().toString(), "New user registered",
                 getClientIp());
+        emailService.sendWelcome(user.getEmail(), user.getName());
 
         return buildTokenResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void requestPasswordReset(ForgotPasswordRequest request) {
+        userRepository.findByEmail(request.getEmail().trim()).ifPresent(user -> {
+            passwordResetTokenRepository.deleteByUserId(user.getId());
+            String rawToken = generateResetToken();
+            passwordResetTokenRepository.save(PasswordResetToken.builder()
+                    .user(user)
+                    .tokenHash(hashToken(rawToken))
+                    .expiresAt(LocalDateTime.now().plusMinutes(30))
+                    .build());
+            emailService.sendPasswordReset(user.getEmail(), user.getName(), rawToken);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(hashToken(request.getToken()))
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset token"));
+        if (!resetToken.isValid()) {
+            throw new IllegalArgumentException("Invalid or expired reset token");
+        }
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+        resetToken.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(resetToken);
+        refreshTokenRepository.revokeAllByUserId(user.getId());
+        auditLogService.log(user.getEmail(), "PASSWORD_RESET", "User", user.getId().toString(),
+                "Password reset completed", getClientIp());
+    }
+
+    private String generateResetToken() {
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private String hashToken(String token) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest);
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 is unavailable", ex);
+        }
     }
 
     @Override

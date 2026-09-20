@@ -10,6 +10,8 @@ import { AuthProvider } from './context/AuthContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage.tsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.tsx'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.tsx'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.tsx'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage.tsx'));
 const AdminPage = lazy(() => import('./pages/AdminPage.tsx'));
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage.tsx'));
@@ -60,6 +62,8 @@ export default function App() {
                   <Routes>
                     <Route path='/login' element={<LoginPage />} />
                     <Route path='/register' element={<RegisterPage />} />
+                    <Route path='/forgot-password' element={<ForgotPasswordPage />} />
+                    <Route path='/reset-password' element={<ResetPasswordPage />} />
                     <Route path='/' element={<AppLayout />}>
                       <Route index element={<Navigate to='/dashboard' replace />} />
                       <Route path='dashboard' element={<RequireRole allowedRoles={["USER"]}><DashboardPage /></RequireRole>} />

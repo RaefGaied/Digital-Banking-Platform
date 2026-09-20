@@ -15,5 +15,13 @@ export const authApi = {
   verify2fa: async (tempToken: string, code: number): Promise<TokenResponse> => {
     const response = await api.post('/auth/verify-2fa', { tempToken, code });
     return response.data;
+  },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    await api.post('/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    await api.post('/auth/reset-password', { token, password });
   }
 };

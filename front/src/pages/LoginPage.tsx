@@ -824,6 +824,14 @@ export default function LoginPage() {
                   }}
                 />
 
+                <Box
+                  component={Link}
+                  to='/forgot-password'
+                  sx={{ alignSelf: 'flex-end', color: 'primary.main', fontSize: 14, fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  {text.forgotPassword}
+                </Box>
+
                 <Button
                   type='submit'
                   variant='contained'
