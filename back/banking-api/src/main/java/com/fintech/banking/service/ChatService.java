@@ -108,9 +108,14 @@ public class ChatService {
         String knowledgeContext = "";
         boolean usedRag = false;
         if (decision == AgentDecision.REQUEST_INFO) {
-            String ragContext = ragKnowledgeService.buildContextSnippet(content);
-            usedRag = !ragContext.isBlank();
-            knowledgeContext = usedRag ? ragContext : knowledgeBaseService.buildContextSnippet(content);
+            // The local FAQ is synchronous and cheap. Only invoke the Ollama
+            // embedding path when the local knowledge base has no answer.
+            knowledgeContext = knowledgeBaseService.buildContextSnippet(content);
+            if (knowledgeContext.isBlank()) {
+                String ragContext = ragKnowledgeService.buildContextSnippet(content);
+                usedRag = !ragContext.isBlank();
+                knowledgeContext = usedRag ? ragContext : "";
+            }
             if (!knowledgeContext.isBlank()) {
                 details.put("knowledgeContext", knowledgeContext);
             }

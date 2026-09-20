@@ -31,7 +31,7 @@ public class PythonAgentGateway {
     public PythonAgentGateway(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(2))
+                .connectTimeout(Duration.ofSeconds(1))
                 .build();
     }
 
@@ -45,7 +45,7 @@ public class PythonAgentGateway {
             log.debug("Sending Python agent chat payload: {}", body);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl.replaceAll("/$", "") + "/chat"))
-                    .timeout(Duration.ofSeconds(8))
+                    .timeout(Duration.ofSeconds(3))
                     .header("Authorization", bearerToken.startsWith("Bearer ") ? bearerToken : "Bearer " + bearerToken)
                     .header("Content-Type", "application/json")
                     .header("X-Agent-Query", query)
