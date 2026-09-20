@@ -25,6 +25,8 @@
         <jjwt.version>0.12.5</jjwt.version>
         <testcontainers.version>1.19.7</testcontainers.version>
         <spring-ai.version>1.0.0</spring-ai.version>
+        <postgresql.version>42.7.12</postgresql.version>
+        <spring-kafka.version>3.3.16</spring-kafka.version>
     </properties>
 
     <dependencyManagement>
@@ -99,6 +101,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -141,6 +144,7 @@
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
+            <version>${spring-kafka.version}</version>
         </dependency>
 
         <!-- ===== DOCUMENTAÇÃO — SWAGGER ===== -->
