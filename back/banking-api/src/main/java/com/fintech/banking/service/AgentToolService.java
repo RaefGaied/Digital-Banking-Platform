@@ -121,34 +121,23 @@ public class AgentToolService {
     }
 
     private AgentToolResult handleAccount(String email, String userMessage, Map<String, Object> details) {
-        if (!asksForAvailableAccountNumbers(userMessage)) {
-            return informational(accountGuidance(userMessage), "account_guidance", details);
-        }
-
         try {
-            List<String> accountNumbers = accountService.getAvailableAccountNumbers();
-            if (accountNumbers.isEmpty()) {
+            AccountResponse account = accountService.getMyAccount(email);
+            String normalized = userMessage == null ? "" : userMessage.toLowerCase(Locale.ROOT);
+            boolean asksForOwnNumber = normalized.matches(".*\\b(my|mine|own|mon|ma|mes)\\b.*\\b(account|compte|number|numéro|numero)\\b.*")
+                    || normalized.matches(".*\\b(account|compte)\\b.*\\b(numbers?|numéro|numero)\\b.*");
+            if (asksForOwnNumber) {
                 return informational(localized(userMessage,
-                        "No active account numbers are currently available.",
-                        "Aucun numéro de compte actif n'est actuellement disponible."), "account_numbers", details);
+                        "Your account number is " + account.getNumber() + ".",
+                        "Votre numéro de compte est " + account.getNumber() + "."), "own_account_number", details);
             }
-            String numbers = String.join(", ", accountNumbers);
-            details.put("accountNumbers", accountNumbers);
-            return informational(localized(userMessage,
-                    "Available account numbers: " + numbers,
-                    "Numéros de compte disponibles : " + numbers), "account_numbers", details);
+            return informational(accountGuidance(userMessage), "account_guidance", details);
         } catch (Exception ex) {
             log.warn("Failed to fetch available account numbers for {}: {}", email, ex.getMessage());
             return informational(localized(userMessage,
-                    "I could not retrieve the available account numbers. Please try again later.",
-                    "Je n'ai pas pu récupérer les numéros de compte disponibles. Veuillez réessayer plus tard."), "account_numbers_failed", details);
+                    "I could not retrieve your account details. Please try again later.",
+                    "Je n'ai pas pu récupérer les informations de votre compte. Veuillez réessayer plus tard."), "account_details_failed", details);
         }
-    }
-
-    private boolean asksForAvailableAccountNumbers(String userMessage) {
-        String normalized = userMessage == null ? "" : userMessage.toLowerCase(Locale.ROOT);
-        return normalized.matches(".*\\b(what|which|available|exist|existing)\\b.*\\b(account|accounts)\\b.*")
-                || normalized.matches(".*\\b(account|accounts)\\b.*\\b(numbers?|number)\\b.*\\b(available|exist|existing)\\b.*");
     }
 
     private String accountGuidance(String userMessage) {
@@ -245,9 +234,22 @@ public class AgentToolService {
             }
         }
 
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0 || targetAccount == null || targetAccount.isBlank()) {
+        boolean missingAmount = amount == null || amount.compareTo(BigDecimal.ZERO) <= 0;
+        boolean missingTarget = targetAccount == null || targetAccount.isBlank();
+        if (missingAmount || missingTarget) {
+            String message;
+            if (missingAmount && missingTarget) {
+                message = localized(userMessage, "To make a transfer, provide the amount and destination account number.",
+                        "Pour effectuer un virement, indiquez le montant et le numéro de compte destinataire.");
+            } else if (missingAmount) {
+                message = localized(userMessage, "What amount would you like to transfer to account " + targetAccount + "?",
+                        "Quel montant souhaitez-vous virer vers le compte " + targetAccount + " ?");
+            } else {
+                message = localized(userMessage, "Which destination account number should receive " + amount + "?",
+                        "Quel numéro de compte doit recevoir " + amount + " ?");
+            }
             return new AgentToolResult(
-                    localized(userMessage, "To make a transfer, provide the amount and destination account number.", "Pour effectuer un virement, indiquez le montant et le numéro de compte destinataire."),
+                    message,
                     "request_transfer_details",
                     details,
                     AgentDecision.REQUEST_INFO,

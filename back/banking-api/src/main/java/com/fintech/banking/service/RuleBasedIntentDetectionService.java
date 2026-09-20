@@ -17,6 +17,7 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
     private final ObjectMapper mapper = new ObjectMapper();
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("(\\d+[,.]?\\d*)");
     private static final Pattern ACCOUNT_PATTERN = Pattern.compile("(?:compte|account|num(?:\\u00e9|e)?ro|no\\.|n°)\\s*([A-Za-z0-9-]{6,})", Pattern.CASE_INSENSITIVE);
+    private static final Pattern STANDALONE_ACCOUNT_PATTERN = Pattern.compile("(?<![\\d\\w])\\d[\\d-]{5,}(?![\\d\\w])");
     private static final Pattern HISTORY_LIMIT_PATTERN = Pattern.compile("last\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
 
     @Override
@@ -138,6 +139,14 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
         Matcher matcher = ACCOUNT_PATTERN.matcher(text);
         if (matcher.find()) {
             params.put("targetAccountNumber", matcher.group(1));
+            return;
+        }
+        Matcher standalone = STANDALONE_ACCOUNT_PATTERN.matcher(text);
+        if (standalone.find()) {
+            String candidate = standalone.group();
+            if (!candidate.contains(".") && !candidate.contains(",")) {
+                params.put("targetAccountNumber", candidate);
+            }
         }
     }
 

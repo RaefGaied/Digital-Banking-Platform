@@ -14,6 +14,7 @@ import com.fintech.banking.domain.entity.Card;
 import com.fintech.banking.domain.vo.IntentResult;
 import com.fintech.banking.dto.request.TransactionRequest;
 import com.fintech.banking.dto.response.CardResponse;
+import com.fintech.banking.dto.response.AccountResponse;
 import com.fintech.banking.dto.response.TransactionResponse;
 import com.fintech.banking.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -51,14 +53,16 @@ class AgentToolServiceTest {
     );
 
     @Test
-    void listsAvailableAccountNumbersWhenAsked() {
+    void onlyReturnsTheAuthenticatedUsersAccountNumber() {
         BankingAgent agent = new BankingAgent();
         UUID userId = UUID.randomUUID();
         agent.setUserId(userId);
         User user = new User();
         user.setEmail("client@example.com");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(accountService.getAvailableAccountNumbers()).thenReturn(List.of("102030-4", "204060-8"));
+        when(accountService.getMyAccount("client@example.com")).thenReturn(AccountResponse.builder()
+                .number("102030-4")
+                .build());
 
         IntentResult intent = new IntentResult();
         intent.setIntent(IntentType.ACCOUNT);
@@ -66,9 +70,9 @@ class AgentToolServiceTest {
         AgentToolService.AgentToolResult result = agentToolService.executeToolAction(
                 agent, new Session(), intent, "what account numbers exist then?");
 
-        assertEquals("account_numbers", result.getAction());
+        assertEquals("own_account_number", result.getAction());
         assertTrue(result.getBotMessage().contains("102030-4"));
-        assertTrue(result.getBotMessage().contains("204060-8"));
+        assertFalse(result.getBotMessage().contains("204060-8"));
     }
 
     @Test
