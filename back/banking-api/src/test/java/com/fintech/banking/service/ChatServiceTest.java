@@ -103,6 +103,34 @@ class ChatServiceTest {
     }
 
     @Test
+    void shouldAnswerGreetingWithoutCallingIntentModelOrKnowledgeServices() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID systemUserId = UUID.randomUUID();
+
+        Session session = new Session();
+        session.setId(sessionId);
+        session.setUserId(userId);
+        session.setStatus(SessionStatus.OPENED);
+
+        User systemUser = new User();
+        systemUser.setId(systemUserId);
+        systemUser.setEmail("system@finbank.local");
+
+        when(sessionService.getSessionById(sessionId)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail(eq("system@finbank.local"))).thenReturn(Optional.of(systemUser));
+        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new Message());
+
+        Message result = chatService.handleUserMessage(sessionId, userId, "hello");
+
+        verify(messageService, times(2)).createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verifyNoInteractions(intentDetectionService, bankingAgentService, agentWorkflowService,
+                agentToolService, pythonAgentGateway);
+        assertTrue(result != null);
+    }
+
+    @Test
     void shouldNotDumpRawRagContextInBotReply() {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();

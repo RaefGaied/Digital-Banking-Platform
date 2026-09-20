@@ -63,6 +63,10 @@ public class ChatService {
             throw new IllegalStateException("Session is not active");
         }
 
+        if (isGreeting(content)) {
+            return handleGreeting(sessionId, userId, content);
+        }
+
         IntentResult intentResult = null;
         try {
             intentResult = intentDetectionService.detectIntent(content);
@@ -198,6 +202,49 @@ public class ChatService {
                 botRagSource);
 
         return userMessage;
+    }
+
+    private Message handleGreeting(UUID sessionId, UUID userId, String content) {
+        String detectedLang = com.fintech.banking.util.LanguageDetector.detect(content);
+        Message userMessage = messageService.createMessage(
+                sessionId,
+                userId,
+                SenderType.USER,
+                content,
+                false,
+                null,
+                null,
+                detectedLang,
+                false,
+                null);
+
+        UUID systemSenderId = userRepository.findByEmail(SYSTEM_EMAIL)
+                .map(com.fintech.banking.domain.entity.User::getId)
+                .orElseThrow(() -> new IllegalStateException("System assistant user not found"));
+        String botContent = "EN".equalsIgnoreCase(detectedLang)
+                ? "Hello! How can I help you today?"
+                : "Bonjour ! Comment puis-je vous aider aujourd'hui ?";
+        messageService.createMessage(
+                sessionId,
+                systemSenderId,
+                SenderType.BOT,
+                botContent,
+                false,
+                null,
+                null,
+                detectedLang,
+                false,
+                null);
+        return userMessage;
+    }
+
+    private boolean isGreeting(String content) {
+        if (content == null || content.isBlank()) {
+            return false;
+        }
+        String normalized = content.trim().toLowerCase(Locale.ROOT)
+                .replaceAll("[.!?,;:]+$", "");
+        return normalized.matches("(hi|hello|hey|good morning|good afternoon|good evening|bonjour|bonsoir|salut|coucou)");
     }
 
     /** Extracts the first "Source: X" line from a RAG/knowledge-base context snippet. */
