@@ -47,6 +47,17 @@ public class Message {
     @Column(name = "parameters", columnDefinition = "jsonb")
     private JsonNode parameters;
 
+    @Column(name = "detected_lang", length = 5)
+    @Builder.Default
+    private String detectedLang = "FR";
+
+    @Column(name = "rag_used")
+    @Builder.Default
+    private Boolean ragUsed = false;
+
+    @Column(name = "rag_source")
+    private String ragSource;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -50,7 +50,12 @@ export default function AdminDashboardPage() {
         sx={{
           borderRadius: 5,
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(232,97,26,0.14), rgba(255,255,255,0.96))',
+          background: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(232,97,26,0.18), rgba(18,18,21,0.95))'
+              : 'linear-gradient(135deg, rgba(232,97,26,0.14), rgba(255,255,255,0.96))',
+          border: 1,
+          borderColor: 'divider',
         }}
       >
         <CardContent sx={{ p: { xs: 3, md: 4 } }}>

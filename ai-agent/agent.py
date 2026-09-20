@@ -7,6 +7,7 @@ from escalation import should_escalate, escalate
 
 import re
 import datetime
+import os
 
 # ================= SESSION STORE =================
 user_sessions = {
@@ -18,6 +19,10 @@ user_sessions = {
     #   data: {}
     # }
 }
+
+HIGH_VALUE_TRANSFER_THRESHOLD = float(
+    os.getenv("HIGH_VALUE_TRANSFER_THRESHOLD", "5000")
+)
 
 # ================= QUERY PARSER =================
 def parse_transaction_query(query):
@@ -79,20 +84,21 @@ def detect_intent(query, decision):
     VALID_TOOLS = ["getBalance", "getTransactions", "transferMoney", "raiseComplaint"]
 
     if decision.get("tool") in VALID_TOOLS:
-        return decision["tool"], decision.get("arguments", {}) or {}
+        arguments = decision.get("arguments", {}) or {}
+        if decision["tool"] == "transferMoney":
+            extracted = extract_transfer_details(query)
+            merged_arguments = dict(arguments)
+            merged_arguments.update(extracted)
+            if merged_arguments.get("amount") is not None and merged_arguments.get("receiverAccno") is not None:
+                return "transferMoney", merged_arguments
+        return decision["tool"], arguments
     
     if any(x in q for x in ["raise ticket", "create ticket", "complaint", "report issue","kaam nahi", "not working", "issue", "problem", "error", "nhi ho rha"]):
         return "raiseComplaint", {}
     
     if any(x in q for x in ["transfer", "send", "bhej"]):
-        nums = re.findall(r'-?\d+\.?\d*', q)
-
-        if len(nums) >= 2:
-            return "transferMoney", {
-                "amount": float(nums[0]),
-                "receiverAccno": int(nums[1])
-            }
-        return "transferMoney", {}
+        details = extract_transfer_details(query)
+        return "transferMoney", details
 
     if any(x in q for x in ["transaction", "transactions", "history", "statement", "txns",
     "recent", "record", "record chahiye"]):
@@ -102,6 +108,36 @@ def detect_intent(query, decision):
         return "getBalance", {}
 
     return None, {}
+
+
+def extract_transfer_details(query):
+    """Extract amount and destination without requiring a specific transfer verb."""
+    normalized = query.lower().replace(",", "")
+    details = {}
+
+    standalone_account = re.fullmatch(r"\s*(\d[\d-]*)\s*", normalized)
+    if standalone_account:
+        return {"receiverAccno": standalone_account.group(1)}
+
+    amount_match = re.search(r"\bamount\s*(?:is|of|:)?\s*(\d+(?:\.\d+)?)", normalized)
+    if amount_match:
+        details["amount"] = float(amount_match.group(1))
+
+    receiver_match = re.search(
+        r"\b(?:receiver|recipient|destination|account(?:\s+number)?|acc(?:ount)?\s*no)\D*"
+        r"(\d[\d-]*)",
+        normalized,
+    )
+    if receiver_match:
+        details["receiverAccno"] = receiver_match.group(1)
+
+    numbers = re.findall(r"\b\d+(?:\.\d+)?\b", normalized)
+    if "amount" not in details and len(numbers) > 1:
+        details["amount"] = float(numbers[0])
+    if "receiverAccno" not in details and len(numbers) > 1:
+        details["receiverAccno"] = numbers[1]
+
+    return details
 
 # ================= FORMAT =================
 def format_transactions(txns, user_id):
@@ -136,6 +172,20 @@ def run_agent(query, token, user_id):
     if q.strip() in {"hi", "hello", "hey", "bonjour", "salut"}:
         return "Hello! How can I help you with your banking needs today?"
 
+    if (
+        ("account" in q or "accounts" in q)
+        and ("number" in q or "numbers" in q)
+        and any(word in q for word in ["all", "available", "exist", "existing", "which", "what", "show", "see"])
+    ):
+        try:
+            numbers = get_available_account_numbers(token)
+            if not numbers:
+                return "No active account numbers are currently available."
+            return "Available account numbers: " + ", ".join(str(number) for number in numbers)
+        except Exception as exc:
+            print("ACCOUNT LOOKUP ERROR:", exc)
+            return "I could not retrieve the available account numbers. Please try again later."
+
     session = user_sessions.get(user_id)
 
     # ===== SESSION EXPIRY =====
@@ -150,6 +200,13 @@ def run_agent(query, token, user_id):
         if session.get("type") == "transfer" and session.get("status") == "pending":
             if q not in ["yes", "haan", "no", "cancel"]:
                 return "⚠️ Please confirm previous transaction (yes/no)"
+
+        if session.get("type") == "transfer" and session.get("status") == "awaiting_details":
+            session["args"].update(extract_transfer_details(query))
+            if session["args"].get("amount") is None or session["args"].get("receiverAccno") is None:
+                return "Please provide both the amount and receiver account number"
+            session["status"] = "pending"
+            return f"⚠️ Confirm transfer ₹{session['args']['amount']} to account {session['args']['receiverAccno']}? (yes/no)"
 
         if session.get("type") == "support":
             pass  # allow flow to continue
@@ -214,11 +271,35 @@ def run_agent(query, token, user_id):
                         raise Exception(res.get("error"))
 
                     user_sessions.pop(user_id, None)
+                    if (
+                        isinstance(res, dict)
+                        and (
+                            str(res.get("status", "")).upper() == "PENDING"
+                            or str(res.get("agentDecision", "")).upper() == "TRIGGER_BPMN"
+                            or res.get("flowableProcessId")
+                        )
+                    ):
+                        return (
+                            "⏳ Transfer submitted for validation. "
+                            "Because this is a high-value transfer, it must be approved "
+                            "through the banking validation workflow before completion."
+                        )
                     return "✅ Transfer successful"
 
                 except Exception as e:
                     print("TRANSFER ERROR:", e)
-                    user_sessions.pop(user_id, None)   # 🔥 CLEAR SESSION
+                    if "destination account" in str(e).lower():
+                        user_sessions[user_id] = {
+                            "type": "transfer",
+                            "tool": "transferMoney",
+                            "args": {
+                                "amount": session["args"].get("amount"),
+                            },
+                            "status": "awaiting_details",
+                            "created_at": datetime.datetime.now().timestamp()
+                        }
+                        return "The destination account number was not found. Please provide a valid destination account number."
+                    user_sessions.pop(user_id, None)
                     return "❌ Transfer failed. Please try again."
 
         return "⚠️ No pending action"
@@ -315,7 +396,20 @@ def run_agent(query, token, user_id):
 
     # VALIDATE INPUT PRESENCE
                 if amount is None or receiver is None:
-                    return "Please provide amount and receiver account number"
+                    partial_args = dict(args)
+                    partial_args.update(extract_transfer_details(query))
+                    if partial_args.get("amount") is None or partial_args.get("receiverAccno") is None:
+                        user_sessions[user_id] = {
+                            "type": "transfer",
+                            "tool": tool,
+                            "args": partial_args,
+                            "status": "awaiting_details",
+                            "created_at": datetime.datetime.now().timestamp()
+                        }
+                        return "Please provide both the amount and receiver account number"
+                    args = partial_args
+                    amount = args.get("amount")
+                    receiver = args.get("receiverAccno")
 
     # SAFE CONVERSION
                 try:
@@ -329,6 +423,26 @@ def run_agent(query, token, user_id):
 
                 if str(receiver) == str(user_id):
                     return "⚠️ You cannot transfer to your own account."
+
+                # High-value transfers are validated by the backend BPMN workflow.
+                # Do not call auxiliary balance/transaction endpoints before confirmation:
+                # those checks can fail independently and prevent the workflow from starting.
+                if amount > HIGH_VALUE_TRANSFER_THRESHOLD:
+                    user_sessions[user_id] = {
+                        "type": "transfer",
+                        "tool": tool,
+                        "args": {
+                            "amount": amount,
+                            "receiverAccno": receiver,
+                        },
+                        "status": "pending",
+                        "high_risk": True,
+                        "created_at": datetime.datetime.now().timestamp()
+                    }
+                    return (
+                        f"⚠️ This high-value transfer of {amount:g} requires validation. "
+                        f"Do you confirm the transfer of {amount:g} to account {receiver}? (yes/no)"
+                    )
 
     # HIGH VALUE FLAG (NOT BLOCK)
                 if amount > 500000:
@@ -378,8 +492,9 @@ def run_agent(query, token, user_id):
                 return f"⚠️ Confirm transfer ₹{amount} to account {receiver}? (yes/no)"
 
         except Exception as e:
-            print("TOOL ERROR:", e)
-            return "❌ Operation failed"
+            print("TOOL ERROR:", repr(e))
+            detail = str(e).strip() or "The banking service returned no error details."
+            return f"❌ Operation failed: {detail}"
 
     # ===== RAG =====
     rag = None
@@ -393,9 +508,6 @@ def run_agent(query, token, user_id):
 
     # ===== FALLBACK =====
     reply = decision.get("reply", "Samajh nahi aaya")
-
-    append_user_mem(user_id, f"User: {query}")
-    append_user_mem(user_id, f"Bot: {reply}")
 
     if should_escalate(user_id, reply) and not session:
         return "⚠️ I'm unable to resolve this. Do you want to raise a support ticket? (yes/no)"

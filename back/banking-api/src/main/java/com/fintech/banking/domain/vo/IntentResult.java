@@ -14,6 +14,9 @@ public class IntentResult {
 
     private Boolean isSensitive;
 
+    /** "FR" or "EN" — required by the cahier des charges bilingual prompt (section 8.4). */
+    private String detectedLanguage;
+
     public boolean isConfident() {
         return confidence != null && confidence >= 0.7;
     }
@@ -71,5 +74,13 @@ public class IntentResult {
 
     public void setIsSensitive(Boolean isSensitive) {
         this.isSensitive = isSensitive;
+    }
+
+    public String getDetectedLanguage() {
+        return detectedLanguage;
+    }
+
+    public void setDetectedLanguage(String detectedLanguage) {
+        this.detectedLanguage = detectedLanguage;
     }
 }

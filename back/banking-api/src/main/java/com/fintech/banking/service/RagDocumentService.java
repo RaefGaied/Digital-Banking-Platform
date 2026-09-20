@@ -13,6 +13,7 @@ import java.util.List;
 public class RagDocumentService {
 
     private final RagDocumentRepository ragDocumentRepository;
+    private final RagKnowledgeService ragKnowledgeService;
 
     public List<RagDocument> listAll() {
         return ragDocumentRepository.findAllByOrderByUpdatedAtDesc();
@@ -37,7 +38,9 @@ public class RagDocumentService {
                 .active(active == null || active)
                 .build();
 
-        return ragDocumentRepository.save(document);
+        RagDocument saved = ragDocumentRepository.save(document);
+        ragKnowledgeService.embedAndStore(saved.getId(), buildEmbeddingInput(saved));
+        return saved;
     }
 
     @Transactional
@@ -50,12 +53,29 @@ public class RagDocumentService {
         document.setSource(trimToNull(source, document.getSource()));
         document.setActive(active == null ? document.getActive() : active);
 
-        return ragDocumentRepository.save(document);
+        RagDocument saved = ragDocumentRepository.save(document);
+        ragKnowledgeService.embedAndStore(saved.getId(), buildEmbeddingInput(saved));
+        return saved;
     }
 
     @Transactional
     public void delete(Long id) {
         ragDocumentRepository.deleteById(id);
+    }
+
+    /** Re-vectorizes an existing document on demand (BF-A08). */
+    @Transactional
+    public RagDocument reindex(Long id) {
+        RagDocument document = ragDocumentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("RAG document not found: " + id));
+        ragKnowledgeService.embedAndStore(document.getId(), buildEmbeddingInput(document));
+        return document;
+    }
+
+    private String buildEmbeddingInput(RagDocument document) {
+        String title = document.getTitle() == null ? "" : document.getTitle();
+        String content = document.getContent() == null ? "" : document.getContent();
+        return (title + "\n" + content).trim();
     }
 
     private String trimToNull(String value) {

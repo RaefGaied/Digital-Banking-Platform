@@ -5,6 +5,8 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
 
 # ================= JSON PARSER =================
@@ -87,7 +89,7 @@ def call_groq(prompt):
                 "Content-Type": "application/json"
             },
             json={
-                "model": "llama-3.1-8b-instant",
+                "model": "openai/gpt-oss-20b",
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0
             },
@@ -108,6 +110,28 @@ def call_groq(prompt):
 
     except Exception as e:
         print("GROQ ERROR:", e)
+        return None
+
+
+def call_ollama(prompt):
+    try:
+        res = requests.post(
+            f"{OLLAMA_BASE_URL.rstrip('/')}/api/chat",
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+                "format": "json",
+            },
+            timeout=60,
+        )
+        if res.status_code != 200:
+            print("OLLAMA RESPONSE:", res.status_code, res.text[:200])
+            return None
+        content = res.json().get("message", {}).get("content", "")
+        return extract_json(content)
+    except requests.RequestException as exc:
+        print("OLLAMA ERROR:", exc)
         return None
 
 # ================= MAIN =================
@@ -149,6 +173,12 @@ Context:
 User: {query}
 """
 
+    # ===== TRY LOCAL OLLAMA (no API key or provider quota) =====
+    result = call_ollama(prompt)
+    if result and result.get("action"):
+        print("✅ USING LOCAL OLLAMA")
+        return result
+
     # ===== TRY OPENAI =====
     if OPENAI_API_KEY:
         result = call_openai(prompt)
@@ -166,5 +196,5 @@ User: {query}
     # ===== FINAL FAILSAFE =====
     return {
         "action": "reply",
-        "reply": "System busy, please try again"
+        "reply": "I can help with your balance, transactions, transfers, account numbers, or support requests."
     }

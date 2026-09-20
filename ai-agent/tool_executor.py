@@ -52,7 +52,7 @@ def execute_tool(tool, args, token, user_id):
             }
 
         return _retry(lambda: transfer_money(token, {
-            "receiverAccno": receiver,
+            "targetAccountNumber": str(receiver),
             "amount": amount
         }))
     

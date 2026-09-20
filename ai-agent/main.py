@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import jwt, logging, json, os, time
+import jwt, logging, json, os, re, time
 from config import JWT_SECRET
 from agent import run_agent
+from memory_store import append_user_mem
 
 app = FastAPI()
 
@@ -41,23 +42,6 @@ def check_rate(user_id):
     rate_limit[user_id] = window
     return True
 
-# ================= MEMORY =================
-MEMORY_FILE = "memory.json"
-
-def save_memory(user_id, msg):
-    try:
-        data = json.load(open(MEMORY_FILE)) if os.path.exists(MEMORY_FILE) else {}
-    except:
-        data = {}
-
-    data.setdefault(str(user_id), []).append({
-        "msg": msg,
-        "time": time.time()
-    })
-
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
 # ================= JWT =================
 def get_accno(token):
     try:
@@ -80,10 +64,41 @@ def health():
 
 # ================= CHAT =================
 @app.post("/chat")
-async def chat(req: ChatRequest, request: Request):
+async def chat(request: Request):
 
     start = time.time()
-    query = (req.query or req.message).strip()
+    try:
+        raw_body = await request.body()
+        decoded_body = raw_body.decode("utf-8")
+        logging.debug("Chat body length=%d prefix=%r", len(decoded_body), decoded_body[:80])
+        payload = json.loads(decoded_body)
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+    except json.JSONDecodeError:
+        normalized_body = decoded_body.replace('\\"', '"').strip()
+        try:
+            payload = json.loads(normalized_body)
+            if isinstance(payload, str):
+                payload = json.loads(payload)
+        except json.JSONDecodeError:
+            # Accept the legacy Java map representation while clients update.
+            match = re.fullmatch(
+                r"\s*\{\s*(?:query|message)\s*[:=]\s*[\"']?(.*?)[\"']?\s*\}\s*",
+                normalized_body,
+            )
+            payload = {"query": match.group(1)} if match else None
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="Request body must be valid UTF-8") from exc
+
+    if not isinstance(payload, dict):
+        header_query = request.headers.get("x-agent-query", "").strip()
+        if header_query:
+            payload = {"query": header_query}
+
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Request body must be a JSON object")
+
+    query = str(payload.get("query") or payload.get("message") or "").strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query is required")
 
@@ -108,7 +123,7 @@ async def chat(req: ChatRequest, request: Request):
         }
 
     # ===== MEMORY =====
-    save_memory(user_id, query)
+    append_user_mem(user_id, f"User: {query}")
 
     # ===== AGENT =====
     try:
@@ -116,6 +131,7 @@ async def chat(req: ChatRequest, request: Request):
     except Exception as e:
         logging.error(f"AGENT FAILURE: {e}")
         reply = "⚠️ System issue, please try again later"
+    append_user_mem(user_id, f"Bot: {reply}")
 
     # ===== SMART ACTIONS =====
     q = query.lower()

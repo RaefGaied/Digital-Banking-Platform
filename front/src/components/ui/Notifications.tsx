@@ -29,28 +29,43 @@ export default function Notifications() {
     {
       id: 'welcome',
       icon: Bell,
-      color: 'bg-primary-100 text-primary-500',
+      color: 'bg-orange-500/10 text-orange-500',
       title: 'Welcome to FinBank!',
       description: 'Your account is active and ready to use.',
       time: 'Just now',
     },
-    ...transactions.slice(0, 3).map(t => ({
+    ...transactions.slice(0, 3).map((t) => ({
       id: t.id,
       icon: DollarSign,
-      color: t.type === 'DEPOSIT' ? 'bg-green-100 text-green-500' : 'bg-red-100 text-red-500',
-      title: t.type === 'DEPOSIT' ? 'Amount received' : t.type === 'WITHDRAWAL' ? 'Withdrawal made' : 'Transfer sent',
-      description: `${t.type === 'DEPOSIT' ? '+' : '-'}${formatCurrency(t.amount)} ${t.description ? `- ${t.description}` : ''}`,
+      color:
+        t.type === 'DEPOSIT'
+          ? 'bg-emerald-500/10 text-emerald-500'
+          : 'bg-rose-500/10 text-rose-500',
+      title:
+        t.type === 'DEPOSIT'
+          ? 'Amount received'
+          : t.type === 'WITHDRAWAL'
+          ? 'Withdrawal made'
+          : 'Transfer sent',
+      description: `${t.type === 'DEPOSIT' ? '+' : '-'}${formatCurrency(t.amount)} ${
+        t.description ? `- ${t.description}` : ''
+      }`,
       time: formatDate(t.createdAt),
     })),
-    ...investments.filter(i => Number(i.profitLoss) > 0).slice(0, 2).map(i => ({
-      id: i.id,
-      icon: TrendingUp,
-      color: 'bg-green-100 text-green-500',
-      title: `${i.investmentType.replace('_', ' ')} earning`,
-      description: `Your investment is up ${formatCurrency(Number(i.profitLoss))} (${Number(i.profitLossPercent).toFixed(2)}%)`,
-      time: formatDate(i.investedAt),
-    })),
-  ].filter(n => !dismissed.includes(n.id));
+    ...investments
+      .filter((i) => Number(i.profitLoss) > 0)
+      .slice(0, 2)
+      .map((i) => ({
+        id: i.id,
+        icon: TrendingUp,
+        color: 'bg-emerald-500/10 text-emerald-500',
+        title: `${i.investmentType.replace('_', ' ')} earning`,
+        description: `Your investment is up ${formatCurrency(Number(i.profitLoss))} (${Number(
+          i.profitLossPercent
+        ).toFixed(2)}%)`,
+        time: formatDate(i.investedAt),
+      })),
+  ].filter((n) => !dismissed.includes(n.id));
 
   const unreadCount = notifications.length;
 
@@ -58,10 +73,12 @@ export default function Notifications() {
     <div className='relative'>
       <button
         onClick={() => setOpen(!open)}
-        className='relative w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm hover:shadow-md transition-shadow'>
-        <Bell className='w-5 h-5 text-gray-400' />
+        aria-label='Notifications'
+        className='relative w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-center text-slate-700 dark:text-zinc-300 shadow-sm hover:border-primary-500 dark:hover:border-primary-500 transition-all'
+      >
+        <Bell className='w-4.5 h-4.5' />
         {unreadCount > 0 && (
-          <span className='absolute -top-1 -right-1 w-5 h-5 bg-primary-500 text-white text-xs font-bold rounded-full flex items-center justify-center'>
+          <span className='absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-sm animate-pulse'>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -70,44 +87,67 @@ export default function Notifications() {
       {open && (
         <>
           <div className='fixed inset-0 z-40' onClick={() => setOpen(false)} />
-          <div className='absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-xl border border-cream-200 z-50 overflow-hidden'>
-            <div className='flex items-center justify-between p-4 border-b border-cream-200'>
-              <h3 className='font-semibold text-dark-800'>Notifications</h3>
+          <div className='absolute right-0 top-12 w-80 sm:w-88 max-w-[calc(100vw-32px)] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-zinc-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150'>
+            {/* Popover Header */}
+            <div className='flex items-center justify-between p-4 border-b border-slate-100 dark:border-zinc-800/80'>
+              <h3 className='font-bold text-sm text-slate-900 dark:text-zinc-100'>Notifications</h3>
               <div className='flex items-center gap-2'>
                 {notifications.length > 0 && (
                   <button
-                    onClick={() => setDismissed(prev => [...prev, ...notifications.map(n => n.id)])}
-                    className='text-xs text-primary-500 hover:text-primary-600 flex items-center gap-1'>
+                    onClick={() =>
+                      setDismissed((prev) => [...prev, ...notifications.map((n) => n.id)])
+                    }
+                    className='text-xs font-semibold text-primary-500 hover:text-primary-600 flex items-center gap-1'
+                  >
                     <Check className='w-3 h-3' /> Mark all read
                   </button>
                 )}
-                <button onClick={() => setOpen(false)} className='text-gray-400 hover:text-dark-800'>
+                <button
+                  onClick={() => setOpen(false)}
+                  className='p-1 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 rounded-lg'
+                >
                   <X className='w-4 h-4' />
                 </button>
               </div>
             </div>
 
-            <div className='max-h-96 overflow-y-auto'>
+            {/* List */}
+            <div className='max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-zinc-800/60'>
               {notifications.length === 0 ? (
                 <div className='p-8 text-center'>
-                  <Bell className='w-8 h-8 text-gray-200 mx-auto mb-2' />
-                  <p className='text-gray-400 text-sm'>{isAdmin ? 'No security notifications' : 'No notifications'}</p>
+                  <Bell className='w-8 h-8 text-slate-300 dark:text-zinc-700 mx-auto mb-2' />
+                  <p className='text-slate-500 dark:text-zinc-400 text-xs font-medium'>
+                    {isAdmin ? 'No security notifications' : 'No new notifications'}
+                  </p>
                 </div>
               ) : (
-                notifications.map(n => (
-                  <div key={n.id} className='flex items-start gap-3 p-4 hover:bg-cream-50 transition-colors border-b border-cream-100 last:border-0'>
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${n.color}`}>
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className='flex items-start gap-3 p-3.5 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors'
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${n.color}`}
+                    >
                       <n.icon className='w-4 h-4' />
                     </div>
                     <div className='flex-1 min-w-0'>
-                      <p className='text-sm font-medium text-dark-800'>{n.title}</p>
-                      <p className='text-xs text-gray-400 truncate mt-0.5'>{n.description}</p>
-                      <p className='text-xs text-gray-300 mt-1'>{n.time}</p>
+                      <p className='text-xs font-semibold text-slate-900 dark:text-zinc-100'>
+                        {n.title}
+                      </p>
+                      <p className='text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5'>
+                        {n.description}
+                      </p>
+                      <p className='text-[10px] text-slate-400 dark:text-zinc-500 mt-1 font-medium'>
+                        {n.time}
+                      </p>
                     </div>
                     <button
-                      onClick={() => setDismissed(prev => [...prev, n.id])}
-                      className='text-gray-300 hover:text-gray-500 shrink-0'>
-                      <X className='w-3 h-3' />
+                      onClick={() => setDismissed((prev) => [...prev, n.id])}
+                      className='text-slate-300 dark:text-zinc-600 hover:text-slate-500 dark:hover:text-zinc-400 shrink-0 p-1'
+                      aria-label='Dismiss notification'
+                    >
+                      <X className='w-3.5 h-3.5' />
                     </button>
                   </div>
                 ))

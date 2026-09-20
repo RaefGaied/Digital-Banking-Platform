@@ -44,6 +44,15 @@ spring:
       properties:
         spring.json.trusted.packages: com.fintech.banking.*
 
+  ai:
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_MODEL:llama3.2}
+      embedding:
+        model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+
 server:
   port: 8080
   servlet:
@@ -75,6 +84,9 @@ app:
   sensitive-line:
     threshold: 5000
 
+rag:
+  similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.72}
+
 logging:
   level:
     com.fintech.banking: DEBUG
@@ -93,6 +105,8 @@ azure:
     model: ${AZURE_OPENAI_MODEL:gpt-4o}
 
 ai:
+  ollama:
+    enabled: ${OLLAMA_ENABLED:false}
   openai:
     api-key: ${OPENAI_API_KEY:}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             targetNamespace="http://bpmn.io/schema/bpmn"
+             exporter="Camunda Modeler"
+             exporterVersion="5.0.0">
+
+  <process id="fraudValidationProcess" isExecutable="true" name="Gestion Fraude">
+    <laneSet id="LaneSet_1">
+      <lane id="Lane_Client" name="Client">
+        <flowNodeRef>Event_Start</flowNodeRef>
+        <flowNodeRef>Task_FournirJustificatifs</flowNodeRef>
+        <flowNodeRef>Boundary_ClientTimeout</flowNodeRef>
+      </lane>
+      <lane id="Lane_Systeme" name="Système">
+        <flowNodeRef>Task_VerifierCompte</flowNodeRef>
+        <flowNodeRef>Gateway_CompteActif</flowNodeRef>
+        <flowNodeRef>Task_NotifyCompteBloque</flowNodeRef>
+        <flowNodeRef>Event_EndCompteBloque</flowNodeRef>
+        <flowNodeRef>Task_BloquerCarte</flowNodeRef>
+        <flowNodeRef>Gateway_BlocageOk</flowNodeRef>
+        <flowNodeRef>Task_NotifyBlocage</flowNodeRef>
+        <flowNodeRef>Task_NotifyErreur</flowNodeRef>
+        <flowNodeRef>Event_EndErreur</flowNodeRef>
+        <flowNodeRef>Task_NotifyFauxPositif</flowNodeRef>
+        <flowNodeRef>Task_AuditLog</flowNodeRef>
+        <flowNodeRef>Event_EndFraudeTraitee</flowNodeRef>
+      </lane>
+      <lane id="Lane_Admin" name="Admin">
+        <flowNodeRef>Task_AnalyseFraude</flowNodeRef>
+        <flowNodeRef>Boundary_AdminTimeout</flowNodeRef>
+        <flowNodeRef>Gateway_DecisionAdmin</flowNodeRef>
+        <flowNodeRef>Task_NotifyContact</flowNodeRef>
+        <flowNodeRef>Gateway_MaxInfos</flowNodeRef>
+        <flowNodeRef>Task_Escalade</flowNodeRef>
+        <flowNodeRef>Event_EndEscalade</flowNodeRef>
+      </lane>
+    </laneSet>
+
+    <startEvent id="Event_Start" name="Fraude signalée">
+      <outgoing>Flow_1</outgoing>
+    </startEvent>
+
+    <serviceTask id="Task_VerifierCompte" name="Vérifier statut compte">
+      <incoming>Flow_1</incoming>
+      <outgoing>Flow_2</outgoing>
+    </serviceTask>
+
+    <exclusiveGateway id="Gateway_CompteActif" name="Compte actif?">
+      <incoming>Flow_2</incoming>
+      <outgoing>Flow_CompteOui</outgoing>
+      <outgoing>Flow_CompteNon</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="Flow_1" sourceRef="Event_Start" targetRef="Task_VerifierCompte"/>
+    <sequenceFlow id="Flow_2" sourceRef="Task_VerifierCompte" targetRef="Gateway_CompteActif"/>
+    <sequenceFlow id="Flow_CompteOui" name="Oui" sourceRef="Gateway_CompteActif" targetRef="Task_AnalyseFraude">
+      <conditionExpression>${compteActif==true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_CompteNon" name="Non" sourceRef="Gateway_CompteActif" targetRef="Task_NotifyCompteBloque">
+      <conditionExpression>${compteActif==false}</conditionExpression>
+    </sequenceFlow>
+
+    <serviceTask id="Task_NotifyCompteBloque" name="Notifier compte bloqué">
+      <incoming>Flow_CompteNon</incoming>
+      <outgoing>Flow_CompteEnd</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_CompteEnd" sourceRef="Task_NotifyCompteBloque" targetRef="Event_EndCompteBloque"/>
+    <endEvent id="Event_EndCompteBloque" name="Compte bloqué">
+      <incoming>Flow_CompteEnd</incoming>
+    </endEvent>
+
+    <userTask id="Task_AnalyseFraude" name="Analyser fraude" camunda:candidateGroups="admin">
+      <incoming>Flow_CompteOui</incoming>
+      <incoming>Flow_MaxOui</incoming>
+      <outgoing>Flow_3</outgoing>
+    </userTask>
+
+    <boundaryEvent id="Boundary_AdminTimeout" name="48h écoulées" attachedToRef="Task_AnalyseFraude" cancelActivity="true">
+      <outgoing>Flow_AdminTimeout_out</outgoing>
+      <timerEventDefinition>
+        <timeDuration>PT48H</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <sequenceFlow id="Flow_AdminTimeout_out" sourceRef="Boundary_AdminTimeout" targetRef="Task_Escalade"/>
+
+    <sequenceFlow id="Flow_3" sourceRef="Task_AnalyseFraude" targetRef="Gateway_DecisionAdmin"/>
+
+    <exclusiveGateway id="Gateway_DecisionAdmin" name="Décision">
+      <incoming>Flow_3</incoming>
+      <outgoing>Flow_Bloquer</outgoing>
+      <outgoing>Flow_Contacter</outgoing>
+      <outgoing>Flow_FauxPositif</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="Flow_Bloquer" name="Bloquer" sourceRef="Gateway_DecisionAdmin" targetRef="Task_BloquerCarte">
+      <conditionExpression>${decision=='BLOQUER'}</conditionExpression>
+    </sequenceFlow>
+
+    <serviceTask id="Task_BloquerCarte" name="Bloquer carte">
+      <incoming>Flow_Bloquer</incoming>
+      <outgoing>Flow_4</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_4" sourceRef="Task_BloquerCarte" targetRef="Gateway_BlocageOk"/>
+
+    <exclusiveGateway id="Gateway_BlocageOk" name="Blocage OK?">
+      <incoming>Flow_4</incoming>
+      <outgoing>Flow_BlocageOui</outgoing>
+      <outgoing>Flow_BlocageNon</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="Flow_BlocageOui" name="Oui" sourceRef="Gateway_BlocageOk" targetRef="Task_NotifyBlocage">
+      <conditionExpression>${blocageOk==true}</conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="Task_NotifyBlocage" name="Notifier blocage">
+      <incoming>Flow_BlocageOui</incoming>
+      <outgoing>Flow_5</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_5" sourceRef="Task_NotifyBlocage" targetRef="Task_AuditLog"/>
+
+    <sequenceFlow id="Flow_BlocageNon" name="Non" sourceRef="Gateway_BlocageOk" targetRef="Task_NotifyErreur">
+      <conditionExpression>${blocageOk==false}</conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="Task_NotifyErreur" name="Notifier erreur">
+      <incoming>Flow_BlocageNon</incoming>
+      <outgoing>Flow_ErreurEnd</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_ErreurEnd" sourceRef="Task_NotifyErreur" targetRef="Event_EndErreur"/>
+    <endEvent id="Event_EndErreur" name="Erreur blocage">
+      <incoming>Flow_ErreurEnd</incoming>
+    </endEvent>
+
+    <sequenceFlow id="Flow_Contacter" name="Contacter" sourceRef="Gateway_DecisionAdmin" targetRef="Task_NotifyContact">
+      <conditionExpression>${decision=='CONTACTER'}</conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="Task_NotifyContact" name="Demander justificatifs">
+      <incoming>Flow_Contacter</incoming>
+      <outgoing>Flow_6</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_6" sourceRef="Task_NotifyContact" targetRef="Task_FournirJustificatifs"/>
+
+    <userTask id="Task_FournirJustificatifs" name="Fournir justificatifs" camunda:assignee="${userId}">
+      <incoming>Flow_6</incoming>
+      <outgoing>Flow_7</outgoing>
+    </userTask>
+
+    <boundaryEvent id="Boundary_ClientTimeout" name="24h écoulées" attachedToRef="Task_FournirJustificatifs" cancelActivity="true">
+      <outgoing>Flow_ClientTimeout_out</outgoing>
+      <timerEventDefinition>
+        <timeDuration>PT24H</timeDuration>
+      </timerEventDefinition>
+    </boundaryEvent>
+    <sequenceFlow id="Flow_ClientTimeout_out" sourceRef="Boundary_ClientTimeout" targetRef="Task_Escalade"/>
+
+    <sequenceFlow id="Flow_7" sourceRef="Task_FournirJustificatifs" targetRef="Gateway_MaxInfos"/>
+
+    <exclusiveGateway id="Gateway_MaxInfos" name="Nbinfos &lt; 3?">
+      <incoming>Flow_7</incoming>
+      <outgoing>Flow_MaxOui</outgoing>
+      <outgoing>Flow_MaxNon</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_MaxOui" name="Oui" sourceRef="Gateway_MaxInfos" targetRef="Task_AnalyseFraude">
+      <conditionExpression>${nbInfos &lt; 3}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_MaxNon" name="Non" sourceRef="Gateway_MaxInfos" targetRef="Task_Escalade">
+      <conditionExpression>${nbInfos &gt;= 3}</conditionExpression>
+    </sequenceFlow>
+
+    <sequenceFlow id="Flow_FauxPositif" name="Faux positif" sourceRef="Gateway_DecisionAdmin" targetRef="Task_NotifyFauxPositif">
+      <conditionExpression>${decision=='FAUX_POSITIF'}</conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="Task_NotifyFauxPositif" name="Notifier faux positif">
+      <incoming>Flow_FauxPositif</incoming>
+      <outgoing>Flow_8</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_8" sourceRef="Task_NotifyFauxPositif" targetRef="Task_AuditLog"/>
+
+    <serviceTask id="Task_AuditLog" name="Audit log">
+      <incoming>Flow_5</incoming>
+      <incoming>Flow_8</incoming>
+      <outgoing>Flow_AuditEnd</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_AuditEnd" sourceRef="Task_AuditLog" targetRef="Event_EndFraudeTraitee"/>
+    <endEvent id="Event_EndFraudeTraitee" name="Fraude traitée">
+      <incoming>Flow_AuditEnd</incoming>
+    </endEvent>
+
+    <serviceTask id="Task_Escalade" name="Escalade superviseur">
+      <incoming>Flow_MaxNon</incoming>
+      <incoming>Flow_AdminTimeout_out</incoming>
+      <incoming>Flow_ClientTimeout_out</incoming>
+      <outgoing>Flow_EscaladeEnd</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_EscaladeEnd" sourceRef="Task_Escalade" targetRef="Event_EndEscalade"/>
+    <endEvent id="Event_EndEscalade" name="Escalade">
+      <incoming>Flow_EscaladeEnd</incoming>
+    </endEvent>
+
+  </process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_Fraude">
+      <bpmndi:BPMNShape id="Lane_Client_Shape" bpmnElement="Lane_Client" isHorizontal="true">
+        <omgdc:Bounds x="0" y="0" width="1450" height="160"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Systeme_Shape" bpmnElement="Lane_Systeme" isHorizontal="true">
+        <omgdc:Bounds x="0" y="160" width="1450" height="460"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Admin_Shape" bpmnElement="Lane_Admin" isHorizontal="true">
+        <omgdc:Bounds x="0" y="620" width="1450" height="220"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Start_Shape" bpmnElement="Event_Start">
+        <omgdc:Bounds x="90" y="60" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FournirJustificatifs_Shape" bpmnElement="Task_FournirJustificatifs">
+        <omgdc:Bounds x="540" y="50" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_VerifierCompte_Shape" bpmnElement="Task_VerifierCompte">
+        <omgdc:Bounds x="160" y="200" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CompteActif_Shape" bpmnElement="Gateway_CompteActif" isMarkerVisible="true">
+        <omgdc:Bounds x="330" y="205" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_BloquerCarte_Shape" bpmnElement="Task_BloquerCarte">
+        <omgdc:Bounds x="400" y="200" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyBlocage_Shape" bpmnElement="Task_NotifyBlocage">
+        <omgdc:Bounds x="660" y="200" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_BlocageOk_Shape" bpmnElement="Gateway_BlocageOk" isMarkerVisible="true">
+        <omgdc:Bounds x="830" y="205" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AuditLog_Shape" bpmnElement="Task_AuditLog">
+        <omgdc:Bounds x="930" y="200" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndFraudeTraitee_Shape" bpmnElement="Event_EndFraudeTraitee">
+        <omgdc:Bounds x="1100" y="215" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyCompteBloque_Shape" bpmnElement="Task_NotifyCompteBloque">
+        <omgdc:Bounds x="260" y="330" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndCompteBloque_Shape" bpmnElement="Event_EndCompteBloque">
+        <omgdc:Bounds x="420" y="345" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyErreur_Shape" bpmnElement="Task_NotifyErreur">
+        <omgdc:Bounds x="830" y="330" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndErreur_Shape" bpmnElement="Event_EndErreur">
+        <omgdc:Bounds x="990" y="345" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyFauxPositif_Shape" bpmnElement="Task_NotifyFauxPositif">
+        <omgdc:Bounds x="1250" y="460" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AnalyseFraude_Shape" bpmnElement="Task_AnalyseFraude">
+        <omgdc:Bounds x="190" y="680" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DecisionAdmin_Shape" bpmnElement="Gateway_DecisionAdmin" isMarkerVisible="true">
+        <omgdc:Bounds x="360" y="695" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_NotifyContact_Shape" bpmnElement="Task_NotifyContact">
+        <omgdc:Bounds x="470" y="680" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_MaxInfos_Shape" bpmnElement="Gateway_MaxInfos" isMarkerVisible="true">
+        <omgdc:Bounds x="600" y="695" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Escalade_Shape" bpmnElement="Task_Escalade">
+        <omgdc:Bounds x="850" y="680" width="120" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_EndEscalade_Shape" bpmnElement="Event_EndEscalade">
+        <omgdc:Bounds x="1010" y="695" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Boundary_AdminTimeout_Shape" bpmnElement="Boundary_AdminTimeout">
+        <omgdc:Bounds x="232" y="722" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Boundary_ClientTimeout_Shape" bpmnElement="Boundary_ClientTimeout">
+        <omgdc:Bounds x="642" y="92" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_Edge" bpmnElement="Flow_1">
+        <omgdi:waypoint x="108" y="96"/>
+        <omgdi:waypoint x="160" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_Edge" bpmnElement="Flow_2">
+        <omgdi:waypoint x="280" y="230"/>
+        <omgdi:waypoint x="330" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CompteNon_Edge" bpmnElement="Flow_CompteNon">
+        <omgdi:waypoint x="345" y="255"/>
+        <omgdi:waypoint x="320" y="330"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CompteEnd_Edge" bpmnElement="Flow_CompteEnd">
+        <omgdi:waypoint x="380" y="360"/>
+        <omgdi:waypoint x="420" y="363"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CompteOui_Edge" bpmnElement="Flow_CompteOui">
+        <omgdi:waypoint x="345" y="255"/>
+        <omgdi:waypoint x="345" y="300"/>
+        <omgdi:waypoint x="150" y="300"/>
+        <omgdi:waypoint x="150" y="710"/>
+        <omgdi:waypoint x="190" y="710"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_Edge" bpmnElement="Flow_3">
+        <omgdi:waypoint x="310" y="710"/>
+        <omgdi:waypoint x="360" y="720"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Bloquer_Edge" bpmnElement="Flow_Bloquer">
+        <omgdi:waypoint x="360" y="700"/>
+        <omgdi:waypoint x="360" y="650"/>
+        <omgdi:waypoint x="70" y="650"/>
+        <omgdi:waypoint x="70" y="175"/>
+        <omgdi:waypoint x="460" y="175"/>
+        <omgdi:waypoint x="460" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_Edge" bpmnElement="Flow_4">
+        <omgdi:waypoint x="520" y="230"/>
+        <omgdi:waypoint x="660" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_BlocageOui_Edge" bpmnElement="Flow_BlocageOui">
+        <omgdi:waypoint x="780" y="230"/>
+        <omgdi:waypoint x="830" y="225"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_BlocageNon_Edge" bpmnElement="Flow_BlocageNon">
+        <omgdi:waypoint x="855" y="255"/>
+        <omgdi:waypoint x="855" y="300"/>
+        <omgdi:waypoint x="830" y="330"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_Edge" bpmnElement="Flow_5">
+        <omgdi:waypoint x="890" y="230"/>
+        <omgdi:waypoint x="930" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ErreurEnd_Edge" bpmnElement="Flow_ErreurEnd">
+        <omgdi:waypoint x="950" y="360"/>
+        <omgdi:waypoint x="990" y="363"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AuditEnd_Edge" bpmnElement="Flow_AuditEnd">
+        <omgdi:waypoint x="1050" y="230"/>
+        <omgdi:waypoint x="1100" y="233"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Contacter_Edge" bpmnElement="Flow_Contacter">
+        <omgdi:waypoint x="385" y="730"/>
+        <omgdi:waypoint x="470" y="710"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_Edge" bpmnElement="Flow_6">
+        <omgdi:waypoint x="560" y="680"/>
+        <omgdi:waypoint x="560" y="110"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_Edge" bpmnElement="Flow_7">
+        <omgdi:waypoint x="605" y="110"/>
+        <omgdi:waypoint x="605" y="695"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ClientTimeout_out_Edge" bpmnElement="Flow_ClientTimeout_out">
+        <omgdi:waypoint x="660" y="128"/>
+        <omgdi:waypoint x="1400" y="128"/>
+        <omgdi:waypoint x="1400" y="640"/>
+        <omgdi:waypoint x="910" y="640"/>
+        <omgdi:waypoint x="910" y="680"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AdminTimeout_out_Edge" bpmnElement="Flow_AdminTimeout_out">
+        <omgdi:waypoint x="388" y="758"/>
+        <omgdi:waypoint x="388" y="800"/>
+        <omgdi:waypoint x="900" y="800"/>
+        <omgdi:waypoint x="900" y="740"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_MaxOui_Edge" bpmnElement="Flow_MaxOui">
+        <omgdi:waypoint x="600" y="745"/>
+        <omgdi:waypoint x="600" y="790"/>
+        <omgdi:waypoint x="250" y="790"/>
+        <omgdi:waypoint x="250" y="740"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_MaxNon_Edge" bpmnElement="Flow_MaxNon">
+        <omgdi:waypoint x="650" y="720"/>
+        <omgdi:waypoint x="850" y="710"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EscaladeEnd_Edge" bpmnElement="Flow_EscaladeEnd">
+        <omgdi:waypoint x="970" y="710"/>
+        <omgdi:waypoint x="1010" y="713"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FauxPositif_Edge" bpmnElement="Flow_FauxPositif">
+        <omgdi:waypoint x="385" y="745"/>
+        <omgdi:waypoint x="385" y="785"/>
+        <omgdi:waypoint x="1310" y="785"/>
+        <omgdi:waypoint x="1310" y="520"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_Edge" bpmnElement="Flow_8">
+        <omgdi:waypoint x="1250" y="490"/>
+        <omgdi:waypoint x="970" y="490"/>
+        <omgdi:waypoint x="970" y="260"/>
+      </bpmndi:BPMNEdge>    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>

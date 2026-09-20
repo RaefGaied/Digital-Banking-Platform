@@ -7,6 +7,7 @@ import com.fintech.banking.domain.entity.Message;
 import com.fintech.banking.domain.entity.Session;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.AgentDecision;
+import com.fintech.banking.domain.enums.IntentType;
 import com.fintech.banking.domain.enums.SenderType;
 import com.fintech.banking.domain.enums.SessionStatus;
 import com.fintech.banking.domain.vo.IntentResult;
@@ -93,11 +94,11 @@ class ChatServiceTest {
         when(intentDetectionService.detectIntent(eq("Comment puis-je faire un virement ?"))).thenReturn(intentResult);
         when(bankingAgentService.getAgentBySessionId(sessionId)).thenReturn(Optional.of(agent));
         when(bankingAgentService.determineDecision(agent, intentResult)).thenReturn(AgentDecision.REQUEST_INFO);
-        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any())).thenReturn(new Message());
+        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(new Message());
 
         Message result = chatService.handleUserMessage(sessionId, userId, "Comment puis-je faire un virement ?");
 
-        verify(messageService, times(2)).createMessage(any(), any(), any(), any(), any(), any(), any());
+        verify(messageService, times(2)).createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
         assertTrue(result != null);
     }
 
@@ -133,40 +134,44 @@ class ChatServiceTest {
         when(intentDetectionService.detectIntent(eq("What should I do if my card is blocked?"))).thenReturn(intentResult);
         when(bankingAgentService.getAgentBySessionId(sessionId)).thenReturn(Optional.of(agent));
         when(bankingAgentService.determineDecision(agent, intentResult)).thenReturn(AgentDecision.REQUEST_INFO);
-        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any())).thenReturn(new Message());
+        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(new Message());
 
         chatService.handleUserMessage(sessionId, userId, "What should I do if my card is blocked?");
 
-        verify(messageService, times(2)).createMessage(any(), any(), any(), any(), any(), any(), any());
+        verify(messageService, times(2)).createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
-    void shouldUsePythonAgentAsPrimaryChatHandlerWhenAuthenticated() {
+    void shouldUseJavaOrchestrationBeforePythonFallback() {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID systemUserId = UUID.randomUUID();
-
         Session session = new Session();
         session.setId(sessionId);
         session.setUserId(userId);
         session.setStatus(SessionStatus.OPENED);
-
         User systemUser = new User();
         systemUser.setId(systemUserId);
         systemUser.setEmail("system@finbank.local");
-
+        IntentResult intentResult = new IntentResult();
+        intentResult.setIntent(IntentType.BALANCE);
+        intentResult.setConfidence(0.95);
+        intentResult.setParameters(objectMapper.createObjectNode());
+        BankingAgent agent = new BankingAgent();
+        agent.setId(UUID.randomUUID());
+        agent.setSessionId(sessionId);
+        agent.setUserId(userId);
         when(sessionService.getSessionById(sessionId)).thenReturn(Optional.of(session));
-        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(new Message());
-        when(pythonAgentGateway.ask(eq("What is my balance?"), eq("Bearer token")))
-                .thenReturn(Optional.of("Your balance is ₹1000"));
+        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(new Message());
+        when(intentDetectionService.detectIntent(eq("What is my balance?"))).thenReturn(intentResult);
+        when(bankingAgentService.getAgentBySessionId(sessionId)).thenReturn(Optional.of(agent));
+        when(bankingAgentService.determineDecision(agent, intentResult)).thenReturn(AgentDecision.AUTO_EXECUTE);
+        when(agentToolService.executeToolAction(agent, session, intentResult, "What is my balance?"))
+                .thenReturn(AgentToolService.AgentToolResult.withFallback("Your balance is 1000", "get_balance", null, AgentDecision.AUTO_EXECUTE));
         when(userRepository.findByEmail(eq("system@finbank.local"))).thenReturn(Optional.of(systemUser));
-
-        chatService.handleUserMessage(sessionId, userId, "What is my balance?", "Bearer token");
-
-        verify(pythonAgentGateway).ask("What is my balance?", "Bearer token");
-        verify(messageService, times(2)).createMessage(any(), any(), any(), any(), any(), any(), any());
-        verifyNoInteractions(agentToolService);
-        verifyNoInteractions(bankingAgentService);
+        chatService.handleUserMessage(sessionId, userId, "What is my balance?", "******");
+        verify(messageService, times(2)).createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(agentToolService).executeToolAction(agent, session, intentResult, "What is my balance?");
+        verifyNoInteractions(pythonAgentGateway);
     }
 }

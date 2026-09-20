@@ -1,6 +1,36 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Box, Divider, Stack, Paper, Tooltip, IconButton } from '@mui/material';
-import { Home, CreditCard, ArrowLeftRight, TrendingUp, PieChart, User, LogOut, ShieldCheck, Activity, Users, FileText, ShieldAlert, MessageCircle, History, Bot, Database, SearchCode } from 'lucide-react';
+import {
+  Box,
+  Divider,
+  Stack,
+  Paper,
+  Tooltip,
+  IconButton,
+  Drawer,
+  Typography,
+  Chip,
+} from '@mui/material';
+import {
+  Home,
+  CreditCard,
+  ArrowLeftRight,
+  TrendingUp,
+  PieChart,
+  User,
+  LogOut,
+  ShieldCheck,
+  Activity,
+  Users,
+  FileText,
+  ShieldAlert,
+  MessageCircle,
+  History,
+  Bot,
+  Database,
+  SearchCode,
+  X,
+  Sparkles,
+} from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -27,9 +57,12 @@ const adminNavItems = [
   { to: '/rag', icon: SearchCode, key: 'sidebar.ragTest' },
 ] as const;
 
-// icon-only nav items handled inline for modern compact layout
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const navigate = useNavigate();
   const { logout, userName, userRole } = useAuth();
   const { t } = useI18n();
@@ -37,87 +70,333 @@ export default function Sidebar() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+    if (onMobileClose) onMobileClose();
   };
 
-  const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
   const items = userRole === 'ADMIN' ? adminNavItems : userNavItems;
 
-  return (
-    <Paper
-      elevation={0}
+  // Modern Brand Logo Mark
+  const BrandLogo = () => (
+    <Box
       sx={{
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        width: 96,
-        height: '100vh',
-        borderRadius: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.paper',
-        borderRight: 1,
-        borderColor: 'divider',
-        zIndex: 1200,
+        width: 44,
+        height: 44,
+        borderRadius: 3,
+        background: 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)',
+        display: 'grid',
+        placeItems: 'center',
+        color: '#ffffff',
+        boxShadow: '0 8px 18px -2px rgba(232, 97, 26, 0.35)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 60%)',
+        },
       }}
     >
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'center' }}>
+      <Sparkles className='w-5 h-5 text-white' />
+    </Box>
+  );
+
+  return (
+    <>
+      {/* ── DESKTOP SIDEBAR (>= 1024px) ── */}
+      <Paper
+        elevation={0}
+        sx={{
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          width: 96,
+          height: '100vh',
+          borderRadius: 0,
+          display: { xs: 'none', lg: 'flex' },
+          flexDirection: 'column',
+          bgcolor: 'background.paper',
+          borderRight: 1,
+          borderColor: 'divider',
+          zIndex: 1200,
+          boxShadow: '2px 0 16px rgba(0, 0, 0, 0.02)',
+        }}
+      >
+        {/* Brand Header */}
         <Box
           sx={{
-            width: 48,
-            height: 48,
-            borderRadius: 2,
-            bgcolor: 'primary.main',
-            display: 'grid',
-            placeItems: 'center',
-            color: 'primary.contrastText',
-            fontWeight: 800,
-            fontSize: 18,
+            p: 2.5,
+            borderBottom: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1,
           }}
         >
-          $
+          <BrandLogo />
         </Box>
-      </Box>
 
-      <Box sx={{ flex: 1, p: 2, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Stack spacing={2} sx={{ width: '100%', alignItems: 'center' }}>
+        {/* Navigation Items with Tooltips and Glowing Pill */}
+        <Box
+          sx={{
+            flex: 1,
+            py: 2.5,
+            px: 1.5,
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1.25,
+            '&::-webkit-scrollbar': { width: 3 },
+          }}
+        >
           {items.map(({ to, icon: Icon, key }) => (
-            <Tooltip key={to} title={t(key as any)} placement='right'>
+            <Tooltip key={to} title={t(key as any)} placement='right' arrow>
               <NavLink
                 to={to}
                 style={({ isActive }) => ({
                   display: 'grid',
                   placeItems: 'center',
-                  width: 56,
-                  height: 56,
-                  borderRadius: 12,
+                  width: 52,
+                  height: 52,
+                  borderRadius: 14,
                   textDecoration: 'none',
                   color: isActive ? '#ffffff' : 'inherit',
-                  background: isActive ? 'linear-gradient(135deg, #e8611a, #ff8a3d)' : 'transparent',
-                  boxShadow: isActive ? '0 12px 24px rgba(232,97,26,0.18)' : 'none',
+                  background: isActive
+                    ? 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)'
+                    : 'transparent',
+                  boxShadow: isActive ? '0 8px 20px -2px rgba(232, 97, 26, 0.35)' : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  opacity: isActive ? 1 : 0.72,
                 })}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.style.background.includes('gradient')) {
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!e.currentTarget.style.background.includes('gradient')) {
+                    e.currentTarget.style.opacity = '0.72';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }
+                }}
               >
                 <Icon className='w-5 h-5' />
               </NavLink>
             </Tooltip>
           ))}
-        </Stack>
-      </Box>
+        </Box>
 
-      <Divider />
+        <Divider />
 
-      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-        <IconButton onClick={() => navigate('/profile')} sx={{ bgcolor: 'action.hover' }} title={t('sidebar.viewProfile')}>
-          <Box sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: 'primary.main', display: 'grid', placeItems: 'center', color: 'primary.contrastText', fontWeight: 700 }}>
-            {userName ? getInitials(userName) : 'U'}
+        {/* User profile avatar & Logout */}
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+          <Tooltip title={t('sidebar.viewProfile')} placement='right' arrow>
+            <IconButton
+              onClick={() => navigate('/profile')}
+              sx={{
+                p: 0.5,
+                border: 2,
+                borderColor: 'primary.light',
+                transition: 'transform 0.2s ease',
+                '&:hover': { transform: 'scale(1.05)' },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: 14,
+                }}
+              >
+                {userName ? getInitials(userName) : 'U'}
+              </Box>
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={t('sidebar.logout')} placement='right' arrow>
+            <IconButton
+              onClick={handleLogout}
+              sx={{
+                color: 'text.secondary',
+                borderRadius: 3,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  color: 'error.main',
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <LogOut className='w-5 h-5' />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Paper>
+
+      {/* ── MOBILE / TABLET SLIDE-OUT DRAWER (< 1024px) ── */}
+      <Drawer
+        anchor='left'
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{ keepMounted: true }}
+        sx={{
+          display: { xs: 'block', lg: 'none' },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 290,
+            bgcolor: 'background.paper',
+            backgroundImage: 'none',
+            borderRight: 1,
+            borderColor: 'divider',
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* Drawer Header */}
+          <Box
+            sx={{
+              p: 2.5,
+              borderBottom: 1,
+              borderColor: 'divider',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
+              <BrandLogo />
+              <Box>
+                <Typography variant='h6' sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+                  FinBank
+                </Typography>
+                <Chip
+                  label={userRole === 'ADMIN' ? 'Admin Suite' : 'Personal Banking'}
+                  size='small'
+                  color={userRole === 'ADMIN' ? 'primary' : 'default'}
+                  sx={{ height: 18, fontSize: 10, fontWeight: 700, mt: 0.25 }}
+                />
+              </Box>
+            </Stack>
+            <IconButton onClick={onMobileClose} size='small'>
+              <X className='w-5 h-5 text-gray-500' />
+            </IconButton>
           </Box>
-        </IconButton>
 
-        <Tooltip title={t('sidebar.logout')}>
-          <IconButton onClick={handleLogout} color='inherit'>
-            <LogOut className='w-5 h-5' />
-          </IconButton>
-        </Tooltip>
-      </Box>
-    </Paper>
+          {/* User Preview Card */}
+          <Box sx={{ p: 2, pb: 1 }}>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                bgcolor: 'action.hover',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2.5,
+                  background: 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                }}
+              >
+                {userName ? getInitials(userName) : 'U'}
+              </Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant='subtitle2' sx={{ fontWeight: 700 }} noWrap>
+                  {userName || t('common.user')}
+                </Typography>
+                <Typography variant='caption' color='text.secondary' noWrap>
+                  {userRole}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Menu Items with text labels */}
+          <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            {items.map(({ to, icon: Icon, key }) => (
+              <NavLink
+                key={to}
+                to={to}
+                onClick={onMobileClose}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '12px 16px',
+                  borderRadius: 12,
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: isActive ? '#ffffff' : 'inherit',
+                  background: isActive
+                    ? 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)'
+                    : 'transparent',
+                  boxShadow: isActive ? '0 8px 18px -2px rgba(232, 97, 26, 0.35)' : 'none',
+                  transition: 'all 0.2s ease',
+                })}
+              >
+                <Icon className='w-5 h-5 shrink-0' />
+                <span>{t(key as any)}</span>
+              </NavLink>
+            ))}
+          </Box>
+
+          <Divider />
+
+          {/* Drawer Footer */}
+          <Box sx={{ p: 2 }}>
+            <Box
+              component='button'
+              onClick={handleLogout}
+              sx={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                p: 1.5,
+                borderRadius: 2.5,
+                border: 'none',
+                bgcolor: 'transparent',
+                color: 'error.main',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <LogOut className='w-5 h-5' />
+              <span>{t('sidebar.logout')}</span>
+            </Box>
+          </Box>
+        </Box>
+      </Drawer>
+    </>
   );
 }

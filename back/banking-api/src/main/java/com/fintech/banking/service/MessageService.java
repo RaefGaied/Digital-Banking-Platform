@@ -32,6 +32,19 @@ public class MessageService {
     @Transactional
     public Message createMessage(UUID sessionId, UUID senderId, SenderType senderType, 
                                   String content, Boolean isInternal, String intent, JsonNode parameters) {
+        return createMessage(sessionId, senderId, senderType, content, isInternal, intent, parameters,
+                null, false, null);
+    }
+
+    /**
+     * Creates a new message in a session, including bilingual detection and RAG
+     * traceability metadata (cahier des charges section 8.3: detected_lang,
+     * rag_used, rag_source).
+     */
+    @Transactional
+    public Message createMessage(UUID sessionId, UUID senderId, SenderType senderType,
+                                  String content, Boolean isInternal, String intent, JsonNode parameters,
+                                  String detectedLang, Boolean ragUsed, String ragSource) {
         Message message = Message.builder()
             .sessionId(sessionId)
             .senderId(senderId)
@@ -40,6 +53,9 @@ public class MessageService {
             .isInternal(isInternal != null && isInternal)
             .intent(intent)
             .parameters(parameters)
+            .detectedLang(detectedLang == null || detectedLang.isBlank() ? "FR" : detectedLang)
+            .ragUsed(ragUsed != null && ragUsed)
+            .ragSource(ragSource)
             .build();
 
         message = messageRepository.save(message);

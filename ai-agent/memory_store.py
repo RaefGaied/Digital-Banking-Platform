@@ -1,7 +1,7 @@
 import json, os, time
 
-FILE = "memory.json"
-MAX_HISTORY = 20   # 🔥 limit per user
+FILE = os.getenv("MEMORY_FILE", "data/memory.json")
+MAX_HISTORY = int(os.getenv("MEMORY_MAX_HISTORY", "0"))
 
 
 # ================= LOAD =================
@@ -19,6 +19,7 @@ def load():
 # ================= SAVE =================
 def save(data):
     try:
+        os.makedirs(os.path.dirname(FILE) or ".", exist_ok=True)
         with open(FILE, "w") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
@@ -56,15 +57,14 @@ def append_user_mem(uid, msg):
     user_key = str(uid)
     data.setdefault(user_key, []).append(entry)
 
-    # 🔥 limit memory
-    data[user_key] = data[user_key][-MAX_HISTORY:]
+    if MAX_HISTORY > 0:
+        data[user_key] = data[user_key][-MAX_HISTORY:]
 
     save(data)
 
 
 # ================= CONTEXT HELPER =================
 def get_context(uid, limit=5):
-    data = load()
-    history = data.get(str(uid), [])
+    history = get_user_mem(uid)
 
-    return "\n".join([x["msg"] for x in history[-limit:]])
+    return "\n".join(str(x.get("msg", "")) for x in history[-limit:])

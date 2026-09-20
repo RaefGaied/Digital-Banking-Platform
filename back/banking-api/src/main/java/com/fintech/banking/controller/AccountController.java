@@ -8,6 +8,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/accounts")
 @RequiredArgsConstructor
@@ -18,5 +20,10 @@ public class AccountController {
     @GetMapping("/me")
     public ResponseEntity<AccountResponse> getMyAccount(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(accountService.getMyAccount(userDetails.getUsername()));
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<List<String>> getAvailableAccountNumbers() {
+        return ResponseEntity.ok(accountService.getAvailableAccountNumbers());
     }
 }

@@ -95,6 +95,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // Cahier des charges requires a BCrypt cost factor of 12 for password hashing.
+        return new BCryptPasswordEncoder(12);
     }
 }

@@ -9,6 +9,7 @@ import com.azure.core.credential.TokenCredential;
 import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import java.util.Objects;
 
 @Service
 @Primary
+@ConditionalOnProperty(prefix = "ai.ollama", name = "enabled", havingValue = "false", matchIfMissing = true)
 @org.springframework.boot.autoconfigure.condition.ConditionalOnExpression("T(org.springframework.util.StringUtils).hasText('${azure.openai.endpoint:}') or T(org.springframework.util.StringUtils).hasText('${ai.openai.api-key:}')")
 public class OpenAIIntentDetectionService implements IntentDetectionService {
 

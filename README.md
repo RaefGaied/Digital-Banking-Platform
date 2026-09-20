@@ -353,6 +353,61 @@ Controller (authenticated)
 
 ---
 
+## 🤖 AI Chatbot Architecture
+
+The banking assistant is orchestrated by **Spring Boot**, not by the Python service. Java
+owns every security-sensitive decision; any LLM is only used to interpret free-text
+messages.
+
+```
+React frontend
+     │
+     ▼
+Spring Boot ChatService  (primary orchestrator)
+     │
+     ▼
+IntentDetectionService (chosen automatically, in this order)
+     ├── OllamaIntentDetectionService   → local Ollama model (ai.ollama.enabled=true)
+     ├── OpenAIIntentDetectionService   → OpenAI/Azure OpenAI (when an API key is set)
+     └── RuleBasedIntentDetectionService → deterministic regex fallback (always available)
+     │
+     ▼
+IntentResult { intent, parameters, confidence, isSensitive }
+     │
+     ▼
+TransactionValidationService ("Sensitive Line")
+     ├── AUTO_EXECUTE   → low-risk actions run immediately (balance, history, …)
+     ├── REQUEST_INFO   → intent unclear → optional Python fallback for a natural-language reply
+     ├── TRIGGER_BPMN   → high-value transfers, card fraud, sensitive data changes
+     └── BLOCK          → rejected outright
+     │
+     ▼
+Flowable BPMN (processes/*.bpmn) — human validation for sensitive operations
+     │
+     ▼
+PostgreSQL — accounts, transactions, audit log, workflow tasks
+```
+
+### Role of each component
+
+| Component | Responsibility |
+|-----------|-----------------|
+| `ChatService` | Single entry point for chat messages; always runs first. |
+| `OllamaIntentDetectionService` | Calls a local Ollama model through Spring AI's `ChatClient` and returns structured JSON intents. Falls back to the rule-based detector on any failure. |
+| `OpenAIIntentDetectionService` | Optional cloud LLM path (OpenAI or Azure OpenAI) used only when Ollama is disabled and an API key is configured. |
+| `RuleBasedIntentDetectionService` | Deterministic, dependency-free fallback; guarantees the chatbot keeps working even with no LLM configured. |
+| `TransactionValidationService` | The "Sensitive Line": decides whether an intent can run automatically, needs more information, must go through Flowable, or must be blocked (for example, transfers above `app.sensitive-line.threshold`, default `5000`). |
+| `RagKnowledgeService` | Retrieval-Augmented Generation over `rag_documents` (pgvector). Embeddings are generated locally through Spring AI's Ollama `EmbeddingModel` (`nomic-embed-text`, 768 dimensions — zero cost, no external API). Only matches above the similarity threshold (`rag.similarity-threshold`, default `0.72`) are used; otherwise falls back to the static file-based knowledge base. |
+| Flowable BPMN processes | `transfer-validation.bpmn`, `fraud-validation.bpmn`, `data-update-validation.bpmn` — human-in-the-loop approval for sensitive operations. |
+| `ai-agent` (Python/FastAPI) | **Optional fallback only.** Used solely when Java cannot resolve an intent (`REQUEST_INFO`) with enough confidence. It never touches the database directly, never executes transfers, and never bypasses Java validation — it only calls the same authenticated Java REST APIs a human user would. |
+
+Ollama is configured through `OLLAMA_ENABLED`, `OLLAMA_BASE_URL`, and `OLLAMA_MODEL`
+(defaults: enabled in Docker Compose, `http://ollama:11434`, `qwen2.5:7b`). Disabling
+Ollama automatically re-enables the OpenAI path if an API key is present, and the
+rule-based detector is always the last line of defense.
+
+---
+
 ## 🗄️ Entity Diagram
 
 ```
@@ -440,6 +495,9 @@ Controller (authenticated)
 | Spring Data JPA | 3.5 | ORM / Database Access |
 | Spring Kafka | 3.5 | Event Streaming |
 | Spring Cache | 3.5 | Cache Abstraction |
+| Spring AI | 1.0 | LLM orchestration (`ChatClient`) |
+| Ollama | — | Local LLM provider (default: `qwen2.5:7b`) |
+| Flowable BPMN | — | Sensitive-operation approval workflows |
 | PostgreSQL | 16 | Primary Relational Database |
 | Redis | 7 | Distributed Cache |
 | Apache Kafka | 3.9 | Message Broker |

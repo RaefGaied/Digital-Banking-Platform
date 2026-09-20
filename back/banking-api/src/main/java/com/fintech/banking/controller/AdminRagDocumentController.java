@@ -50,6 +50,12 @@ public class AdminRagDocumentController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/rag-documents/{id}/reindex")
+    public ResponseEntity<RagDocument> reindex(Authentication authentication, @PathVariable Long id) {
+        requireAdmin(authentication);
+        return ResponseEntity.ok(ragDocumentService.reindex(id));
+    }
+
     private void requireAdmin(Authentication authentication) {
         if (authentication == null) {
             throw new org.springframework.web.server.ResponseStatusException(

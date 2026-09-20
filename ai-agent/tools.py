@@ -18,9 +18,9 @@ def get_balance(token):
 
     return res.json()
 
-def get_transactions(token, accno):
+def get_transactions(token, accno=None):
     res = requests.get(
-        f"{BASE_URL}/transactions/user/{accno}",
+        f"{BASE_URL}/transactions/history",
         headers=headers(token),
         timeout=5
     )
@@ -30,9 +30,24 @@ def get_transactions(token, accno):
 
     data = res.json()
 
+    if isinstance(data, list):
+        return {"content": data}
     if not isinstance(data, dict) or "content" not in data:
         raise Exception("Invalid transaction response format")
 
+    return data
+
+def get_available_account_numbers(token):
+    res = requests.get(
+        f"{BASE_URL}/accounts/available",
+        headers=headers(token),
+        timeout=5
+    )
+    if res.status_code != 200:
+        raise Exception(f"Account lookup failed: {res.text}")
+    data = res.json()
+    if not isinstance(data, list):
+        raise Exception("Invalid account response format")
     return data
 
 def transfer_money(token, payload):
@@ -42,10 +57,21 @@ def transfer_money(token, payload):
         headers=headers(token),
         timeout=5
     )
-    if res.status_code != 200:
-        raise Exception(f"Transfer failed: {res.text}")
+    if not 200 <= res.status_code < 300:
+        detail = res.text.strip()
+        try:
+            body = res.json()
+            detail = body.get("error") or body.get("message") or detail
+            if not detail and body.get("fields"):
+                detail = "; ".join(str(value) for value in body["fields"].values())
+        except (ValueError, TypeError):
+            pass
+        raise Exception(f"Transfer failed ({res.status_code}): {detail or 'backend returned no details'}")
 
-    data = res.json()
+    try:
+        data = res.json()
+    except (ValueError, TypeError) as exc:
+        raise Exception(f"Transfer returned invalid JSON ({res.status_code})") from exc
 
     # optional safety check
     if not isinstance(data, dict):

@@ -64,4 +64,10 @@ class RuleBasedIntentDetectionServiceTest {
         assertEquals(IntentType.NOTIFICATIONS, service.detectIntent("Où sont mes notifications ?").getIntent());
         assertEquals(IntentType.STOLEN_CARD, service.detectIntent("Ma carte est volée").getIntent());
     }
+
+    @Test
+    void detectsFrenchAndEnglishMessageLanguage() {
+        assertEquals("FR", service.detectIntent("Quel est mon solde ?").getDetectedLanguage());
+        assertEquals("EN", service.detectIntent("What is my account balance?").getDetectedLanguage());
+    }
 }

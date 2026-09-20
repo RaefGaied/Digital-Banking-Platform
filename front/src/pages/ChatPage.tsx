@@ -6,7 +6,7 @@ import { sessionsApi } from '../api/sessions';
 import { agentsApi } from '../api/agents';
 import { aiApi } from '../api/ai';
 import type { MessageResponse } from '../api/messages';
-import { Activity, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Activity, CheckCircle2, AlertCircle, Clock, Send, Bot, User, Sparkles } from 'lucide-react';
 
 export default function ChatPage() {
   const { id } = useParams();
@@ -17,15 +17,23 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
 
-  const sessionQuery = useQuery({ queryKey: ['session', sessionId], queryFn: () => sessionsApi.getById(sessionId), enabled: !!sessionId });
-  
-  const conversationQuery = useQuery({ queryKey: ['conversation', sessionId], queryFn: () => messagesApi.getConversation(sessionId), enabled: !!sessionId });
-
-  const agentQuery = useQuery({ 
-    queryKey: ['agent-session', sessionId], 
-    queryFn: () => agentsApi.getBySession(sessionId), 
+  const sessionQuery = useQuery({
+    queryKey: ['session', sessionId],
+    queryFn: () => sessionsApi.getById(sessionId),
     enabled: !!sessionId,
-    retry: false
+  });
+
+  const conversationQuery = useQuery({
+    queryKey: ['conversation', sessionId],
+    queryFn: () => messagesApi.getConversation(sessionId),
+    enabled: !!sessionId,
+  });
+
+  const agentQuery = useQuery({
+    queryKey: ['agent-session', sessionId],
+    queryFn: () => agentsApi.getBySession(sessionId),
+    enabled: !!sessionId,
+    retry: false,
   });
 
   const aiAskMutation = useMutation({
@@ -47,10 +55,18 @@ export default function ChatPage() {
 
   if (!sessionId) {
     return (
-      <div className='p-6'>
-        <h2 className='text-lg font-semibold'>No session selected</h2>
-        <p className='text-sm text-gray-500 mt-2'>Open a session first from the Sessions page.</p>
-        <button onClick={() => navigate('/sessions')} className='mt-4 rounded bg-primary-500 text-white px-4 py-2'>Go to Sessions</button>
+      <div className='card p-6 text-center max-w-md mx-auto my-12'>
+        <Bot className='w-12 h-12 text-primary-500 mx-auto mb-3' />
+        <h2 className='text-lg font-bold text-slate-900 dark:text-zinc-100'>No session selected</h2>
+        <p className='text-sm text-slate-500 dark:text-zinc-400 mt-1 mb-5'>
+          Open or select a banking session first from the Sessions management page.
+        </p>
+        <button
+          onClick={() => navigate('/sessions')}
+          className='w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold px-4 py-2.5 shadow-md'
+        >
+          Go to Sessions
+        </button>
       </div>
     );
   }
@@ -67,44 +83,57 @@ export default function ChatPage() {
   const activity = activityQuery.data ?? [];
   const latestActivity = activity[activity.length - 1];
 
-  const pendingAction = agent && typeof agent.context === 'object' && agent.context !== null && 'pendingToolAction' in agent.context
-    ? String((agent.context as Record<string, unknown>).pendingToolAction)
-    : null;
+  const pendingAction =
+    agent && typeof agent.context === 'object' && agent.context !== null && 'pendingToolAction' in agent.context
+      ? String((agent.context as Record<string, unknown>).pendingToolAction)
+      : null;
 
-  const pendingArguments = agent && typeof agent.context === 'object' && agent.context !== null && 'pendingToolArguments' in agent.context
-    ? (agent.context as Record<string, unknown>).pendingToolArguments as Record<string, unknown> | null
-    : null;
+  const pendingArguments =
+    agent && typeof agent.context === 'object' && agent.context !== null && 'pendingToolArguments' in agent.context
+      ? ((agent.context as Record<string, unknown>).pendingToolArguments as Record<string, unknown> | null)
+      : null;
 
-  const pendingConfirmationLabel = pendingAction === 'confirm_transfer'
-    ? 'Virement en attente de confirmation'
-    : pendingAction
+  const pendingConfirmationLabel =
+    pendingAction === 'confirm_transfer'
+      ? 'Virement en attente de confirmation'
+      : pendingAction
       ? `Action en attente : ${pendingAction}`
       : null;
 
-  const pendingConfirmationDetails = pendingAction === 'confirm_transfer' && pendingArguments
-    ? `Montant : ${pendingArguments.amount ?? 'N/A'}, Compte : ${pendingArguments.targetAccountNumber ?? 'N/A'}`
-    : pendingArguments
+  const pendingConfirmationDetails =
+    pendingAction === 'confirm_transfer' && pendingArguments
+      ? `Montant : ${pendingArguments.amount ?? 'N/A'}, Compte : ${pendingArguments.targetAccountNumber ?? 'N/A'}`
+      : pendingArguments
       ? JSON.stringify(pendingArguments)
       : null;
 
-  // Determine agent status based on decision
   const getDecisionColor = (decision?: string) => {
-    switch(decision) {
-      case 'AUTO_EXECUTE': return 'bg-green-50 border-green-200 text-green-700';
-      case 'TRIGGER_BPMN': return 'bg-yellow-50 border-yellow-200 text-yellow-700';
-      case 'REQUEST_INFO': return 'bg-blue-50 border-blue-200 text-blue-700';
-      case 'BLOCK': return 'bg-red-50 border-red-200 text-red-700';
-      default: return 'bg-gray-50 border-gray-200 text-gray-700';
+    switch (decision) {
+      case 'AUTO_EXECUTE':
+        return 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300';
+      case 'TRIGGER_BPMN':
+        return 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300';
+      case 'REQUEST_INFO':
+        return 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300';
+      case 'BLOCK':
+        return 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300';
+      default:
+        return 'bg-slate-50 dark:bg-zinc-800/60 border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-200';
     }
   };
-  
+
   const getDecisionIcon = (decision?: string) => {
-    switch(decision) {
-      case 'AUTO_EXECUTE': return <CheckCircle2 className='w-4 h-4' />;
-      case 'TRIGGER_BPMN': return <Activity className='w-4 h-4' />;
-      case 'REQUEST_INFO': return <AlertCircle className='w-4 h-4' />;
-      case 'BLOCK': return <AlertCircle className='w-4 h-4' />;
-      default: return <Clock className='w-4 h-4' />;
+    switch (decision) {
+      case 'AUTO_EXECUTE':
+        return <CheckCircle2 className='w-4 h-4' />;
+      case 'TRIGGER_BPMN':
+        return <Activity className='w-4 h-4' />;
+      case 'REQUEST_INFO':
+        return <AlertCircle className='w-4 h-4' />;
+      case 'BLOCK':
+        return <AlertCircle className='w-4 h-4' />;
+      default:
+        return <Clock className='w-4 h-4' />;
     }
   };
 
@@ -112,82 +141,75 @@ export default function ChatPage() {
   const aiContext = aiAskMutation.data;
 
   return (
-    <div className='p-6 flex flex-col h-full gap-4'>
-      <div>
-        <h2 className='text-xl font-bold'>Chat</h2>
-        <p className='text-sm text-gray-500'>Session: {sessionQuery.data?.id ?? sessionId}</p>
+    <div className='flex flex-col h-[calc(100vh-140px)] gap-4'>
+      {/* Header */}
+      <div className='flex items-center justify-between'>
+        <div>
+          <h2 className='text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight'>
+            Banking Agent Chat
+          </h2>
+          <p className='text-xs sm:text-sm text-slate-500 dark:text-zinc-400'>
+            Live Session: <span className='font-mono font-semibold'>{sessionQuery.data?.id ?? sessionId}</span>
+          </p>
+        </div>
       </div>
 
       {/* Agent Activity Panel */}
       {agent && (
-        <div className={`border rounded-lg p-4 ${getDecisionColor(activeDecision)}`}>
+        <div className={`border rounded-2xl p-4 transition-all ${getDecisionColor(activeDecision)}`}>
           <div className='flex flex-wrap items-center gap-2 mb-2'>
             {getDecisionIcon(activeDecision)}
-            <span className='font-semibold'>Agent Activity</span>
+            <span className='font-bold text-sm'>Agent Decision Engine</span>
             {pendingAction && (
-              <span className='rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800'>
-                EN ATTENTE
+              <span className='rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-300 px-2.5 py-0.5 text-xs font-extrabold'>
+                ACTION PENDING
               </span>
             )}
           </div>
-          <div className='text-sm space-y-1'>
-            <p><strong>Status:</strong> {activeDecision}</p>
+          <div className='text-xs space-y-1'>
+            <p>
+              <strong>Status:</strong> {activeDecision}
+            </p>
             {latestActivity && (
-              <>
-                <p><strong>Last action:</strong> {latestActivity.action ?? latestActivity.intent ?? 'Processing'}</p>
-                {latestActivity.note && <p><strong>Note:</strong> {latestActivity.note}</p>}
-              </>
+              <p>
+                <strong>Last action:</strong> {latestActivity.action ?? latestActivity.intent ?? 'Processing'}
+              </p>
             )}
             {agent.lastTransactionId && (
-              <p><strong>Last transaction:</strong> {agent.lastTransactionId.slice(0, 8)}...</p>
+              <p>
+                <strong>Last transaction:</strong> {agent.lastTransactionId.slice(0, 10)}...
+              </p>
             )}
-            <p className='text-xs mt-2'>Updated: {agent.updatedAt || new Date().toLocaleTimeString()}</p>
           </div>
 
           {pendingConfirmationLabel && (
-            <div className='mt-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-orange-800'>
-              <div className='font-semibold'>Action en attente</div>
-              <div className='text-sm mt-1'>{pendingConfirmationLabel}</div>
+            <div className='mt-3 rounded-xl border border-orange-300 dark:border-orange-800 bg-orange-100/60 dark:bg-orange-950/60 p-3 text-orange-900 dark:text-orange-200'>
+              <div className='font-bold text-xs'>{pendingConfirmationLabel}</div>
               {pendingConfirmationDetails && (
-                <div className='text-xs mt-2 text-orange-700'>
+                <div className='text-[11px] mt-1 text-orange-800 dark:text-orange-300 font-mono'>
                   {pendingConfirmationDetails}
                 </div>
               )}
-              <div className='text-xs mt-2 text-orange-700'>Répondez par <strong>oui</strong> ou <strong>non</strong>.</div>
-            </div>
-          )}
-
-          {activity.length > 0 && (
-            <div className='mt-4 rounded-lg border border-gray-200 bg-white p-3'>
-              <div className='text-sm font-semibold text-gray-700 mb-2'>Recent action trace</div>
-              <div className='space-y-2'>
-                {activity.map((entry, index) => (
-                  <div key={`${entry.timestamp}-${index}`} className='rounded-lg border border-gray-100 bg-gray-50 p-3'>
-                    <div className='flex justify-between text-xs text-gray-500'>
-                      <span>{new Date(entry.timestamp).toLocaleTimeString()}</span>
-                      <span>{entry.decision ?? 'N/A'}</span>
-                    </div>
-                    <div className='mt-1 text-sm text-gray-700'>{entry.action ?? entry.intent ?? 'Agent step'}</div>
-                    {entry.note && <div className='mt-1 text-xs text-gray-500'>{entry.note}</div>}
-                  </div>
-                ))}
-              </div>
             </div>
           )}
         </div>
       )}
 
-      <div className='rounded-lg border border-sky-200 bg-sky-50 p-3'>
+      {/* AI Help Banner */}
+      <div className='rounded-2xl border border-sky-200 dark:border-sky-900/60 bg-sky-50 dark:bg-sky-950/40 p-3.5'>
         <div className='flex items-center justify-between gap-3'>
-          <div>
-            <h3 className='text-sm font-semibold text-sky-800'>AI Help</h3>
-            <p className='text-xs text-sky-700'>Relevant banking guidance for the current request.</p>
+          <div className='flex items-center gap-2'>
+            <Sparkles className='w-4 h-4 text-sky-600 dark:text-sky-400' />
+            <div>
+              <h3 className='text-xs sm:text-sm font-bold text-sky-900 dark:text-sky-200'>AI Banking Assistant</h3>
+              <p className='text-[11px] text-sky-700 dark:text-sky-300'>Contextual guidance for banking actions</p>
+            </div>
           </div>
           <div className='flex items-center gap-2'>
             <button
               type='button'
-              onClick={() => setAiPanelOpen((value) => !value)}
-              className='rounded border border-sky-200 bg-white px-2 py-1 text-xs font-medium text-sky-700'
+              onClick={() => setAiPanelOpen((v) => !v)}
+              className='rounded-xl border border-sky-200 dark:border-sky-800 bg-white dark:bg-zinc-900 px-3 py-1 text-xs font-semibold text-sky-700 dark:text-sky-300 shadow-sm'
             >
               {aiPanelOpen ? 'Hide' : 'Show'}
             </button>
@@ -199,78 +221,98 @@ export default function ChatPage() {
                 if (!question) return;
                 void aiAskMutation.mutateAsync(question);
               }}
-              className='rounded bg-sky-600 px-2 py-1 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50'
+              className='rounded-xl bg-sky-600 hover:bg-sky-700 px-3 py-1 text-xs font-bold text-white disabled:opacity-50 transition-colors'
             >
-              {aiAskMutation.isPending ? 'Loading...' : 'Ask AI'}
+              {aiAskMutation.isPending ? 'Analyzing...' : 'Ask AI'}
             </button>
           </div>
         </div>
 
-        {aiPanelOpen && (
-          <div className='mt-3 rounded border border-sky-200 bg-white p-3'>
-            {aiAskMutation.isPending ? (
-              <p className='text-sm text-sky-700'>Searching the banking knowledge base…</p>
-            ) : aiContext ? (
-              <>
-                <div className='mb-2 flex items-center justify-between gap-2'>
-                  <span className='text-[10px] font-semibold uppercase tracking-wide text-sky-700'>Context</span>
-                  {aiContext.intent && (
-                    <span className='rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700'>
-                      {String(aiContext.intent)}
-                    </span>
-                  )}
-                </div>
-
-                {aiContext.error ? (
-                  <p className='text-sm text-sky-700'>{aiContext.error}</p>
-                ) : (
-                  <>
-                    <p className='mb-2 text-xs text-sky-700'>Question: {aiContext.question}</p>
-                    {aiContext.matches.length > 0 ? (
-                      <ul className='space-y-2 text-sm text-sky-900'>
-                        {aiContext.matches.map((match, index) => (
-                          <li key={`${match}-${index}`} className='rounded border border-sky-200 bg-sky-50 p-2'>
-                            {match}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className='text-sm text-sky-700'>No matching banking knowledge found.</p>
-                    )}
-                  </>
-                )}
-              </>
+        {aiPanelOpen && aiContext && (
+          <div className='mt-3 rounded-xl border border-sky-200 dark:border-sky-800/80 bg-white dark:bg-zinc-900 p-3'>
+            <p className='text-xs text-sky-900 dark:text-sky-200 font-medium mb-1'>Question: {aiContext.question}</p>
+            {aiContext.matches?.length > 0 ? (
+              <ul className='space-y-1.5 text-xs text-slate-700 dark:text-zinc-300'>
+                {aiContext.matches.map((match: string, idx: number) => (
+                  <li key={idx} className='p-2 rounded-lg bg-sky-50 dark:bg-sky-950/50 border border-sky-100 dark:border-sky-900'>
+                    {match}
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <p className='text-sm text-sky-700'>Type a question in the box to get AI guidance.</p>
+              <p className='text-xs text-sky-600 dark:text-sky-400'>No direct matches in knowledge base.</p>
             )}
           </div>
         )}
       </div>
 
-      <div className='flex-1 overflow-auto border rounded-lg p-4 bg-white'>
-        {messages.length === 0 && <p className='text-sm text-gray-400'>No messages yet.</p>}
+      {/* Messages Scroll Area */}
+      <div className='flex-1 overflow-auto rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900 shadow-inner'>
+        {messages.length === 0 && (
+          <div className='h-full flex flex-col items-center justify-center text-slate-400 text-xs gap-2'>
+            <Bot className='w-8 h-8 opacity-40' />
+            <p>No messages yet in this session. Say hello to start!</p>
+          </div>
+        )}
         <div className='space-y-3'>
-          {messages.map((m: any) => (
-            <div key={m.id} className={`p-3 rounded-lg ${m.senderType === 'USER' ? 'bg-cream-50 ml-auto max-w-xs' : 'bg-primary-50 mr-auto max-w-xs'}`}>
-              <div className='flex items-center gap-2 mb-1'>
-                <span className='text-xs font-semibold text-gray-600'>{m.senderType}</span>
-                {m.intent && <span className='text-xs bg-gray-200 px-2 py-0.5 rounded'>{m.intent}</span>}
+          {messages.map((m: any) => {
+            const isUser = m.senderType === 'USER';
+            return (
+              <div
+                key={m.id}
+                className={`flex gap-2.5 max-w-[85%] sm:max-w-md ${isUser ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
+              >
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold ${
+                    isUser ? 'bg-gradient-to-r from-orange-500 to-amber-500' : 'bg-slate-700 dark:bg-zinc-700'
+                  }`}
+                >
+                  {isUser ? <User className='w-3.5 h-3.5' /> : <Bot className='w-3.5 h-3.5' />}
+                </div>
+                <div
+                  className={`p-3.5 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed ${
+                    isUser
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700'
+                  }`}
+                >
+                  <p>{m.content}</p>
+                  <span
+                    className={`block text-[10px] mt-1.5 font-normal ${
+                      isUser ? 'text-white/70 text-right' : 'text-slate-400 dark:text-zinc-500'
+                    }`}
+                  >
+                    {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
               </div>
-              <div className='text-sm text-gray-700'>{m.content}</div>
-              <div className='text-xs text-gray-400 mt-1'>{new Date(m.createdAt).toLocaleTimeString()}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div ref={bottomRef} />
       </div>
 
-      <div>
-        <div className='flex gap-2'>
-          <input value={input} onChange={(e) => setInput(e.target.value)} className='flex-1 px-3 py-2 rounded-xl border' placeholder='Write your message...' />
-          <button disabled={!input.trim() || sendMutation.isPending} onClick={() => sendMutation.mutate(input.trim())} className='rounded-xl bg-primary-500 text-white px-4 py-2 disabled:opacity-50'>
-            {sendMutation.isPending ? 'Sending...' : 'Send'}
-          </button>
-        </div>
+      {/* Input Form */}
+      <div className='flex gap-2'>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && input.trim() && !sendMutation.isPending) {
+              sendMutation.mutate(input.trim());
+            }
+          }}
+          className='flex-1 px-4 py-3 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 text-sm outline-none focus:border-primary-500 transition-colors shadow-sm'
+          placeholder='Type your message or instruction...'
+        />
+        <button
+          disabled={!input.trim() || sendMutation.isPending}
+          onClick={() => sendMutation.mutate(input.trim())}
+          className='rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 text-white px-5 py-3 font-bold text-sm disabled:opacity-50 transition-all shadow-md flex items-center gap-2'
+        >
+          <span>Send</span>
+          <Send className='w-4 h-4' />
+        </button>
       </div>
     </div>
   );

@@ -4,21 +4,27 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
         primary: {
-          50:  "#fff4ed",
-          100: "#ffe8d5",
-          200: "#ffd0aa",
-          300: "#ffb074",
-          400: "#ff843c",
+          50:  "#fff7ed",
+          100: "#ffedd5",
+          200: "#fed7aa",
+          300: "#fdba74",
+          400: "#fb923c",
           500: "#e8611a",
           600: "#d4500f",
           700: "#b03d0b",
           800: "#8c3110",
           900: "#712a11",
         },
+        surface: {
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
+          2: "rgb(var(--surface-2) / <alpha-value>)",
+        },
+        canvas: "rgb(var(--bg) / <alpha-value>)",
         cream: {
           50:  "rgb(var(--cream-50) / <alpha-value>)",
           100: "rgb(var(--cream-100) / <alpha-value>)",
@@ -31,8 +37,12 @@ export default {
         }
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["'Plus Jakarta Sans'", "Inter", "system-ui", "sans-serif"],
       },
+      boxShadow: {
+        'glow': '0 0 25px -5px rgba(232, 97, 26, 0.25)',
+        'glow-lg': '0 0 35px -5px rgba(232, 97, 26, 0.35)',
+      }
     },
   },
   plugins: [],

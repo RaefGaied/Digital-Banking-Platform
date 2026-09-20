@@ -74,6 +74,9 @@ public class ChatService {
                 ? intentResult.getIntent().name()
                 : null;
         JsonNode parameters = intentResult != null ? intentResult.getParameters() : null;
+        String detectedLang = intentResult != null && intentResult.getDetectedLanguage() != null
+                ? intentResult.getDetectedLanguage()
+                : com.fintech.banking.util.LanguageDetector.detect(content);
 
         Message userMessage = messageService.createMessage(
                 sessionId,
@@ -82,25 +85,10 @@ public class ChatService {
                 content,
                 false,
                 intentName,
-                parameters);
-
-        // Give the Python agent first chance for authenticated chat requests.
-        Optional<String> pythonReply = pythonAgentGateway.ask(content, authorizationHeader);
-        if (pythonReply.isPresent()) {
-            UUID systemSenderId = userRepository.findByEmail(SYSTEM_EMAIL)
-                    .map(com.fintech.banking.domain.entity.User::getId)
-                    .orElseThrow(() -> new IllegalStateException("System assistant user not found"));
-
-            messageService.createMessage(
-                    sessionId,
-                    systemSenderId,
-                    SenderType.BOT,
-                    pythonReply.get(),
-                    false,
-                    null,
-                    null);
-            return userMessage;
-        }
+                parameters,
+                detectedLang,
+                false,
+                null);
 
         BankingAgent agent = bankingAgentService.getAgentBySessionId(sessionId)
                 .orElseGet(() -> bankingAgentService.createAgent(sessionId, userId));
@@ -113,10 +101,9 @@ public class ChatService {
             details.put("parameters", parameters);
         }
 
-        String knowledgeContext = ragKnowledgeService.buildContextSnippet(content);
-        if (knowledgeContext.isBlank()) {
-            knowledgeContext = knowledgeBaseService.buildContextSnippet(content);
-        }
+        String ragContext = ragKnowledgeService.buildContextSnippet(content);
+        boolean usedRag = !ragContext.isBlank();
+        String knowledgeContext = usedRag ? ragContext : knowledgeBaseService.buildContextSnippet(content);
         if (!knowledgeContext.isBlank()) {
             details.put("knowledgeContext", knowledgeContext);
         }
@@ -130,6 +117,8 @@ public class ChatService {
 
         String botContent;
         AgentDecision toolDecision = decision;
+        boolean botUsedRag = false;
+        String botRagSource = null;
 
         if (bankingAgentService.hasPendingToolAction(agent)) {
             AgentToolService.AgentToolResult pendingResult = agentToolService.handlePendingToolConfirmation(agent, session, content, intentResult);
@@ -184,6 +173,8 @@ public class ChatService {
         } else if (decision == AgentDecision.REQUEST_INFO) {
             String summarizedContext = summarizeKnowledgeContext(content, knowledgeContext);
             botContent = summarizedContext;
+            botUsedRag = usedRag;
+            botRagSource = extractSource(knowledgeContext);
         } else {
             botContent = localized(content,
                     "I am not sure what you mean. Could you provide more details?",
@@ -201,9 +192,25 @@ public class ChatService {
                 botContent,
                 false,
                 null,
-                null);
+                null,
+                detectedLang,
+                botUsedRag,
+                botRagSource);
 
         return userMessage;
+    }
+
+    /** Extracts the first "Source: X" line from a RAG/knowledge-base context snippet. */
+    private String extractSource(String knowledgeContext) {
+        if (knowledgeContext == null || knowledgeContext.isBlank()) {
+            return null;
+        }
+        return Arrays.stream(knowledgeContext.split("\\n"))
+                .map(String::trim)
+                .filter(line -> line.startsWith("Source:"))
+                .map(line -> line.substring("Source:".length()).trim())
+                .findFirst()
+                .orElse(null);
     }
 
     private String summarizeKnowledgeContext(String question, String knowledgeContext) {

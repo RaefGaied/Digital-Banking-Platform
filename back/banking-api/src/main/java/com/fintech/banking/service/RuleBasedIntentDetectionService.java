@@ -101,6 +101,7 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
                 || intent == IntentType.STOLEN_CARD
                 || intent == IntentType.CLAIM
                 || intent == IntentType.UPDATE_SENSITIVE_DATA);
+        result.setDetectedLanguage(com.fintech.banking.util.LanguageDetector.detect(text));
 
         return result;
     }

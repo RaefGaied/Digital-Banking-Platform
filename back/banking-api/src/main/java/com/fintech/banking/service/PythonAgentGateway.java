@@ -11,6 +11,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
@@ -41,17 +42,19 @@ public class PythonAgentGateway {
 
         try {
             String body = objectMapper.writeValueAsString(Map.of("query", query));
+            log.debug("Sending Python agent chat payload: {}", body);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl.replaceAll("/$", "") + "/chat"))
                     .timeout(Duration.ofSeconds(8))
                     .header("Authorization", bearerToken.startsWith("Bearer ") ? bearerToken : "Bearer " + bearerToken)
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .header("X-Agent-Query", query)
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(body.getBytes(StandardCharsets.UTF_8)))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
-                log.warn("Python agent returned HTTP {}", response.statusCode());
+                log.warn("Python agent returned HTTP {}: {}", response.statusCode(), response.body());
                 return Optional.empty();
             }
 

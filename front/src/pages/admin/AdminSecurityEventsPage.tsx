@@ -29,10 +29,10 @@ export default function AdminSecurityEventsPage() {
 
   const typeBg = (type: string) => {
     switch (type) {
-      case 'REUSE_DETECTED': return '#fff1f2';
-      case 'BRUTE_FORCE': return '#fff7ed';
-      case 'ACCOUNT_LOCKED': return '#eff6ff';
-      default: return '#fefce8';
+      case 'REUSE_DETECTED': return 'rgba(239, 68, 68, 0.14)';
+      case 'BRUTE_FORCE': return 'rgba(245, 158, 11, 0.14)';
+      case 'ACCOUNT_LOCKED': return 'rgba(59, 130, 246, 0.14)';
+      default: return 'rgba(234, 179, 8, 0.14)';
     }
   };
 
@@ -56,9 +56,9 @@ export default function AdminSecurityEventsPage() {
           return (
             <Card key={event.id} sx={{ borderRadius: 4 }}>
               <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'flex-start' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                    <Box sx={{ width: 42, height: 42, borderRadius: 999, bgcolor: typeBg(event.type), display: 'grid', placeItems: 'center' }}>
+                    <Box sx={{ width: 42, height: 42, borderRadius: 999, bgcolor: typeBg(event.type), display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                       <Icon className='h-5 w-5' />
                     </Box>
                     <Box>
@@ -74,7 +74,7 @@ export default function AdminSecurityEventsPage() {
                     </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                     <Chip
                       label={event.resolved ? 'Resolved' : 'Open'}
                       color={event.resolved ? 'success' : 'warning'}
