@@ -1,6 +1,5 @@
 package com.fintech.banking.service;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fintech.banking.domain.enums.IntentType;
 import com.fintech.banking.domain.vo.IntentResult;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,7 @@ class OllamaIntentDetectionServiceTest {
             """;
 
     @Test
-    void returnsStructuredOllamaIntentAndNormalizesMissingFields() {
+    void usesFastRuleBasedIntentForCommonBankingCommand() {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         ChatClient client = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         IntentResult modelResult = new IntentResult(
@@ -52,9 +51,10 @@ class OllamaIntentDetectionServiceTest {
                 .detectIntent("Transfer 100 to account 204060-8");
 
         assertEquals(IntentType.TRANSFER, result.getIntent());
-        assertEquals(0.95, result.getConfidence());
+        assertEquals(0.9, result.getConfidence());
         assertNotNull(result.getParameters());
-        assertEquals(JsonNodeFactory.instance.objectNode(), result.getParameters());
+        assertEquals(100, result.getParameters().get("amount").asInt());
+        assertEquals("204060-8", result.getParameters().get("targetAccountNumber").asText());
         assertEquals(false, result.getIsSensitive());
         assertEquals("EN", result.getDetectedLanguage());
     }

@@ -46,6 +46,15 @@ public class OllamaIntentDetectionService implements IntentDetectionService {
             return null;
         }
 
+        // Deterministic rules cover the common banking commands without a
+        // network round-trip or a slow local LLM inference.
+        IntentResult ruleResult = fallback.detectIntent(text);
+        if (ruleResult != null && ruleResult.getIntent() != null
+                && ruleResult.getConfidence() != null
+                && ruleResult.getConfidence() >= 0.7) {
+            return ruleResult;
+        }
+
         try {
             IntentResult result = chatClient.prompt()
                     .system(SYSTEM_PROMPT)
@@ -58,7 +67,7 @@ public class OllamaIntentDetectionService implements IntentDetectionService {
         } catch (RuntimeException ex) {
             log.warn("Ollama intent detection failed; using rule-based fallback: {}", ex.getMessage());
         }
-        return fallback.detectIntent(text);
+        return ruleResult;
     }
 
     private boolean isValid(IntentResult result, String originalText) {

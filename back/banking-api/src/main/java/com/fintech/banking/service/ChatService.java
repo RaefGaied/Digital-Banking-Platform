@@ -105,16 +105,20 @@ public class ChatService {
             details.put("parameters", parameters);
         }
 
-        String ragContext = ragKnowledgeService.buildContextSnippet(content);
-        boolean usedRag = !ragContext.isBlank();
-        String knowledgeContext = usedRag ? ragContext : knowledgeBaseService.buildContextSnippet(content);
-        if (!knowledgeContext.isBlank()) {
-            details.put("knowledgeContext", knowledgeContext);
-        }
+        String knowledgeContext = "";
+        boolean usedRag = false;
+        if (decision == AgentDecision.REQUEST_INFO) {
+            String ragContext = ragKnowledgeService.buildContextSnippet(content);
+            usedRag = !ragContext.isBlank();
+            knowledgeContext = usedRag ? ragContext : knowledgeBaseService.buildContextSnippet(content);
+            if (!knowledgeContext.isBlank()) {
+                details.put("knowledgeContext", knowledgeContext);
+            }
 
-        String recentContext = buildSessionContext(sessionId, content);
-        if (!recentContext.isBlank()) {
-            details.put("sessionContext", recentContext);
+            String recentContext = buildSessionContext(sessionId, content);
+            if (!recentContext.isBlank()) {
+                details.put("sessionContext", recentContext);
+            }
         }
 
         agentWorkflowService.recordAgentAction(agent.getId(), "process_user_message", intentResult, decision, details);
