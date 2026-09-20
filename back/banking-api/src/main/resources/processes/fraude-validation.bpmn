@@ -44,7 +44,7 @@
       <outgoing>Flow_1</outgoing>
     </startEvent>
 
-    <serviceTask id="Task_VerifierCompte" name="Vérifier statut compte">
+    <serviceTask id="Task_VerifierCompte" name="Vérifier statut compte" camunda:delegateExpression="${verifCompteDelegate}">
       <incoming>Flow_1</incoming>
       <outgoing>Flow_2</outgoing>
     </serviceTask>
@@ -64,7 +64,7 @@
       <conditionExpression>${compteActif==false}</conditionExpression>
     </sequenceFlow>
 
-    <serviceTask id="Task_NotifyCompteBloque" name="Notifier compte bloqué">
+    <serviceTask id="Task_NotifyCompteBloque" name="Notifier compte bloqué" camunda:delegateExpression="${notifyDelegate}">
       <incoming>Flow_CompteNon</incoming>
       <outgoing>Flow_CompteEnd</outgoing>
     </serviceTask>
@@ -100,7 +100,7 @@
       <conditionExpression>${decision=='BLOQUER'}</conditionExpression>
     </sequenceFlow>
 
-    <serviceTask id="Task_BloquerCarte" name="Bloquer carte">
+    <serviceTask id="Task_BloquerCarte" name="Bloquer carte" camunda:delegateExpression="${bloquerCarteDelegate}">
       <incoming>Flow_Bloquer</incoming>
       <outgoing>Flow_4</outgoing>
     </serviceTask>
@@ -115,7 +115,7 @@
     <sequenceFlow id="Flow_BlocageOui" name="Oui" sourceRef="Gateway_BlocageOk" targetRef="Task_NotifyBlocage">
       <conditionExpression>${blocageOk==true}</conditionExpression>
     </sequenceFlow>
-    <serviceTask id="Task_NotifyBlocage" name="Notifier blocage">
+    <serviceTask id="Task_NotifyBlocage" name="Notifier blocage" camunda:delegateExpression="${notifyDelegate}">
       <incoming>Flow_BlocageOui</incoming>
       <outgoing>Flow_5</outgoing>
     </serviceTask>
@@ -124,7 +124,7 @@
     <sequenceFlow id="Flow_BlocageNon" name="Non" sourceRef="Gateway_BlocageOk" targetRef="Task_NotifyErreur">
       <conditionExpression>${blocageOk==false}</conditionExpression>
     </sequenceFlow>
-    <serviceTask id="Task_NotifyErreur" name="Notifier erreur">
+    <serviceTask id="Task_NotifyErreur" name="Notifier erreur" camunda:delegateExpression="${notifyDelegate}">
       <incoming>Flow_BlocageNon</incoming>
       <outgoing>Flow_ErreurEnd</outgoing>
     </serviceTask>
@@ -136,7 +136,7 @@
     <sequenceFlow id="Flow_Contacter" name="Contacter" sourceRef="Gateway_DecisionAdmin" targetRef="Task_NotifyContact">
       <conditionExpression>${decision=='CONTACTER'}</conditionExpression>
     </sequenceFlow>
-    <serviceTask id="Task_NotifyContact" name="Demander justificatifs">
+    <serviceTask id="Task_NotifyContact" name="Demander justificatifs" camunda:delegateExpression="${notifyDelegate}">
       <incoming>Flow_Contacter</incoming>
       <outgoing>Flow_6</outgoing>
     </serviceTask>
@@ -172,13 +172,13 @@
     <sequenceFlow id="Flow_FauxPositif" name="Faux positif" sourceRef="Gateway_DecisionAdmin" targetRef="Task_NotifyFauxPositif">
       <conditionExpression>${decision=='FAUX_POSITIF'}</conditionExpression>
     </sequenceFlow>
-    <serviceTask id="Task_NotifyFauxPositif" name="Notifier faux positif">
+    <serviceTask id="Task_NotifyFauxPositif" name="Notifier faux positif" camunda:delegateExpression="${notifyDelegate}">
       <incoming>Flow_FauxPositif</incoming>
       <outgoing>Flow_8</outgoing>
     </serviceTask>
     <sequenceFlow id="Flow_8" sourceRef="Task_NotifyFauxPositif" targetRef="Task_AuditLog"/>
 
-    <serviceTask id="Task_AuditLog" name="Audit log">
+    <serviceTask id="Task_AuditLog" name="Audit log" camunda:delegateExpression="${auditDelegate}">
       <incoming>Flow_5</incoming>
       <incoming>Flow_8</incoming>
       <outgoing>Flow_AuditEnd</outgoing>
@@ -188,7 +188,7 @@
       <incoming>Flow_AuditEnd</incoming>
     </endEvent>
 
-    <serviceTask id="Task_Escalade" name="Escalade superviseur">
+    <serviceTask id="Task_Escalade" name="Escalade superviseur" camunda:delegateExpression="${escaladeDelegate}">
       <incoming>Flow_MaxNon</incoming>
       <incoming>Flow_AdminTimeout_out</incoming>
       <incoming>Flow_ClientTimeout_out</incoming>
@@ -202,7 +202,7 @@
   </process>
 
   <bpmndi:BPMNDiagram id="Diagram_1">
-    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_Fraude">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="fraudValidationProcess">
       <bpmndi:BPMNShape id="Lane_Client_Shape" bpmnElement="Lane_Client" isHorizontal="true">
         <omgdc:Bounds x="0" y="0" width="1450" height="160"/>
       </bpmndi:BPMNShape>
