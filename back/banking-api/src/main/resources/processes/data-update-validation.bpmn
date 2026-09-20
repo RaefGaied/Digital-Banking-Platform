@@ -5,17 +5,32 @@
              targetNamespace="http://www.flowable.org/processdef">
 
   <process id="dataUpdateValidationProcess" name="Validation de mise à jour de données" isExecutable="true">
-    <startEvent id="startEvent" name="Start" />
+    <laneSet id="laneSet1">
+      <lane id="laneAdmin" name="Admin">
+        <flowNodeRef>startEvent</flowNodeRef>
+        <flowNodeRef>dataUpdateTask</flowNodeRef>
+        <flowNodeRef>decisionGateway</flowNodeRef>
+      </lane>
+      <lane id="laneSystem" name="System">
+        <flowNodeRef>auditLogTask</flowNodeRef>
+        <flowNodeRef>endApproved</flowNodeRef>
+        <flowNodeRef>endRejected</flowNodeRef>
+      </lane>
+    </laneSet>
+
+    <startEvent id="startEvent" name="Data Update Initiated" />
     <userTask id="dataUpdateTask" name="Vérifier la modification de données" flowable:candidateGroups="admin" />
     <exclusiveGateway id="decisionGateway" name="Decision" />
+    <serviceTask id="auditLogTask" name="Enregistrer audit log" flowable:delegateExpression="${auditDelegate}" />
     <endEvent id="endApproved" name="Approved" />
     <endEvent id="endRejected" name="Rejected" />
 
     <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="dataUpdateTask" />
     <sequenceFlow id="flow2" sourceRef="dataUpdateTask" targetRef="decisionGateway" />
-    <sequenceFlow id="flow3" sourceRef="decisionGateway" targetRef="endApproved">
+    <sequenceFlow id="flow3" sourceRef="decisionGateway" targetRef="auditLogTask">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == true}]]></conditionExpression>
     </sequenceFlow>
+    <sequenceFlow id="flow3b" sourceRef="auditLogTask" targetRef="endApproved" />
     <sequenceFlow id="flow4" sourceRef="decisionGateway" targetRef="endRejected">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${approved == false}]]></conditionExpression>
     </sequenceFlow>
