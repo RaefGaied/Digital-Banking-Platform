@@ -53,26 +53,64 @@ class AgentToolServiceTest {
     );
 
     @Test
-    void onlyReturnsTheAuthenticatedUsersAccountNumber() {
+    void refusesAccountEnumerationRequests() {
         BankingAgent agent = new BankingAgent();
         UUID userId = UUID.randomUUID();
         agent.setUserId(userId);
         User user = new User();
         user.setEmail("client@example.com");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(accountService.getMyAccount("client@example.com")).thenReturn(AccountResponse.builder()
-                .number("102030-4")
-                .build());
 
         IntentResult intent = new IntentResult();
         intent.setIntent(IntentType.ACCOUNT);
 
         AgentToolService.AgentToolResult result = agentToolService.executeToolAction(
-                agent, new Session(), intent, "what account numbers exist then?");
+                agent, new Session(), intent, "list all account numbers");
 
-        assertEquals("own_account_number", result.getAction());
-        assertTrue(result.getBotMessage().contains("102030-4"));
-        assertFalse(result.getBotMessage().contains("204060-8"));
+        assertEquals("account_privacy_refusal", result.getAction());
+        assertTrue(result.getBotMessage().toLowerCase().contains("privacy")
+                || result.getBotMessage().toLowerCase().contains("confidential"));
+        verify(accountService, Mockito.never()).getMyAccount(Mockito.anyString());
+    }
+
+    @Test
+    void refusesAnotherPersonsAccountNumber() {
+        BankingAgent agent = new BankingAgent();
+        UUID userId = UUID.randomUUID();
+        agent.setUserId(userId);
+        User user = new User();
+        user.setEmail("client@example.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        IntentResult intent = new IntentResult();
+        intent.setIntent(IntentType.ACCOUNT);
+
+        AgentToolService.AgentToolResult result = agentToolService.executeToolAction(
+                agent, new Session(), intent, "est ce que vous connaissez sarah ? son numero de compte ?");
+
+        assertEquals("account_privacy_refusal", result.getAction());
+        assertTrue(result.getBotMessage().contains("confidentialité"));
+        verify(accountService, Mockito.never()).getMyAccount(Mockito.anyString());
+    }
+
+    @Test
+    void explainsHowToContinueWhenDestinationAccountWasForgotten() {
+        UUID userId = UUID.randomUUID();
+        BankingAgent agent = new BankingAgent();
+        agent.setUserId(userId);
+        User user = new User();
+        user.setEmail("client@example.com");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        IntentResult intent = new IntentResult();
+        intent.setIntent(IntentType.TRANSFER);
+
+        AgentToolService.AgentToolResult result = agentToolService.executeToolAction(
+                agent, new Session(), intent, "I forgot the account number I want to transfer to");
+
+        assertEquals("request_transfer_details", result.getAction());
+        assertTrue(result.getBotMessage().contains("cannot retrieve"));
+        verify(transactionService, Mockito.never()).transfer(Mockito.anyString(), Mockito.any(TransactionRequest.class));
     }
 
     @Test

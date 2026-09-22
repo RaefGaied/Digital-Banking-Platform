@@ -82,6 +82,16 @@ public class ChatService {
                 ? intentResult.getDetectedLanguage()
                 : com.fintech.banking.util.LanguageDetector.detect(content);
 
+        if (isAccountPrivacyRequest(content)) {
+            if (intentResult == null) {
+                intentResult = new IntentResult();
+            }
+            intentResult.setIntent(com.fintech.banking.domain.enums.IntentType.ACCOUNT);
+            intentResult.setConfidence(1.0);
+            intentResult.setIsSensitive(false);
+            intentName = com.fintech.banking.domain.enums.IntentType.ACCOUNT.name();
+        }
+
         Message userMessage = messageService.createMessage(
                 sessionId,
                 userId,
@@ -245,6 +255,16 @@ public class ChatService {
                 false,
                 null);
         return userMessage;
+    }
+
+    private boolean isAccountPrivacyRequest(String content) {
+        if (content == null || content.isBlank()) {
+            return false;
+        }
+        String normalized = content.toLowerCase(Locale.ROOT);
+        boolean accountReference = normalized.matches(".*\\b(compte|comptes|account|accounts|num(?:é|e)ro|numeros?|numbers?)\\b.*");
+        boolean thirdPartyOrEnumeration = normalized.matches(".*\\b(sarah|someone|somebody|another|other|others|tous|toutes|all|every|everyone|available|exist|existing)\\b.*");
+        return accountReference && thirdPartyOrEnumeration;
     }
 
     private boolean isGreeting(String content) {

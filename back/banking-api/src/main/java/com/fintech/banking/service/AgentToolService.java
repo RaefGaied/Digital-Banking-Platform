@@ -121,9 +121,18 @@ public class AgentToolService {
     }
 
     private AgentToolResult handleAccount(String email, String userMessage, Map<String, Object> details) {
+        String normalized = userMessage == null ? "" : userMessage.toLowerCase(Locale.ROOT);
+        boolean asksForOthers = normalized.matches(".*\\b(sarah|someone|somebody|another|other|others|tous|toutes|all|every|everyone|available|exist|existing)\\b.*")
+                && normalized.matches(".*\\b(compte|comptes|account|accounts|num(?:é|e)ro|numbers?|numeros?)\\b.*");
+        if (asksForOthers) {
+            return informational(localized(userMessage,
+                    "For privacy and security, I cannot provide another person's account number or list all customer accounts. I can show only your own account number.",
+                    "Pour des raisons de confidentialité et de sécurité, je ne peux pas communiquer le numéro d'une autre personne ni lister les comptes des clients. Je peux uniquement afficher votre propre numéro de compte."),
+                    "account_privacy_refusal", details);
+        }
+
         try {
             AccountResponse account = accountService.getMyAccount(email);
-            String normalized = userMessage == null ? "" : userMessage.toLowerCase(Locale.ROOT);
             boolean asksForOwnNumber = normalized.matches(".*\\b(my|mine|own|mon|ma|mes)\\b.*\\b(account|compte|number|numéro|numero)\\b.*")
                     || normalized.matches(".*\\b(account|compte)\\b.*\\b(numbers?|numéro|numero)\\b.*");
             if (asksForOwnNumber) {
@@ -239,7 +248,11 @@ public class AgentToolService {
         if (missingAmount || missingTarget) {
             String message;
             if (missingAmount && missingTarget) {
-                message = localized(userMessage, "To make a transfer, provide the amount and destination account number.",
+                message = forgotDestinationAccount(userMessage)
+                        ? localized(userMessage,
+                        "I cannot retrieve or disclose another customer's account number. Ask the recipient for it or select a saved beneficiary, then provide the amount and destination account.",
+                        "Je ne peux pas retrouver ni communiquer le numéro de compte d'un autre client. Demandez-le au bénéficiaire ou sélectionnez un bénéficiaire enregistré, puis indiquez le montant et le compte destinataire.")
+                        : localized(userMessage, "To make a transfer, provide the amount and destination account number.",
                         "Pour effectuer un virement, indiquez le montant et le numéro de compte destinataire.");
             } else if (missingAmount) {
                 message = localized(userMessage, "What amount would you like to transfer to account " + targetAccount + "?",
@@ -277,6 +290,15 @@ public class AgentToolService {
                 false,
                 true,
                 confirmationArgs);
+    }
+
+    private boolean forgotDestinationAccount(String userMessage) {
+        if (userMessage == null) {
+            return false;
+        }
+        String normalized = userMessage.toLowerCase(Locale.ROOT);
+        return normalized.matches(".*\\b(forgot|forget|forgotten|remember|remembered|oubli(?:é|e|er)|rappelle|souviens)\\b.*")
+                && normalized.matches(".*\\b(account|compte|numero|numéro|number)\\b.*");
     }
 
     private AgentToolResult executeConfirmedTransfer(String email,

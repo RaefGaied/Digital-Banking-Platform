@@ -43,12 +43,16 @@ public class FlowableTaskCompletionService {
         Map<String, Object> processVars = flowableService.getProcessVariables(processInstanceId);
 
         Map<String, Object> vars = body == null ? new HashMap<>() : new HashMap<>(body);
+        boolean approved = readBoolean(vars.get("approved"), processVars.get("approved"));
+        String decision = readDecision(vars.get("decision"), processVars.get("decision"), approved);
+        vars.put("approved", approved);
+        vars.put("decision", decision);
         flowableService.completeTask(taskId, vars);
 
-        boolean approved = readBoolean(vars.get("approved"), processVars.get("approved"));
         Map<String, Object> result = new HashMap<>();
         result.put("taskId", taskId);
         result.put("approved", approved);
+        result.put("decision", decision);
         result.put("processInstanceId", processInstanceId);
 
         try {
@@ -75,6 +79,19 @@ public class FlowableTaskCompletionService {
     private boolean readBoolean(Object primary, Object fallback) {
         Object value = primary != null ? primary : fallback;
         return value != null && Boolean.parseBoolean(String.valueOf(value));
+    }
+
+    private String readDecision(Object primary, Object fallback, boolean approved) {
+        Object value = primary != null ? primary : fallback;
+        if (value == null || String.valueOf(value).isBlank()) {
+            return approved ? "APPROVE" : "REJECT";
+        }
+        String normalized = String.valueOf(value).trim().toUpperCase();
+        if (!normalized.equals("APPROVE") && !normalized.equals("REJECT")
+                && !normalized.equals("REQUEST_INFO")) {
+            throw new IllegalArgumentException("Unsupported task decision: " + value);
+        }
+        return normalized;
     }
 
     private void handleTransactionOutcome(Transaction transaction, boolean approved) {

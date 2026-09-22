@@ -237,25 +237,34 @@ The MCP server should only:
 
 It should not contain banking rules itself. The rules must stay in the backend.
 
-## What is still missing in the codebase
+## Trace and audit coverage
 
-- Persistent audit storage for every tool call, if you want a full trace ledger
-- Frontend display of the full agent trace timeline
+- Every annotated MCP tool call is persisted through `AuditLogService` with the
+  authenticated user, tool name, status, duration, and the fixed `mcp` source.
+  Tool arguments are intentionally excluded to avoid storing account numbers,
+  tokens, or other sensitive values.
+- The frontend displays the agent activity timeline and BPMN-related stages in
+  the chat view.
 
 ## Implemented bridges
 
-The backend now exposes an HTTP tool bridge under `/api/v1/mcp` and a stdio MCP transport via `McpStdioApplication` for:
+The backend now exposes a Spring AI MCP Streamable HTTP server at `/api/v1/mcp`.
+The annotated `BankingMcpTools` facade delegates to the existing secured services for:
 
-- `agent.create`
-- `agent.getBySession`
-- `agent.getById`
-- `agent.updateContext`
-- `agent.updateDecision`
-- `agent.recordLastTransaction`
-- `agent.determineDecision`
-- `flowable.listAdminTasks`
-- `flowable.getTask`
-- `flowable.completeTask`
+- `get_my_account`
+- `get_my_transaction_history`
+- `search_banking_knowledge`
+- `prepare_transfer`
+- `create_agent`
+- `get_agent_by_session`
+- `get_agent`
+- `update_agent_context`
+- `update_agent_decision`
+- `record_agent_transaction`
+- `determine_agent_decision`
+- `list_admin_tasks` (admin only)
+- `get_admin_task` (admin only)
+- `complete_admin_task` (admin only)
 
 ## Launch commands
 
@@ -278,10 +287,10 @@ Packaged jar:
 java -jar .\target\banking-api-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
 ```
 
-MCP stdio transport:
+MCP Streamable HTTP endpoint:
 
 ```powershell
-java -cp .\target\banking-api-0.0.1-SNAPSHOT.jar com.fintech.banking.mcp.McpStdioApplication
+http://localhost:8080/api/v1/mcp
 ```
 
 Local runtime note:
@@ -291,8 +300,13 @@ Local runtime note:
 - Kafka warnings are expected if no broker is listening on `localhost:9092`.
 - If port 8080 is already in use, stop the other backend instance before starting a new one.
 
-This bridge reuses the existing Spring services and keeps the banking rules in the backend.
+MCP clients must authenticate with a user JWT. The server enforces account ownership and
+administrator access before invoking tools. `prepare_transfer` only creates a confirmation
+plan; execution remains in the secured transaction and Flowable validation services.
 
 ## Conclusion
 
-The project can use MCP as a tool layer above the current backend. The current implementation is an HTTP bridge that matches the MCP contract and invokes the existing Spring services.
+The project uses MCP as a tool layer above the current backend. Spring AI handles MCP
+discovery and JSON-RPC transport, while the existing Spring services remain the single
+business authority. `determine_agent_decision` also returns a trace containing the
+decision reason, sensitive threshold, and evaluation timestamp.

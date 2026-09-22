@@ -4,6 +4,7 @@ import com.fintech.banking.domain.entity.BankingAgent;
 import com.fintech.banking.domain.entity.Session;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.AgentDecision;
+import com.fintech.banking.domain.enums.IntentType;
 import com.fintech.banking.domain.vo.IntentResult;
 import com.fintech.banking.repository.BankingAgentRepository;
 import com.fintech.banking.repository.SessionRepository;
@@ -250,6 +251,10 @@ public class BankingAgentService {
         // Check confidence level
         if (intentResult.getConfidence() == null || intentResult.getConfidence() < 0.7) {
             return AgentDecision.REQUEST_INFO;
+        }
+
+        if (intentResult.getIntent() == IntentType.TRANSFER) {
+            return AgentDecision.AUTO_EXECUTE;
         }
 
         // Check if intent is sensitive

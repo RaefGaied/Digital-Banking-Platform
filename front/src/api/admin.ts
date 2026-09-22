@@ -57,6 +57,38 @@ export const adminApi = {
     return response.data;
   },
 
+  getFlowableTaskDetails: async (taskId: string): Promise<{
+    taskId: string;
+    name: string;
+    assignee: string | null;
+    processInstanceId: string;
+    variables: Record<string, unknown>;
+  }> => {
+    const response = await api.get<{ tool: string; data: {
+      taskId: string;
+      name: string;
+      assignee: string | null;
+      processInstanceId: string;
+      variables: Record<string, unknown>;
+    } }>(`/mcp/flowable/tasks/${taskId}`);
+    return response.data.data;
+  },
+
+  getFlowableProcessTrace: async (processInstanceId: string): Promise<Array<{
+    activityId: string;
+    activityName: string;
+    activityType: string;
+    taskId: string | null;
+    assignee: string | null;
+    startTime: string;
+    endTime: string | null;
+    completed: boolean;
+    synthetic?: boolean;
+  }>> => {
+    const response = await api.get(`/admin/flowable/processes/${processInstanceId}/trace`);
+    return response.data;
+  },
+
   completeFlowableTask: async (taskId: string, approved: boolean) => {
     const response = await api.post(`/admin/flowable/tasks/${taskId}/complete`, { approved });
     return response.data;

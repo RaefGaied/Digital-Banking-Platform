@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import jakarta.servlet.DispatcherType;
 
 @Configuration
 @EnableWebSecurity
@@ -44,6 +45,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                    .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                     .requestMatchers(
                         "/auth/**",
                         "/swagger-ui/**",
@@ -62,6 +64,7 @@ public class SecurityConfig {
                         "/investments/**",
                         "/support-tickets/**",
                         "/sessions/**",
+                        "/mcp",
                         "/mcp/**",
                         "/users/**",
                         "/profile/**",

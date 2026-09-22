@@ -44,6 +44,11 @@ public class FlowableAdminController {
                 "processDefinitions", flowableService.listProcessDefinitions()));
     }
 
+    @GetMapping("/processes/{processInstanceId}/trace")
+    public ResponseEntity<List<Map<String, Object>>> processTrace(@PathVariable String processInstanceId) {
+        return ResponseEntity.ok(flowableService.getProcessTrace(processInstanceId));
+    }
+
     @PostMapping("/tasks/{taskId}/complete")
     public ResponseEntity<?> completeTask(@PathVariable String taskId, @RequestBody Map<String, Object> body) {
         try {

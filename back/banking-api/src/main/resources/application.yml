@@ -57,6 +57,9 @@ spring:
             enable: ${MAIL_SMTP_STARTTLS:false}
 
   ai:
+    mcp:
+      server:
+        protocol: streamable
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
@@ -132,5 +135,6 @@ ai:
 flowable:
   database-schema-update: true
   async-executor-activate: true
+  history-level: full
   process-definition-location-prefix: classpath:/processes/
   process-definition-location-suffix: '**.bpmn'

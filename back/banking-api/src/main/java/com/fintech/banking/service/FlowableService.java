@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,9 @@ public class FlowableService {
 
     @Autowired(required = false)
     private RepositoryService repositoryService;
+
+    @Autowired(required = false)
+    private HistoryService historyService;
 
     public String startProcessInstance(String processKey, Map<String, Object> variables) {
         if (runtimeService == null) {
@@ -96,5 +101,77 @@ public class FlowableService {
         if (processInstanceId == null) return java.util.Map.of();
         if (runtimeService == null) return java.util.Map.of();
         return runtimeService.getVariables(processInstanceId);
+    }
+
+    public List<Map<String, Object>> getProcessTrace(String processInstanceId) {
+        if (processInstanceId == null) {
+            return List.of();
+        }
+        if (historyService == null) {
+            return fallbackTrace();
+        }
+        List<Map<String, Object>> trace = historyService.createHistoricActivityInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .orderByHistoricActivityInstanceStartTime()
+                .asc()
+                .list()
+                .stream()
+                .map(this::toTraceEntry)
+                .toList();
+
+        // A process created before full history was enabled can have variables and
+        // an active task but no historic activity rows. Expose that live task so the
+        // supervision panel remains actionable instead of appearing broken.
+        if (!trace.isEmpty() || taskService == null) {
+            return trace;
+        }
+        Task activeTask = taskService.createTaskQuery()
+                .processInstanceId(processInstanceId)
+                .singleResult();
+        if (activeTask == null) {
+            return fallbackTrace();
+        }
+        Map<String, Object> liveEntry = new java.util.LinkedHashMap<>();
+        liveEntry.put("activityId", "live-" + activeTask.getId());
+        liveEntry.put("activityName", activeTask.getName() == null ? "Current workflow task" : activeTask.getName());
+        liveEntry.put("activityType", "userTask");
+        liveEntry.put("taskId", activeTask.getId());
+        liveEntry.put("assignee", activeTask.getAssignee());
+        liveEntry.put("startTime", activeTask.getCreateTime());
+        liveEntry.put("endTime", null);
+        liveEntry.put("completed", false);
+        return List.of(liveEntry);
+    }
+
+    private List<Map<String, Object>> fallbackTrace() {
+        List<Map<String, Object>> fallback = new java.util.ArrayList<>();
+        String[] stages = {"Request received", "Automated validation", "Human decision", "Execution"};
+        for (int index = 0; index < stages.length; index++) {
+            Map<String, Object> entry = new java.util.LinkedHashMap<>();
+            entry.put("activityId", "workflow-stage-" + index);
+            entry.put("activityName", stages[index]);
+            entry.put("activityType", "workflowStage");
+            entry.put("taskId", null);
+            entry.put("assignee", null);
+            entry.put("startTime", null);
+            entry.put("endTime", null);
+            entry.put("completed", false);
+            entry.put("synthetic", true);
+            fallback.add(entry);
+        }
+        return fallback;
+    }
+
+    private Map<String, Object> toTraceEntry(HistoricActivityInstance activity) {
+        Map<String, Object> entry = new java.util.LinkedHashMap<>();
+        entry.put("activityId", activity.getActivityId());
+        entry.put("activityName", activity.getActivityName());
+        entry.put("activityType", activity.getActivityType());
+        entry.put("taskId", activity.getTaskId());
+        entry.put("assignee", activity.getAssignee());
+        entry.put("startTime", activity.getStartTime());
+        entry.put("endTime", activity.getEndTime());
+        entry.put("completed", activity.getEndTime() != null);
+        return entry;
     }
 }
