@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Box, Card, CardContent, Chip, Divider, InputAdornment, Stack, TextField, Typography } from '@mui/material';
-import { Search, TrendingUp, TrendingDown, ArrowLeftRight, Sparkles } from 'lucide-react';
+import { Alert, Box, Card, CardContent, Chip, Divider, InputAdornment, Stack, TextField, Typography } from '@mui/material';
+import { Search, TrendingUp, TrendingDown, ArrowLeftRight, Sparkles, Download } from 'lucide-react';
+import { Button } from '@mui/material';
 import { accountApi } from '../api/account';
 import { formatCurrency, formatDate, getTransactionLabel } from '../utils/formatters';
 import { useI18n } from '../i18n/I18nContext';
@@ -13,6 +14,7 @@ export default function HistoryPage() {
   const isDark = theme === 'dark';
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('ALL');
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const text =
     locale === 'fr'
@@ -57,6 +59,28 @@ export default function HistoryPage() {
       transaction.amount.toString().includes(search);
     return matchType && matchSearch;
   });
+
+  const downloadReceipt = async (transactionId: string) => {
+    setDownloadError(null);
+    try {
+      const blob = await accountApi.downloadReceipt(transactionId);
+      if (!blob || blob.size === 0) {
+        throw new Error('The server returned an empty receipt.');
+      }
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `finbank-transaction-${transactionId}.pdf`;
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      const responseData = (error as { response?: { data?: { message?: string; error?: string } } }).response?.data;
+      setDownloadError(responseData?.message || responseData?.error || 'Could not download the transaction receipt.');
+    }
+  };
 
   const filters = [
     { key: 'ALL', label: text.all },
@@ -112,6 +136,12 @@ export default function HistoryPage() {
           />
         </CardContent>
       </Card>
+
+      {downloadError && (
+        <Alert severity='error' onClose={() => setDownloadError(null)}>
+          {downloadError}
+        </Alert>
+      )}
 
       {/* ── FILTER CHIPS ── */}
       <Card sx={{ borderRadius: 4 }}>
@@ -236,6 +266,14 @@ export default function HistoryPage() {
                         variant='outlined'
                         sx={{ mt: 0.5, fontSize: 10, height: 20 }}
                       />
+                      <Button
+                        size='small'
+                        startIcon={<Download size={14} />}
+                        onClick={() => void downloadReceipt(transaction.id)}
+                        sx={{ mt: 0.5, textTransform: 'none' }}
+                      >
+                        PDF
+                      </Button>
                     </Box>
                   </Box>
                   {index < filtered.length - 1 && <Divider sx={{ mt: 2.5 }} />}

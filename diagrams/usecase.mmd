@@ -1,150 +1,99 @@
-%% Use Case - rendered as flowchart for compatibility with mermaid-cli
+%% Diagramme de cas d'utilisation global - FinBank
+%% Compatible avec Draw.io : Arrange > Insert > Advanced > Mermaid
 flowchart LR
-  subgraph Actors
-    AClient[Client]
-    AAdmin[Admin / agent support humain]
-    AIA[Assistant IA / OpenAI]
-    AFlow[Flowable / BPMN]
-    APay[Passerelle de paiement]
-    ANotif[Service de notifications]
-  end
+    Client(("Client"))
+    Admin(("Administrateur<br/>ou support"))
+    Payment(("Passerelle de<br/>paiement"))
+    AI(("Service IA"))
+    Flowable(("Flowable<br/>BPMN"))
+    Notify(("Service de<br/>notification"))
 
-  subgraph ClientUseCases [Use cases client]
-    UCRegister[(S'inscrire)]
-    UCAuth[(S'authentifier / gérer la session)]
-    UC2FA[(Vérifier / activer la 2FA)]
-    UCDashboard[(Consulter le tableau de bord)]
-    UCBalance[(Consulter le solde)]
-    UCHistory[(Consulter l'historique des transactions)]
-    UCTransfer[(Effectuer un virement)]
-    UCPix[(Gérer les clés PIX (PaymentKey) et virements PIX)]
-    UCCards[(Gérer les cartes)]
-    UCInvest[(Gérer les investissements)]
-    UCProfile[(Gérer le profil et la sécurité)]
-    UCSessions[(Gérer les sessions)]
-    UCMessages[(Gérer la conversation et les messages)]
-    UCTickets[(Soumettre et suivre un ticket)]
-    UCNotifications[(Consulter les notifications)]
-    UCHelp[(Consulter l'aide / FAQ)]
-    UCAnalytics[(Consulter les analytics)]
-    UCAgentTrace[(Consulter les traces de l'agent conversationnel)]
-  end
+    subgraph FinBank["Systeme FinBank"]
+        direction TB
 
-  subgraph AdminUseCases [Use cases admin]
-    UCDashboardAdmin[(Consulter le dashboard admin)]
-    UCTasks[(Consulter et traiter les tâches Flowable)]
-    UCFlowableTasks[(Lister les tâches Flowable)]
-    UCFlowableTaskDetail[(Consulter le détail d'une tâche Flowable)]
-    UCFlowableComplete[(Compléter une tâche Flowable)]
-    UCUsers[(Gérer les utilisateurs)]
-    UCAudit[(Consulter les logs d'audit)]
-    UCSecurityEvents[(Consulter et résoudre les événements de sécurité)]
-    UCTicketsAdmin[(Gérer les tickets support)]
-    UCSupervise[(Superviser les workflows de tickets)]
-    UCAgentAdmin[(Consulter les sessions, les agents et les décisions)]
-  end
+        subgraph Security["Authentification et securite"]
+            Register(("S'inscrire"))
+            Login(("S'authentifier"))
+            Profile(("Gerer le profil"))
+        end
 
-  subgraph SystemUseCases [Use cases système]
-    UCIntent[(Détecter l'intention avec l'IA)]
-    UCContext[(Construire le contexte conversationnel)]
-    UCClarify[(Demander une clarification)]
-    UCSensitive[(Appliquer la Sensitive Line)]
-    UCReply[(Générer la réponse IA)]
-    UCPayment[(Exécuter ou simuler le paiement)]
-    UCWorkflow[(Déclencher un workflow BPMN)]
-    UCAuditTrail[(Tracer les actions sensibles)]
-    UCNotify[(Notifier le client)]
-  end
+        subgraph Banking["Operations bancaires"]
+            Dashboard(("Consulter le tableau<br/>de bord"))
+            Account(("Consulter le compte<br/>et le solde"))
+            History(("Consulter l'historique<br/>des transactions"))
+            Transfer(("Effectuer un<br/>virement"))
+            Pix(("Gerer les paiements<br/>PIX"))
+            Cards(("Gerer les cartes<br/>bancaires"))
+            Investments(("Gerer les<br/>investissements"))
+            Analytics(("Consulter les<br/>analyses"))
+        end
 
-  %% Client to use cases
-  AClient --> UCRegister
-  AClient --> UCAuth
-  AClient --> UC2FA
-  AClient --> UCDashboard
-  AClient --> UCBalance
-  AClient --> UCHistory
-  AClient --> UCTransfer
-  AClient --> UCPix
-  AClient --> UCCards
-  AClient --> UCInvest
-  AClient --> UCProfile
-  AClient --> UCSessions
-  AClient --> UCMessages
-  AClient --> UCTickets
-  AClient --> UCNotifications
-  AClient --> UCHelp
-  AClient --> UCAnalytics
-  AClient --> UCAgentTrace
+        subgraph Assistance["Assistance et supervision"]
+            Chat(("Utiliser l'assistant<br/>bancaire"))
+            Claim(("Soumettre et suivre<br/>une reclamation"))
+            Notifications(("Consulter les<br/>notifications"))
+            Users(("Gerer les<br/>utilisateurs"))
+            Tasks(("Traiter les taches<br/>sensibles"))
+            Audit(("Consulter les<br/>journaux d'audit"))
+        end
 
-  %% Admin to use cases
-  AAdmin --> UCAuth
-  AAdmin --> UCDashboardAdmin
-  AAdmin --> UCTasks
-  AAdmin --> UCUsers
-  AAdmin --> UCAudit
-  AAdmin --> UCSecurityEvents
-  AAdmin --> UCTicketsAdmin
-  AAdmin --> UCSupervise
-  AAdmin --> UCAgentAdmin
+        Detect(("Analyser l'intention"))
+        Validate(("Valider une operation<br/>sensible"))
+        Execute(("Executer le paiement"))
+        NotifyClient(("Notifier le client"))
+    end
 
-  %% System and external services
-  AIA --> UCIntent
-  AIA --> UCContext
-  AIA --> UCClarify
-  AIA --> UCReply
-  AFlow --> UCWorkflow
-  AFlow --> UCFlowableTasks
-  AFlow --> UCFlowableTaskDetail
-  AFlow --> UCFlowableComplete
-  APay --> UCPayment
-  ANotif --> UCNotify
+    Client --> Register
+    Client --> Login
+    Client --> Dashboard
+    Client --> Account
+    Client --> History
+    Client --> Transfer
+    Client --> Pix
+    Client --> Cards
+    Client --> Investments
+    Client --> Analytics
+    Client --> Profile
+    Client --> Chat
+    Client --> Claim
+    Client --> Notifications
 
-  %% Core includes and extensions
-  UCRegister ---|include| UCAuth
-  UC2FA ---|include| UCAuth
-  UCDashboard ---|include| UCAuth
-  UCBalance ---|include| UCAuth
-  UCHistory ---|include| UCAuth
-  UCTransfer ---|include| UCAuth
-  UCPix ---|include| UCAuth
-  UCCards ---|include| UCAuth
-  UCInvest ---|include| UCAuth
-  UCProfile ---|include| UCAuth
-  UCSessions ---|include| UCAuth
-  UCMessages ---|include| UCAuth
-  UCTickets ---|include| UCAuth
-  UCNotifications ---|include| UCAuth
-  UCAnalytics ---|include| UCAuth
-  UCAgentTrace ---|include| UCAuth
+    Admin --> Login
+    Admin --> Users
+    Admin --> Tasks
+    Admin --> Audit
+    Admin --> Claim
 
-  UCTransfer ---|include| UCIntent
-  UCTransfer ---|include| UCSensitive
-  UCTransfer -.->|si montant > 5000 € ou intention critique| UCWorkflow
-  UCTransfer -.->|si montant <= 5000 €| UCPayment
+    Payment --> Execute
+    AI --> Detect
+    Flowable --> Validate
+    Notify --> NotifyClient
 
-  UCPix -.->|paiement / transfert PIX| UCPayment
-  UCTickets -.->|escalade sensible| UCWorkflow
-  UCTickets -.->|notification de suivi| UCNotify
-  UCProfile -.->|validation sécurité| UC2FA
-  UCMessages -.->|analyse du message| UCIntent
-  UCMessages -.->|réponse| UCReply
-  UCIntent -.->|faible confiance| UCClarify
-  UCIntent -.->|intentions détectées| UCSensitive
-  UCSensitive -.->|escalade| UCWorkflow
-  UCSensitive -.->|trace d'audit| UCAuditTrail
-  UCWorkflow -.->|assignation et suivi| UCFlowableTasks
-  UCWorkflow -.->|complétion administrative| UCFlowableComplete
-  UCTasks -.->|exploitation des tâches| UCFlowableTaskDetail
-  UCTasks -.->|traitement| UCFlowableComplete
-  UCTicketsAdmin -.->|mise à jour du statut| UCNotify
-  UCSecurityEvents -.->|résolution| UCAuditTrail
+    Register -.->|inclut| Login
+    Dashboard -.->|inclut| Login
+    Account -.->|inclut| Login
+    History -.->|inclut| Login
+    Transfer -.->|inclut| Login
+    Pix -.->|inclut| Login
+    Cards -.->|inclut| Login
+    Investments -.->|inclut| Login
+    Profile -.->|inclut| Login
+    Chat -.->|inclut| Login
+    Claim -.->|inclut| Login
 
-  %% External systems used by the business flows
-  UCTransfer --> APay
-  UCPix --> APay
-  UCReply --> ANotif
-  UCNotify --> ANotif
+    Chat -.->|analyse le message| Detect
+    Transfer -.->|operation sensible| Validate
+    Pix -.->|declenche| Execute
+    Transfer -.->|declenche| Execute
+    Validate -.->|operation autorisee| Execute
+    Transfer -.->|confirme| NotifyClient
+    Investments -.->|alerte de rendement| NotifyClient
+    Claim -.->|mise a jour| NotifyClient
+    Validate -.->|trace| Audit
 
-  %% Note about BPMN
-  click UCSupervise "#" "Orchestration BPMN (Flowable) — voir fichiers BPMN"
-
+    classDef actor fill:#fff2cc,stroke:#b8860b,stroke-width:2px,color:#000;
+    classDef usecase fill:#dae8fc,stroke:#2f5597,stroke-width:1px,color:#000;
+    classDef internal fill:#e2f0d9,stroke:#548235,stroke-width:1px,color:#000;
+    class Client,Admin,Payment,AI,Flowable,Notify actor;
+    class Register,Login,Profile,Dashboard,Account,History,Transfer,Pix,Cards,Investments,Analytics,Chat,Claim,Notifications,Users,Tasks,Audit usecase;
+    class Detect,Validate,Execute,NotifyClient internal;

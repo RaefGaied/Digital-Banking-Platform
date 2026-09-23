@@ -2,11 +2,20 @@ package com.fintech.banking.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.flowable.bpmn.model.BpmnModel;
+import org.flowable.bpmn.model.EndEvent;
+import org.flowable.bpmn.model.FlowElement;
+import org.flowable.bpmn.model.Gateway;
+import org.flowable.bpmn.model.ServiceTask;
+import org.flowable.bpmn.model.StartEvent;
+import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.history.HistoricActivityInstance;
+import org.flowable.variable.api.history.HistoricVariableInstance;
+import org.flowable.common.engine.api.FlowableObjectNotFoundException;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,8 +108,23 @@ public class FlowableService {
 
     public Map<String, Object> getProcessVariables(String processInstanceId) {
         if (processInstanceId == null) return java.util.Map.of();
-        if (runtimeService == null) return java.util.Map.of();
-        return runtimeService.getVariables(processInstanceId);
+        if (runtimeService != null) {
+            try {
+                return runtimeService.getVariables(processInstanceId);
+            } catch (FlowableObjectNotFoundException ignored) {
+                log.debug("Runtime process {} is no longer active; reading historic variables", processInstanceId);
+            }
+        }
+        if (historyService == null) return java.util.Map.of();
+        return historyService.createHistoricVariableInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .list()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        HistoricVariableInstance::getVariableName,
+                        HistoricVariableInstance::getValue,
+                        (first, latest) -> latest,
+                        java.util.LinkedHashMap::new));
     }
 
     public List<Map<String, Object>> getProcessTrace(String processInstanceId) {
@@ -108,7 +132,7 @@ public class FlowableService {
             return List.of();
         }
         if (historyService == null) {
-            return fallbackTrace();
+            return fallbackTrace(processInstanceId);
         }
         List<Map<String, Object>> trace = historyService.createHistoricActivityInstanceQuery()
                 .processInstanceId(processInstanceId)
@@ -129,7 +153,7 @@ public class FlowableService {
                 .processInstanceId(processInstanceId)
                 .singleResult();
         if (activeTask == null) {
-            return fallbackTrace();
+            return fallbackTrace(processInstanceId);
         }
         Map<String, Object> liveEntry = new java.util.LinkedHashMap<>();
         liveEntry.put("activityId", "live-" + activeTask.getId());
@@ -143,9 +167,44 @@ public class FlowableService {
         return List.of(liveEntry);
     }
 
-    private List<Map<String, Object>> fallbackTrace() {
+    private List<Map<String, Object>> fallbackTrace(String processInstanceId) {
+        String processDefinitionKey = null;
+        String processDefinitionId = null;
+        if (runtimeService != null && repositoryService != null) {
+            ProcessInstance instance = runtimeService.createProcessInstanceQuery()
+                    .processInstanceId(processInstanceId)
+                    .singleResult();
+            if (instance != null) {
+                processDefinitionId = instance.getProcessDefinitionId();
+            }
+        }
+        if (processDefinitionId == null && historyService != null) {
+            var historicInstance = historyService.createHistoricProcessInstanceQuery()
+                    .processInstanceId(processInstanceId)
+                    .singleResult();
+            if (historicInstance != null) {
+                processDefinitionId = historicInstance.getProcessDefinitionId();
+            }
+        }
+        if (processDefinitionId != null && repositoryService != null) {
+            var definition = repositoryService.createProcessDefinitionQuery()
+                    .processDefinitionId(processDefinitionId)
+                    .singleResult();
+            if (definition != null) {
+                processDefinitionKey = definition.getKey();
+                List<Map<String, Object>> modelTrace = modelTrace(processDefinitionId);
+                if (!modelTrace.isEmpty()) {
+                    return modelTrace;
+                }
+            }
+        }
+        Map<String, Object> variables = getProcessVariables(processInstanceId);
+        boolean dataUpdate = (processDefinitionKey != null && processDefinitionKey.contains("dataUpdate"))
+                || "UPDATE_SENSITIVE_DATA".equals(String.valueOf(variables.get("intent")));
+        String[] stages = dataUpdate
+                ? new String[]{"Data Update Initiated", "Vérifier la modification de données", "Decision", "Enregistrer audit log", "Approved / Rejected"}
+                : new String[]{"Request received", "Automated validation", "Human decision", "Execution"};
         List<Map<String, Object>> fallback = new java.util.ArrayList<>();
-        String[] stages = {"Request received", "Automated validation", "Human decision", "Execution"};
         for (int index = 0; index < stages.length; index++) {
             Map<String, Object> entry = new java.util.LinkedHashMap<>();
             entry.put("activityId", "workflow-stage-" + index);
@@ -157,9 +216,51 @@ public class FlowableService {
             entry.put("endTime", null);
             entry.put("completed", false);
             entry.put("synthetic", true);
+            entry.put("source", "process-model");
             fallback.add(entry);
         }
         return fallback;
+    }
+
+    private List<Map<String, Object>> modelTrace(String processDefinitionId) {
+        BpmnModel model = repositoryService.getBpmnModel(processDefinitionId);
+        if (model == null || model.getMainProcess() == null) {
+            return List.of();
+        }
+        return model.getMainProcess().getFlowElements().stream()
+                .filter(element -> element instanceof StartEvent
+                        || element instanceof EndEvent
+                        || element instanceof UserTask
+                        || element instanceof ServiceTask
+                        || element instanceof Gateway)
+                .map(this::toModelTraceEntry)
+                .toList();
+    }
+
+    private Map<String, Object> toModelTraceEntry(FlowElement element) {
+        Map<String, Object> entry = new java.util.LinkedHashMap<>();
+        entry.put("activityId", "model-" + element.getId());
+        entry.put("activityName", element.getName() == null || element.getName().isBlank()
+                ? element.getId()
+                : element.getName());
+        entry.put("activityType", elementType(element));
+        entry.put("taskId", null);
+        entry.put("assignee", null);
+        entry.put("startTime", null);
+        entry.put("endTime", null);
+        entry.put("completed", false);
+        entry.put("synthetic", true);
+        entry.put("source", "process-model");
+        return entry;
+    }
+
+    private String elementType(FlowElement element) {
+        if (element instanceof StartEvent) return "startEvent";
+        if (element instanceof EndEvent) return "endEvent";
+        if (element instanceof UserTask) return "userTask";
+        if (element instanceof ServiceTask) return "serviceTask";
+        if (element instanceof Gateway) return "gateway";
+        return "flowNode";
     }
 
     private Map<String, Object> toTraceEntry(HistoricActivityInstance activity) {

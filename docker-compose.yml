@@ -69,7 +69,12 @@ services:
       ollama:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
-    command: ["ollama pull \"$${OLLAMA_MODEL}\" && ollama pull \"$${OLLAMA_EMBEDDING_MODEL}\""]
+    command:
+      - >
+        ollama show "$${OLLAMA_MODEL}" >/dev/null 2>&1 ||
+        ollama pull "$${OLLAMA_MODEL}";
+        ollama show "$${OLLAMA_EMBEDDING_MODEL}" >/dev/null 2>&1 ||
+        ollama pull "$${OLLAMA_EMBEDDING_MODEL}"
     volumes:
       - ollama_data:/root/.ollama
     networks:

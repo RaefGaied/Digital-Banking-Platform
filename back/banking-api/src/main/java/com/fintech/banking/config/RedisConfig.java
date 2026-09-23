@@ -14,9 +14,14 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 public class RedisConfig {
+
+    @Value("${app.cache.accounts-ttl:5m}")
+    private Duration accountsCacheTtl;
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
@@ -38,8 +43,11 @@ public class RedisConfig {
                         RedisSerializationContext.SerializationPair.fromSerializer(serializer))
                 .disableCachingNullValues();
 
+        RedisCacheConfiguration accountsConfig = config.entryTtl(accountsCacheTtl);
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
+                .withInitialCacheConfigurations(Map.of("accounts", accountsConfig))
                 .build();
     }
 }

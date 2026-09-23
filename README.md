@@ -648,7 +648,12 @@ application:
 | `SPRING_DATASOURCE_USERNAME` | `banking_user` | DB username |
 | `SPRING_DATASOURCE_PASSWORD` | `banking_pass` | DB password |
 | `SPRING_DATA_REDIS_HOST` | `redis` | Redis hostname |
+| `ACCOUNTS_CACHE_TTL` | `5m` | Redis TTL for cached account summaries |
 | `SPRING_KAFKA_BOOTSTRAP_SERVERS` | `kafka:9092` | Kafka broker |
+
+Completed transaction receipt emails are deduplicated per transaction and recipient
+using Redis for seven days. If Redis is temporarily unavailable, the consumer logs
+the condition and still attempts delivery so a cache outage does not block notifications.
 
 ### Frontend — `.env`
 

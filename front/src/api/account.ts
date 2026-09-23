@@ -26,4 +26,9 @@ export const accountApi = {
     const response = await api.get<Transaction[]>('/transactions/history');
     return response.data;
   },
+
+  downloadReceipt: async (transactionId: string): Promise<Blob> => {
+    const response = await api.get(`/transactions/${transactionId}/receipt`, { responseType: 'blob' });
+    return response.data;
+  },
 };
