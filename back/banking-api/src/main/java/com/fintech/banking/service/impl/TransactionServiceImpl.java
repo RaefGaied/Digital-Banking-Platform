@@ -15,6 +15,7 @@ import com.fintech.banking.repository.TransactionRepository;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.TransactionValidationService;
 import com.fintech.banking.service.TransactionService;
+import com.fintech.banking.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +37,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final UserRepository userRepository;
     private final TransactionEventProducer eventProducer;
     private final TransactionValidationService transactionValidationService;
+    private final NotificationService notificationService;
 
     @Value("${app.sensitive-line.threshold:5000}")
     private BigDecimal highValueTransferThreshold;
@@ -98,6 +101,9 @@ public class TransactionServiceImpl implements TransactionService {
                 .description(request.getDescription())
                 .build());
         publishEvent(transaction);
+        if (account.getUser() != null) {
+            notificationService.notifyDepositReceived(account.getUser().getId(), transaction.getAmount().toString());
+        }
         return toResponse(transaction);
     }
 
@@ -116,6 +122,9 @@ public class TransactionServiceImpl implements TransactionService {
                 .description(request.getDescription())
                 .build());
         publishEvent(transaction);
+        if (account.getUser() != null) {
+            notificationService.notifyWithdrawalCompleted(account.getUser().getId(), transaction.getAmount().toString());
+        }
         return toResponse(transaction);
     }
 
@@ -145,6 +154,9 @@ public class TransactionServiceImpl implements TransactionService {
                     request.getSessionId());
             transaction = transactionRepository.save(transaction);
             publishEvent(transaction);
+            if (decision == AgentDecision.TRIGGER_BPMN && user.getId() != null) {
+                notificationService.notifyTransferPending(user.getId(), transaction.getAmount().toString());
+            }
             return toResponse(transaction, decision);
         }
 
@@ -161,6 +173,14 @@ public class TransactionServiceImpl implements TransactionService {
                 .description(request.getDescription())
                 .build());
         publishEvent(transaction);
+        UUID senderId = source.getUser() != null ? source.getUser().getId() : null;
+        UUID receiverId = target.getUser() != null ? target.getUser().getId() : null;
+        if (senderId != null) {
+            notificationService.notifyTransferExecuted(senderId, transaction.getAmount().toString());
+        }
+        if (receiverId != null && !receiverId.equals(senderId)) {
+            notificationService.notifyTransferReceived(receiverId, transaction.getAmount().toString());
+        }
         return toResponse(transaction);
     }
 

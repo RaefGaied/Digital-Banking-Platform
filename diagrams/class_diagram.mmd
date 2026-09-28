@@ -1,5 +1,11 @@
-%% Classe de domaine backend - diagramme Mermaid
+%% FinBank - modele global des entites du domaine et de leurs relations
+%% Les enums sont detaillees et reliees aux classes qui les utilisent.
+%% IntentResult est un objet-valeur, pas une entite persistante.
+%% RagDocument.embedding est stocke en PostgreSQL/pgvector par JDBC, pas comme champ JPA.
+%% AdminTicketAction est inclus comme enum d'API, sans association a une entite persistante.
 classDiagram
+    direction LR
+
     class User {
         UUID id
         String name
@@ -8,13 +14,9 @@ classDiagram
         UserRole role
         UserStatus status
         Boolean active
-        Integer failedLoginAttempts
-        LocalDateTime lockedUntil
-        String deviceFingerprint
         Boolean twoFactorEnabled
-        String twoFactorSecret
+        LocalDateTime lockedUntil
         LocalDateTime createdAt
-        LocalDateTime updatedAt
     }
 
     class Account {
@@ -24,7 +26,6 @@ classDiagram
         BigDecimal balance
         AccountStatus status
         LocalDateTime createdAt
-        LocalDateTime updatedAt
     }
 
     class Transaction {
@@ -37,20 +38,78 @@ classDiagram
         LocalDateTime createdAt
     }
 
+    class Card {
+        UUID id
+        CardType cardType
+        CardBrand brand
+        String holderName
+        String lastFour
+        BigDecimal creditLimit
+        BigDecimal availableLimit
+        Boolean active
+    }
+
+    class Investment {
+        UUID id
+        InvestmentType investmentType
+        BigDecimal amount
+        BigDecimal annualRate
+        BigDecimal currentValue
+        InvestmentStatus status
+        LocalDateTime investedAt
+        LocalDateTime redeemedAt
+    }
+
+    class PaymentKey {
+        UUID id
+        PaymentKeyType keyType
+        String keyValue
+        Boolean active
+        Boolean verified
+        LocalDateTime verifiedAt
+    }
+
     class SupportTicket {
         Long id
         UUID userId
-        String subject
-        String description
-        TicketStatus status
-        TicketPriority priority
-        TicketType ticketType
         UUID assignedAdminId
         UUID ownerId
+        String subject
+        String description
+        TicketType ticketType
+        TicketStatus status
+        TicketPriority priority
         String flowableProcessId
+        String attachmentName
+        String attachmentType
+        byte[] attachmentData
         LocalDateTime createdAt
         LocalDateTime updatedAt
         LocalDateTime resolvedAt
+        LocalDateTime closedAt
+    }
+
+    class WorkflowTask {
+        Long id
+        String processInstanceId
+        Long supportTicketId
+        String description
+        WorkflowTaskStatus status
+        TaskType taskType
+        UUID assignedTo
+        ActionType actionType
+        LocalDateTime dueDate
+        LocalDateTime completedAt
+    }
+
+    class Session {
+        UUID id
+        UUID userId
+        SessionStatus status
+        String ipAddress
+        UUID agentId
+        LocalDateTime createdAt
+        LocalDateTime lastActivityAt
         LocalDateTime closedAt
     }
 
@@ -63,8 +122,20 @@ classDiagram
         Boolean isInternal
         String intent
         JsonNode parameters
+        String detectedLang
+        Boolean ragUsed
+        String ragSource
         LocalDateTime createdAt
-        LocalDateTime updatedAt
+    }
+
+    class BankingAgent {
+        UUID id
+        UUID sessionId
+        UUID userId
+        JsonNode context
+        UUID lastTransactionId
+        AgentDecision decision
+        AgentDecision defaultPolicy
     }
 
     class Notification {
@@ -74,11 +145,19 @@ classDiagram
         NotificationChannel channel
         String title
         String body
-        Long referenceId
-        String referenceType
         Boolean isRead
         LocalDateTime createdAt
         LocalDateTime readAt
+    }
+
+    class SecurityEvent {
+        UUID id
+        UUID userId
+        SecurityEventType type
+        String ipAddress
+        String deviceId
+        Boolean resolved
+        LocalDateTime timestamp
     }
 
     class AuditLog {
@@ -103,7 +182,6 @@ classDiagram
         String deviceId
         String ipAddress
         LocalDateTime lastUsed
-        LocalDateTime createdAt
     }
 
     class RefreshToken {
@@ -114,119 +192,288 @@ classDiagram
         LocalDateTime createdAt
     }
 
-    class PaymentKey {
+    class PasswordResetToken {
         UUID id
-        PaymentKeyType keyType
-        String keyValue
-        Boolean active
-        Boolean verified
-        String verificationMethod
-        LocalDateTime verifiedAt
-        LocalDateTime createdAt
+        String tokenHash
+        LocalDateTime expiresAt
+        LocalDateTime usedAt
     }
 
-    class Session {
-        UUID id
-        UUID userId
-        SessionStatus status
-        String ipAddress
-        UUID agentId
-        LocalDateTime createdAt
-        LocalDateTime lastActivityAt
-        LocalDateTime closedAt
-    }
-
-    class SecurityEvent {
-        UUID id
-        UUID userId
-        SecurityEventType type
-        String ipAddress
-        String deviceId
-        Boolean resolved
-        LocalDateTime timestamp
-    }
-
-    class BankingAgent {
-        UUID id
-        UUID sessionId
-        UUID userId
-        JsonNode context
-        UUID lastTransactionId
-        AgentDecision decision
-        AgentDecision defaultPolicy
-        LocalDateTime createdAt
-        LocalDateTime updatedAt
-    }
-
-    class WorkflowTask {
+    class RagDocument {
         Long id
-        String processInstanceId
-        Long supportTicketId
-        WorkflowTaskStatus status
-        TaskType taskType
-        String description
-        UUID assignedTo
-        ActionType actionType
-        LocalDateTime dueDate
-        LocalDateTime breachedAt
-        Integer escalationLevel
-        Map<String,Object> metadata
-        LocalDateTime createdAt
-        LocalDateTime updatedAt
-        LocalDateTime completedAt
-    }
-
-    class Card {
-        UUID id
-        CardType cardType
-        CardBrand brand
-        String holderName
-        String lastFour
-        Integer expiryMonth
-        Integer expiryYear
-        BigDecimal creditLimit
-        BigDecimal availableLimit
+        String title
+        String content
+        String source
         Boolean active
         LocalDateTime createdAt
+        LocalDateTime updatedAt
     }
 
-    class Investment {
-        UUID id
-        InvestmentType investmentType
-        BigDecimal amount
-        BigDecimal annualRate
-        BigDecimal currentValue
-        InvestmentStatus status
-        LocalDateTime investedAt
-        LocalDateTime redeemedAt
+    class IntentResult {
+        <<valueObject>>
+        IntentType intent
+        JsonNode parameters
+        Double confidence
+        String message
+        Boolean isSensitive
+        String detectedLanguage
     }
 
-    User "1" o-- "0..*" Account : owns
-    User "1" o-- "0..*" Card : owns
-    User "1" o-- "0..*" Investment : owns
-    User "1" o-- "0..*" RefreshToken : owns
-    User "1" o-- "0..*" PaymentKey : owns
+    User "1" --> "0..*" Account : owns
+    User "1" --> "0..*" Card : owns
+    User "1" --> "0..*" Investment : owns
+    User "1" --> "0..*" PaymentKey : owns
+    User "1" --> "0..*" RefreshToken : has
+    User "1" --> "0..*" PasswordResetToken : requests
+    User "1" --> "0..*" AuthToken : has
+    User "1" --> "0..*" Session : opens
+    User "1" --> "0..*" Notification : receives
+    User "1" --> "0..*" SecurityEvent : generates
 
-    User "1" o-- "0..*" Notification : receives
-    User "1" o-- "0..*" SecurityEvent : generates
-    User "1" o-- "0..*" SupportTicket : raises
+    User "1" --> "0..*" SupportTicket : submits
+    User "0..1" --> "0..*" SupportTicket : assignedAdmin
+    User "0..1" --> "0..*" WorkflowTask : assignedTo
+    SupportTicket "0..1" <-- "0..*" WorkflowTask : relatedTicket
 
-    Account "1" o-- "0..*" Transaction : sourceAccount
-    Account "1" o-- "0..*" Transaction : targetAccount
+    Account "0..1" <-- "0..*" Transaction : sourceAccount
+    Account "0..1" <-- "0..*" Transaction : targetAccount
 
-    Message "*" --> "1" Session : belongsTo
-    Message "*" --> "1" User : sender
+    User "1" <-- "0..*" Message : sender
+    Session "1" ..> "0..*" Message : sessionUuid reference
+    User "1" <-- "0..*" BankingAgent : userId
+    Session "1" <-- "0..1" BankingAgent : unique sessionId
 
-    RefreshToken --> User : userId
-    AuthToken --> User : userId
-    Notification --> User : userId
-    SecurityEvent --> User : userId
-    Session --> User : userId
-    SupportTicket --> User : userId
-    BankingAgent --> User : userId
-    BankingAgent --> Session : sessionId
-    WorkflowTask --> SupportTicket : supportTicketId
-    WorkflowTask --> User : assignedTo
-    AuditLog --> Session : sessionId
-    Transaction --> Account : sourceAccount
-    Transaction --> Account : targetAccount
+    class UserRole {
+        <<enumeration>>
+        USER
+        ADMIN
+    }
+
+    class UserStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+        BLOCKED
+    }
+
+    class AccountStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+        BLOCKED
+    }
+
+    class TransactionType {
+        <<enumeration>>
+        DEPOSIT
+        WITHDRAWAL
+        TRANSFER
+    }
+
+    class TransactionStatus {
+        <<enumeration>>
+        PENDING
+        COMPLETED
+        FAILED
+        REVERSED
+    }
+
+    class CardType {
+        <<enumeration>>
+        CREDIT
+        DEBIT
+    }
+
+    class CardBrand {
+        <<enumeration>>
+        VISA
+        MASTERCARD
+        ELO
+        AMEX
+    }
+
+    class InvestmentType {
+        <<enumeration>>
+        CDB
+        LCI
+        LCA
+        TESOURO_DIRETO
+        ACOES
+    }
+
+    class InvestmentStatus {
+        <<enumeration>>
+        ACTIVE
+        REDEEMED
+    }
+
+    class PaymentKeyType {
+        <<enumeration>>
+        TAX_ID
+        EMAIL
+        PHONE
+        RANDOM
+    }
+
+    class TicketType {
+        <<enumeration>>
+        TRANSFER_VALIDATION
+        FRAUD
+        CLAIM
+        DATA_UPDATE
+        GENERAL
+    }
+
+    class TicketStatus {
+        <<enumeration>>
+        OPEN
+        IN_PROGRESS
+        RESOLVED
+        CLOSED
+    }
+
+    class TicketPriority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+        CRITICAL
+    }
+
+    class WorkflowTaskStatus {
+        <<enumeration>>
+        PENDING
+        IN_PROGRESS
+        COMPLETED
+        REJECTED
+        CANCELLED
+    }
+
+    class TaskType {
+        <<enumeration>>
+        TRANSFER_VALIDATION
+        FRAUD_CHECK
+        COMPLIANCE_REVIEW
+        ESCALATION
+    }
+
+    class ActionType {
+        <<enumeration>>
+        APPROVE
+        REJECT
+        REVIEW
+        ESCALATE
+    }
+
+    class SessionStatus {
+        <<enumeration>>
+        OPENED
+        ACTIVE
+        EXPIRED
+        CLOSED
+    }
+
+    class SenderType {
+        <<enumeration>>
+        USER
+        BOT
+        SYSTEM
+    }
+
+    class NotificationType {
+        <<enumeration>>
+        TICKET_CREATED
+        TICKET_UPDATED
+        TICKET_RESOLVED
+        TRANSFER_APPROVED
+        TRANSFER_REJECTED
+        TRANSFER_EXECUTED
+        INFO_REQUESTED
+        SECURITY_ALERT
+        ACCOUNT_LOCKED
+        ACCOUNT_UNLOCKED
+        PASSWORD_RESET_COMPLETED
+        SESSION_EXPIRED
+        WORKFLOW_TASK_CREATED
+        WORKFLOW_TASK_RESOLVED
+        EMAIL_CHANGED
+        TRANSFER_PENDING
+        TRANSFER_RECEIVED
+        DEPOSIT_RECEIVED
+        WITHDRAWAL_COMPLETED
+    }
+
+    class NotificationChannel {
+        <<enumeration>>
+        IN_APP
+        EMAIL
+    }
+
+    class SecurityEventType {
+        <<enumeration>>
+        REUSE_DETECTED
+        BRUTE_FORCE
+        ACCOUNT_LOCKED
+        SUSPICIOUS_ACTIVITY
+    }
+
+    class AgentDecision {
+        <<enumeration>>
+        AUTO_EXECUTE
+        TRIGGER_BPMN
+        REQUEST_INFO
+        BLOCK
+    }
+
+    class IntentType {
+        <<enumeration>>
+        TRANSFER
+        BALANCE
+        HISTORY
+        CARD_CREATION
+        CARD_SUPPORT
+        PAYMENT
+        WITHDRAWAL
+        INVESTMENT
+        ACCOUNT
+        PIX
+        PROFILE
+        NOTIFICATIONS
+        SUPPORT
+        FRAUD
+        STOLEN_CARD
+        CLAIM
+        UPDATE_SENSITIVE_DATA
+    }
+
+    class AdminTicketAction {
+        <<enumeration>>
+        TAKE_OWNERSHIP
+        REQUEST_INFO
+        SEND_UPDATE
+        RESOLVE
+    }
+
+    User ..> UserRole : role
+    User ..> UserStatus : status
+    Account ..> AccountStatus : status
+    Transaction ..> TransactionType : type
+    Transaction ..> TransactionStatus : status
+    Card ..> CardType : cardType
+    Card ..> CardBrand : brand
+    Investment ..> InvestmentType : investmentType
+    Investment ..> InvestmentStatus : status
+    PaymentKey ..> PaymentKeyType : keyType
+    SupportTicket ..> TicketType : ticketType
+    SupportTicket ..> TicketStatus : status
+    SupportTicket ..> TicketPriority : priority
+    WorkflowTask ..> WorkflowTaskStatus : status
+    WorkflowTask ..> TaskType : taskType
+    WorkflowTask ..> ActionType : actionType
+    Session ..> SessionStatus : status
+    Message ..> SenderType : senderType
+    Notification ..> NotificationType : type
+    Notification ..> NotificationChannel : channel
+    SecurityEvent ..> SecurityEventType : type
+    BankingAgent ..> AgentDecision : decision and defaultPolicy
+    IntentResult ..> IntentType : intent

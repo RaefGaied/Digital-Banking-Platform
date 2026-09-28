@@ -235,3 +235,79 @@ body {
   70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(232, 97, 26, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(232, 97, 26, 0); }
 }
+
+/* ── FUTURISTIC AI AGENT HUD & THEME DECORATIONS ── */
+.ai-halo-orbit {
+  position: relative;
+}
+.ai-halo-orbit::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, #e8611a, #6366f1, #10b981, #06b6d4, #e8611a);
+  animation: spin-halo 4s linear infinite;
+  z-index: -1;
+  filter: blur(2px);
+}
+@keyframes spin-halo {
+  100% { transform: rotate(360deg); }
+}
+
+.ai-neural-glow {
+  box-shadow: 0 0 25px -4px rgba(99, 102, 241, 0.4), 0 0 10px -2px rgba(232, 97, 26, 0.3);
+  animation: neural-breathing 3s ease-in-out infinite alternate;
+}
+@keyframes neural-breathing {
+  0% {
+    box-shadow: 0 0 15px -4px rgba(99, 102, 241, 0.3), 0 0 8px -2px rgba(232, 97, 26, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 32px -2px rgba(99, 102, 241, 0.6), 0 0 18px -1px rgba(232, 97, 26, 0.45);
+  }
+}
+
+/* Sound / Neural Wave Animated Equalizer */
+.ai-wave-bar {
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6366f1 0%, #e8611a 100%);
+  animation: wave-bounce 1.2s ease-in-out infinite alternate;
+}
+.ai-wave-bar:nth-child(1) { height: 10px; animation-delay: 0.1s; }
+.ai-wave-bar:nth-child(2) { height: 18px; animation-delay: 0.3s; }
+.ai-wave-bar:nth-child(3) { height: 14px; animation-delay: 0.2s; }
+.ai-wave-bar:nth-child(4) { height: 22px; animation-delay: 0.45s; }
+.ai-wave-bar:nth-child(5) { height: 12px; animation-delay: 0.25s; }
+
+@keyframes wave-bounce {
+  0% { transform: scaleY(0.4); opacity: 0.6; }
+  100% { transform: scaleY(1.2); opacity: 1; }
+}
+
+/* Cyber Shimmer Light Sweep */
+.cyber-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.cyber-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 60%
+  );
+  transform: rotate(25deg);
+  animation: sweep 4s infinite;
+  pointer-events: none;
+}
+@keyframes sweep {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  35%, 100% { transform: translateX(100%) rotate(25deg); }
+}

@@ -1,9 +1,15 @@
 package com.fintech.banking.controller;
 
 import com.fintech.banking.domain.entity.User;
+import com.fintech.banking.domain.entity.SupportTicket;
+import com.fintech.banking.domain.enums.TicketStatus;
+import com.fintech.banking.domain.enums.TicketType;
+import com.fintech.banking.repository.SupportTicketRepository;
 import com.fintech.banking.domain.enums.UserStatus;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.TokenService;
+import com.fintech.banking.service.EmailService;
+import com.fintech.banking.service.NotificationService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +20,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 @RestController
 @RequestMapping("/profile")
@@ -22,8 +31,11 @@ import java.util.UUID;
 public class UserProfileController {
 
     private final UserRepository userRepository;
+    private final SupportTicketRepository supportTicketRepository;
     private final TokenService tokenService;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
 
     /**
      * Get current user profile
@@ -64,12 +76,10 @@ public class UserProfileController {
                 user.setName(request.getName());
             }
 
-            // Email cannot be changed if already in use
-            if (request.getEmail() != null && !request.getEmail().isEmpty() && !request.getEmail().equals(user.getEmail())) {
-                if (userRepository.existsByEmail(request.getEmail())) {
-                    return ResponseEntity.badRequest().body(new ErrorResponse("Email already in use"));
-                }
-                user.setEmail(request.getEmail());
+            if (request.getEmail() != null && !request.getEmail().isEmpty()
+                    && !request.getEmail().equalsIgnoreCase(user.getEmail())) {
+                return ResponseEntity.badRequest()
+                        .body(new ErrorResponse("Email changes require an approved email-verification ticket. Use the email-change flow."));
             }
 
             user = userRepository.save(user);
@@ -81,6 +91,88 @@ public class UserProfileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("Failed to update profile: " + e.getMessage()));
         }
+    }
+
+    @PutMapping("/email")
+    @Transactional
+    public ResponseEntity<?> changeEmail(
+            @RequestBody ChangeEmailRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        try {
+            String authenticatedEmail = authentication.getName();
+            User user = userRepository.findByEmail(authenticatedEmail)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            if (request.getCurrentPassword() == null
+                    || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Current password is incorrect"));
+            }
+
+            String newEmail = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase(java.util.Locale.ROOT);
+            if (!newEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Enter a valid email address"));
+            }
+            if (newEmail.equalsIgnoreCase(user.getEmail())) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("The new email must be different from your current email"));
+            }
+            if (userRepository.existsByEmail(newEmail)) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Email already in use"));
+            }
+
+            var approvedEmailTickets = supportTicketRepository
+                    .findByUserIdAndTicketTypeAndStatus(user.getId(), TicketType.DATA_UPDATE, TicketStatus.RESOLVED)
+                    .stream()
+                    .filter(ticket -> isEmailChangeTicket(ticket.getSubject(), ticket.getDescription()))
+                    .toList();
+            if (approvedEmailTickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ErrorResponse("An approved email-verification ticket is required before changing your email"));
+            }
+
+            user.setEmail(newEmail);
+            userRepository.save(user);
+            approvedEmailTickets.forEach(ticket -> {
+                ticket.setStatus(TicketStatus.CLOSED);
+                ticket.setClosedAt(LocalDateTime.now());
+                supportTicketRepository.save(ticket);
+            });
+            try {
+                notificationService.notifyEmailChanged(user.getId(), newEmail);
+            } catch (RuntimeException notificationFailure) {
+                log.error("Email changed but in-app notification could not be created for user {}",
+                        user.getId(), notificationFailure);
+            }
+            try {
+                emailService.sendEmailChangedConfirmation(newEmail, user.getName());
+            } catch (RuntimeException emailFailure) {
+                log.error("Email changed but confirmation email could not be queued for user {}",
+                        user.getId(), emailFailure);
+            }
+            log.info("User email changed after approved identity review: {}", user.getId());
+            return ResponseEntity.ok(new SuccessResponse(
+                    "Email updated. Sign in again using your new email address.",
+                    new UserProfileResponse(user)));
+        } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            log.error("Failed to change user email", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to change email"));
+        }
+    }
+
+    private boolean isEmailChangeTicket(String subject, String description) {
+        String searchableText = ((subject == null ? "" : subject) + " "
+                + (description == null ? "" : description)).toLowerCase(java.util.Locale.ROOT);
+        if (searchableText.isBlank()) {
+            return false;
+        }
+        return searchableText.contains("email")
+                || searchableText.contains("e-mail")
+                || searchableText.contains("courriel")
+                || searchableText.contains("adresse e")
+                || searchableText.contains("modifier mon email")
+                || searchableText.contains("modifer mon email");
     }
 
     /**
@@ -211,6 +303,12 @@ public class UserProfileController {
         private String currentPassword;
         private String newPassword;
         private String confirmPassword;
+    }
+
+    @Data
+    public static class ChangeEmailRequest {
+        private String email;
+        private String currentPassword;
     }
 
     @Data

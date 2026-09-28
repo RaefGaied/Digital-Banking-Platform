@@ -16,6 +16,7 @@ import Notifications from '../ui/Notifications';
 import { useI18n } from '../../i18n/I18nContext';
 import LanguageToggle from '../ui/LanguageToggle';
 import ThemeToggle from '../ui/ThemeToggle';
+import FloatingAgentWidget from '../ui/FloatingAgentWidget';
 
 export default function AppLayout() {
   const { isAuthenticated, userName } = useAuth();
@@ -154,6 +155,44 @@ export default function AppLayout() {
               spacing={{ xs: 0.75, sm: 1.25 }}
               sx={{ alignItems: 'center', flexShrink: 0 }}
             >
+              <Tooltip title="Assistant Client Bancaire avec IA Hybride • Modèle Local & Traçabilité Sécurisée" arrow>
+                <Box
+                  onClick={() => navigate('/chat')}
+                  className='cyber-shimmer'
+                  sx={{
+                    display: { xs: 'none', md: 'flex' },
+                    alignItems: 'center',
+                    gap: 1.25,
+                    px: 1.8,
+                    py: 0.75,
+                    borderRadius: 999,
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.14)' : 'rgba(232, 97, 26, 0.08)',
+                    border: 1.5,
+                    borderColor: (theme) =>
+                      theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(232, 97, 26, 0.3)',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                    '&:hover': {
+                      transform: 'translateY(-1px) scale(1.02)',
+                      borderColor: 'primary.main',
+                      boxShadow: '0 4px 16px rgba(232,97,26,0.2)',
+                    },
+                  }}
+                >
+                  {/* Mini Soundwave Equalizer */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, height: 14 }}>
+                    <Box className='ai-wave-bar' sx={{ height: 10 }} />
+                    <Box className='ai-wave-bar' sx={{ height: 14 }} />
+                    <Box className='ai-wave-bar' sx={{ height: 8 }} />
+                  </Box>
+                  <Typography sx={{ fontSize: 11.5, fontWeight: 800, color: 'text.primary', letterSpacing: '-0.01em' }}>
+                    Agent IA Bancaire Actif
+                  </Typography>
+                </Box>
+              </Tooltip>
+
               <LanguageToggle />
               <ThemeToggle />
               <Notifications />
@@ -195,6 +234,9 @@ export default function AppLayout() {
           </Box>
         </Box>
       </Box>
+
+      {/* ── PERSISTENT INTERACTIVE FLOATING AI AGENT WIDGET ── */}
+      <FloatingAgentWidget />
     </Box>
   );
 }

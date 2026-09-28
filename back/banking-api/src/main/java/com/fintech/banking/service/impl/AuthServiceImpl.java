@@ -20,10 +20,12 @@ import com.fintech.banking.service.AuditLogService;
 import com.fintech.banking.service.AuthService;
 import com.fintech.banking.service.SecurityEventService;
 import com.fintech.banking.service.EmailService;
+import com.fintech.banking.service.NotificationService;
 import com.fintech.banking.util.TotpUtil;
 import com.fintech.banking.exception.AccountLockedException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,6 +45,7 @@ import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -55,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
     private final SecurityEventService securityEventService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     private String getClientIp() {
         try {
@@ -154,6 +158,14 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.revokeAllByUserId(user.getId());
         auditLogService.log(user.getEmail(), "PASSWORD_RESET", "User", user.getId().toString(),
                 "Password reset completed", getClientIp());
+        try {
+            notificationService.notifyPasswordResetCompleted(user.getId());
+        } catch (RuntimeException notificationFailure) {
+            // A notification outage must not undo a completed password reset.
+            log.error("Password reset completed but in-app notification failed for user {}",
+                    user.getId(), notificationFailure);
+        }
+        emailService.sendPasswordResetConfirmation(user.getEmail(), user.getName());
     }
 
     private String generateResetToken() {
@@ -182,6 +194,12 @@ public class AuthServiceImpl implements AuthService {
             existingUser.setFailedLoginAttempts(0);
             existingUser.setLockedUntil(null);
             userRepository.save(existingUser);
+            try {
+                notificationService.notifyAccountUnlocked(existingUser.getId());
+            } catch (RuntimeException notificationFailure) {
+                log.warn("Account unlocked but notification failed for user {}",
+                        existingUser.getId(), notificationFailure);
+            }
         }
 
         if (existingUser != null && !existingUser.isAccountNonLocked()) {

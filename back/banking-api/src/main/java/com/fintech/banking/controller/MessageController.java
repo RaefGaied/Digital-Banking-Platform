@@ -5,6 +5,7 @@ import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.SenderType;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.ChatService;
+import com.fintech.banking.exception.AiProvidersUnavailableException;
 import com.fintech.banking.service.MessageService;
 import com.fintech.banking.service.IntentDetectionService;
 import com.fintech.banking.domain.vo.IntentResult;
@@ -104,6 +105,10 @@ public class MessageController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new SuccessResponse("Message created", new MessageResponse(message)));
 
+        } catch (AiProvidersUnavailableException e) {
+            log.warn("Chat request paused because all AI providers are unavailable");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             log.error("Failed to create message", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

@@ -142,8 +142,16 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             gap: 1,
           }}
         >
-          <BrandLogo />
-        </Box>
+        <Tooltip title="Banking Customer Support Agent • Qwen2.5:7b Local AI Online" placement="right" arrow>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75, cursor: 'pointer' }}>
+            <BrandLogo />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'action.hover', px: 1, py: 0.25, borderRadius: 999 }}>
+              <Box className='w-1.5 h-1.5 rounded-full bg-emerald-500 status-pulse-emerald' />
+              <Typography sx={{ fontSize: 9, fontWeight: 800, color: 'text.secondary' }}>AI</Typography>
+            </Box>
+          </Box>
+        </Tooltip>
+      </Box>
 
         {/* Navigation Items with Tooltips and Glowing Pill */}
         <Box
@@ -282,14 +290,17 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
             <Stack direction='row' spacing={1.5} sx={{ alignItems: 'center' }}>
               <BrandLogo />
               <Box>
-                <Typography variant='h6' sx={{ fontWeight: 800, lineHeight: 1.1 }}>
-                  FinBank
+                <Typography variant='subtitle1' sx={{ fontWeight: 900, lineHeight: 1.1 }}>
+                  Banking Agent
+                </Typography>
+                <Typography variant='caption' color='primary.main' sx={{ fontWeight: 800, fontSize: 10.5, display: 'block' }}>
+                  Assistant IA Hybride
                 </Typography>
                 <Chip
-                  label={userRole === 'ADMIN' ? 'Admin Suite' : 'Personal Banking'}
+                  label={userRole === 'ADMIN' ? 'Admin Back-Office' : 'Client AI Workspace'}
                   size='small'
                   color={userRole === 'ADMIN' ? 'primary' : 'default'}
-                  sx={{ height: 18, fontSize: 10, fontWeight: 700, mt: 0.25 }}
+                  sx={{ height: 18, fontSize: 9.5, fontWeight: 700, mt: 0.25 }}
                 />
               </Box>
             </Stack>

@@ -2,6 +2,8 @@ package com.fintech.banking.service;
 
 import com.fintech.banking.domain.entity.SupportTicket;
 import com.fintech.banking.domain.entity.WorkflowTask;
+import com.fintech.banking.domain.enums.ActionType;
+import com.fintech.banking.domain.enums.AdminTicketAction;
 import com.fintech.banking.domain.enums.TaskType;
 import com.fintech.banking.domain.enums.TicketStatus;
 import com.fintech.banking.domain.enums.TicketType;
@@ -97,10 +99,16 @@ public class SupportTicketService {
                                                   String processKey, Map<String, Object> variables) {
         SupportTicket ticket = createTicket(userId, subject, description, ticketType, ownerId);
         String processInstanceId = null;
+        Map<String, Object> workflowVariables = variables == null
+                ? new HashMap<>()
+                : new HashMap<>(variables);
+        // The completion handler uses this variable to reconcile the BPMN decision
+        // with the persisted support ticket.
+        workflowVariables.put("supportTicketId", ticket.getId());
 
         try {
             if (processKey != null && !processKey.isBlank()) {
-                processInstanceId = flowableService.startProcessInstance(processKey, variables);
+                processInstanceId = flowableService.startProcessInstance(processKey, workflowVariables);
             }
         } catch (Exception e) {
             log.warn("Flowable process not started for ticket {}: {}", ticket.getId(), e.getMessage());
@@ -116,7 +124,8 @@ public class SupportTicketService {
                     .taskType(getTaskTypeForTicketType(ticketType))
                     .description(description)
                     .build();
-            workflowTaskRepository.save(task);
+            WorkflowTask savedTask = workflowTaskRepository.save(task);
+            notificationService.notifyAdminsTaskCreated(savedTask.getId(), savedTask.getDescription());
             ticket.setFlowableProcessId(task.getProcessInstanceId());
             ticket = supportTicketRepository.save(ticket);
         }
@@ -129,7 +138,8 @@ public class SupportTicketService {
             case FRAUD -> TaskType.FRAUD_CHECK;
             case DATA_UPDATE -> TaskType.COMPLIANCE_REVIEW;
             case CLAIM -> TaskType.COMPLIANCE_REVIEW;
-            default -> TaskType.TRANSFER_VALIDATION;
+            case GENERAL -> TaskType.ESCALATION;
+            case TRANSFER_VALIDATION -> TaskType.TRANSFER_VALIDATION;
         };
     }
 
@@ -141,7 +151,29 @@ public class SupportTicketService {
      * Gets all tickets for a user
      */
     public Page<SupportTicket> getUserTickets(UUID userId, Pageable pageable) {
-        return supportTicketRepository.findByUserId(userId, pageable);
+        return supportTicketRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+    }
+
+    public Optional<SupportTicket> findLatestEmailChangeTicket(UUID userId) {
+        return supportTicketRepository
+                .findByUserIdAndTicketTypeOrderByCreatedAtDesc(userId, TicketType.DATA_UPDATE)
+                .stream()
+                .filter(ticket -> isEmailChangeTicket(ticket.getSubject(), ticket.getDescription()))
+                .findFirst();
+    }
+
+    private boolean isEmailChangeTicket(String subject, String description) {
+        String searchableText = ((subject == null ? "" : subject) + " "
+                + (description == null ? "" : description)).toLowerCase(java.util.Locale.ROOT);
+        if (searchableText.isBlank()) {
+            return false;
+        }
+        return searchableText.contains("email")
+                || searchableText.contains("e-mail")
+                || searchableText.contains("courriel")
+                || searchableText.contains("adresse e")
+                || searchableText.contains("modifier mon email")
+                || searchableText.contains("modifer mon email");
     }
 
     /**
@@ -187,11 +219,77 @@ public class SupportTicketService {
 
         // Send notification
         if (newStatus == TicketStatus.RESOLVED) {
-            notificationService.notifyTicketResolved(ticket.getUserId(), ticketId);
+            notificationService.notifyTicketResolved(ticket);
         } else if (newStatus == TicketStatus.IN_PROGRESS) {
             notificationService.notifyTicketUpdated(ticket.getUserId(), ticketId, "Your ticket is being reviewed");
         }
 
+        return ticket;
+    }
+
+    @Transactional
+    public SupportTicket handleGeneralTicketAction(
+            Long ticketId,
+            UUID adminId,
+            AdminTicketAction action,
+            String comment) {
+        SupportTicket ticket = supportTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+        if (ticket.getTicketType() != TicketType.GENERAL) {
+            throw new IllegalArgumentException("Manual support actions are only available for general tickets");
+        }
+        if (ticket.getStatus() == TicketStatus.RESOLVED || ticket.getStatus() == TicketStatus.CLOSED) {
+            throw new IllegalStateException("A resolved or closed ticket cannot be updated");
+        }
+
+        String note = comment == null ? "" : comment.trim();
+        if ((action == AdminTicketAction.REQUEST_INFO || action == AdminTicketAction.RESOLVE)
+                && note.isBlank()) {
+            throw new IllegalArgumentException("A message is required for this ticket action");
+        }
+        if (note.length() > 2000) {
+            throw new IllegalArgumentException("Ticket message must not exceed 2000 characters");
+        }
+
+        ticket.setAssignedAdminId(adminId);
+        if (action == AdminTicketAction.RESOLVE) {
+            ticket.setStatus(TicketStatus.RESOLVED);
+            ticket.setResolvedAt(LocalDateTime.now());
+        } else {
+            ticket.setStatus(TicketStatus.IN_PROGRESS);
+        }
+        ticket = supportTicketRepository.save(ticket);
+
+        List<WorkflowTask> workflowTasks = workflowTaskRepository
+                .findBySupportTicketId(ticketId, Pageable.unpaged())
+                .getContent();
+        for (WorkflowTask task : workflowTasks) {
+            if (task.getStatus() == WorkflowTaskStatus.COMPLETED
+                    || task.getStatus() == WorkflowTaskStatus.REJECTED
+                    || task.getStatus() == WorkflowTaskStatus.CANCELLED) {
+                continue;
+            }
+            task.setAssignedTo(adminId);
+            task.setStatus(action == AdminTicketAction.RESOLVE
+                    ? WorkflowTaskStatus.COMPLETED
+                    : WorkflowTaskStatus.IN_PROGRESS);
+            if (action == AdminTicketAction.RESOLVE) {
+                task.setActionType(ActionType.REVIEW);
+                task.setCompletedAt(LocalDateTime.now());
+            }
+        }
+        workflowTaskRepository.saveAll(workflowTasks);
+
+        switch (action) {
+            case TAKE_OWNERSHIP -> notificationService.notifyTicketUpdated(
+                    ticket.getUserId(),
+                    ticketId,
+                    note.isBlank() ? "An administrator has taken ownership of your ticket and is reviewing it." : note);
+            case REQUEST_INFO -> notificationService.notifyInfoRequested(ticket.getUserId(), ticketId, note);
+            case SEND_UPDATE -> notificationService.notifyTicketUpdated(ticket.getUserId(), ticketId, note);
+            case RESOLVE -> notificationService.notifyTicketResolved(ticket, note);
+        }
+        log.info("General ticket {} handled with action {} by admin {}", ticketId, action, adminId);
         return ticket;
     }
 

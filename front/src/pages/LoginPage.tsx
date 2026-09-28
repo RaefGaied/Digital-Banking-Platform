@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -28,6 +28,9 @@ import {
   Zap,
   CheckCircle2,
   Wifi,
+  Bot,
+  Cpu,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import TwoFactorModal from '../components/auth/TwoFactorModal';
@@ -52,6 +55,7 @@ const liveSettlements = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, loading, error, lockedUntil, attemptsRemaining, verify2fa } = useAuth();
   const { locale } = useI18n();
   const [show2fa, setShow2fa] = useState(false);
@@ -63,7 +67,7 @@ export default function LoginPage() {
 
   // Interactive Live Data States
   const [fxList, setFxList] = useState(initialFx);
-  const [activeTab, setActiveTab] = useState<'live' | 'fx' | 'security'>('live');
+  const [activeTab, setActiveTab] = useState<'ai' | 'live' | 'fx' | 'security'>('ai');
   const [feedIndex, setFeedIndex] = useState(0);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -146,51 +150,59 @@ export default function LoginPage() {
   const text =
     locale === 'fr'
       ? {
-          privateBanking: 'Banque Privée Nouvelle Génération',
-          heroTitle1: 'Votre argent,',
-          heroTitle2: 'vos règles.',
+          projectTitle: 'Banking Customer Support Agent',
+          projectSubtitle: 'Assistant Client Bancaire avec IA Hybride',
+          platformTag: 'FinBank Digital • Plateforme Bancaire Sécurisée',
+          privateBanking: 'IA Hybride & Banque Digitale',
+          heroTitle1: 'Assistant Bancaire',
+          heroTitle2: 'avec IA Hybride.',
           heroDesc:
-            'Terminal financier haute performance : exécution instantanée, coffres multi-devises et sécurité biométrique de grade militaire.',
-          liveStream: 'Flux Réseau en Direct',
-          fxMarkets: 'Marchés Devises / FX',
-          securityAudit: 'Réserves & Sécurité',
+            'Plateforme bancaire intelligente propulsée par Spring AI, Ollama (Qwen2.5:7b), RAG pgvector et orchestration sécurisée Flowable BPMN.',
+          liveStream: 'Flux Réseau',
+          fxMarkets: 'Marchés FX',
+          aiArchitecture: 'Architecture IA Hybride',
+          securityAudit: 'Sécurité & Audits',
           instantClearing: 'Règlement Réseau',
-          secureAccess: 'Portail Sécurisé FinBank',
-          welcomeBack: 'Accès Client Sécurisé',
-          signInPrompt: 'Identifiez-vous pour gérer vos actifs et autoriser vos transactions',
+          secureAccess: 'Portail Bancaire & Support IA',
+          welcomeBack: 'Accès Client & Support',
+          signInPrompt: 'Identifiez-vous pour accéder à vos comptes et interagir avec votre assistant IA',
           emailAddress: 'Adresse e-mail',
           password: 'Mot de passe',
           forgotPassword: 'Mot de passe oublié ?',
           signIn: 'Connexion Sécurisée',
-          securityNote: 'Chiffrement AES 256 bits · Garanties de dépôts certifiées · Audit continu',
+          securityNote: 'Sensitive Line Java autoritaire · Chiffrement AES-256 · Audit Trail Flowable',
           noAccount: 'Pas encore de compte ?',
           createOne: 'Ouvrir un compte',
           demoClient: 'Démo Client',
-          demoAdmin: 'Démo Admin',
-          flipCard: 'Retourner la carte',
+          demoAdmin: 'Démo Admin Back-Office',
+          flipCard: 'Retourner la carte (CVV)',
         }
       : {
-          privateBanking: 'Next-Gen Private Banking Terminal',
-          heroTitle1: 'Your wealth,',
-          heroTitle2: 'your control.',
+          projectTitle: 'Banking Customer Support Agent',
+          projectSubtitle: 'Hybrid AI Banking Customer Assistant',
+          platformTag: 'FinBank Digital • Enterprise Intelligent Banking',
+          privateBanking: 'Hybrid AI & Digital Banking',
+          heroTitle1: 'Banking Customer',
+          heroTitle2: 'Support Agent.',
           heroDesc:
-            'Institutional-grade digital banking: microsecond transaction clearing, multi-currency vaults, and zero-trust biometric security.',
-          liveStream: 'Live Network Feed',
-          fxMarkets: 'Live FX Treasury',
-          securityAudit: 'Reserves & Proof',
+            'Intelligent banking platform powered by Spring AI, Ollama (Qwen2.5:7b), pgvector RAG, and authoritative Flowable BPMN Sensitive Line.',
+          liveStream: 'Network Feed',
+          fxMarkets: 'FX Treasury',
+          aiArchitecture: 'Hybrid AI Architecture',
+          securityAudit: 'Security & Audit',
           instantClearing: 'Global Settlement',
-          secureAccess: 'FinBank Secure Portal',
-          welcomeBack: 'Client Terminal Access',
-          signInPrompt: 'Authenticate to access your portfolios, vaults, and private transfers',
+          secureAccess: 'Banking & AI Agent Portal',
+          welcomeBack: 'Client & Agent Login',
+          signInPrompt: 'Authenticate to access multi-currency accounts and interact with your AI assistant',
           emailAddress: 'Email Address',
           password: 'Password',
           forgotPassword: 'Forgot password?',
           signIn: 'Authenticate & Access',
-          securityNote: 'AES-256 GCM Encryption · 100% Reserve Audited · Multi-region failover',
+          securityNote: 'Authoritative Java Sensitive Line · AES-256 GCM · Flowable BPMN Audit Trail',
           noAccount: "Don't have an account yet?",
           createOne: 'Open an account',
           demoClient: 'Demo Client',
-          demoAdmin: 'Demo Admin',
+          demoAdmin: 'Demo Admin Back-Office',
           flipCard: 'Flip Card (CVV)',
         };
 
@@ -272,15 +284,22 @@ export default function LoginPage() {
               <Sparkles className='w-5 h-5 text-white' />
             </Box>
             <Box>
-              <Typography variant='h5' sx={{ fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                FinBank
+              <Typography variant='h6' sx={{ fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                {text.projectTitle}
+              </Typography>
+              <Typography
+                variant='caption'
+                color='primary.main'
+                sx={{ letterSpacing: 0.5, fontWeight: 800, display: 'block' }}
+              >
+                {text.projectSubtitle}
               </Typography>
               <Typography
                 variant='caption'
                 color='text.secondary'
-                sx={{ letterSpacing: 1.2, textTransform: 'uppercase', fontWeight: 700 }}
+                sx={{ fontSize: 10, fontWeight: 600, display: 'block', mt: 0.2 }}
               >
-                Institutional & Private Banking
+                {text.platformTag}
               </Typography>
             </Box>
           </Stack>
@@ -290,18 +309,36 @@ export default function LoginPage() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
+              gap: 1.5,
               px: 2,
               py: 0.8,
               borderRadius: 999,
               bgcolor: 'action.hover',
               border: 1,
               borderColor: 'divider',
+              boxShadow: '0 2px 8px -1px rgba(0,0,0,0.06)',
             }}
           >
-            <Box className='w-2 h-2 rounded-full bg-emerald-500 status-pulse-emerald' />
+            <Box
+              className='ai-halo-orbit'
+              sx={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor: '#0f172a',
+              }}
+            >
+              <Bot className='w-3 h-3 text-orange-400' />
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Box className='ai-wave-bar' sx={{ height: '10px !important' }} />
+              <Box className='ai-wave-bar' sx={{ height: '14px !important' }} />
+              <Box className='ai-wave-bar' sx={{ height: '8px !important' }} />
+            </Box>
             <Typography variant='caption' sx={{ fontWeight: 800, color: 'text.primary', fontSize: 11 }}>
-              LIVE NETWORK • 99.999% SLA
+              AGENT IA EN LIGNE • Qwen2.5:7b
             </Typography>
           </Box>
         </Box>
@@ -483,8 +520,9 @@ export default function LoginPage() {
         {/* ── REALISTIC LIVE STATISTICS INTERACTIVE TABS ── */}
         <Box sx={{ mt: 1 }}>
           {/* Tab Navigation */}
-          <Stack direction='row' spacing={1} sx={{ mb: 2 }}>
+          <Stack direction='row' spacing={1} sx={{ mb: 2, overflowX: 'auto', pb: 0.5 }}>
             {[
+              { key: 'ai', label: text.aiArchitecture, icon: Bot },
               { key: 'live', label: text.liveStream, icon: Activity },
               { key: 'fx', label: text.fxMarkets, icon: TrendingUp },
               { key: 'security', label: text.securityAudit, icon: Lock },
@@ -503,6 +541,7 @@ export default function LoginPage() {
                     fontWeight: 700,
                     fontSize: 12,
                     textTransform: 'none',
+                    whiteSpace: 'nowrap',
                     bgcolor: isSelected ? 'primary.main' : 'action.hover',
                     color: isSelected ? 'primary.contrastText' : 'text.secondary',
                     '&:hover': {
@@ -515,6 +554,62 @@ export default function LoginPage() {
               );
             })}
           </Stack>
+
+          {/* TAB 0: Hybrid AI Agent Architecture */}
+          {activeTab === 'ai' && (
+            <Box sx={{ display: 'grid', gap: 1.5 }}>
+              {[
+                {
+                  title: 'Layer 1 · Local LLM (Spring AI + Ollama)',
+                  desc: 'Qwen2.5:7b on-premise inference for bilingual understanding (FR/EN) and intent extraction with confidence evaluation.',
+                  badge: 'Qwen2.5:7b Local',
+                  badgeColor: 'primary' as const,
+                  icon: Cpu,
+                },
+                {
+                  title: 'Layer 2 · Knowledge Base RAG (pgvector)',
+                  desc: 'Retrieval-Augmented Generation across banking tariffs, policies, and FAQs in PostgreSQL vector store without hallucinations.',
+                  badge: 'pgvector 768-dim',
+                  badgeColor: 'info' as const,
+                  icon: Layers,
+                },
+                {
+                  title: 'Layer 3 · Authoritative Sensitive Line (Flowable BPMN)',
+                  desc: 'Java-enforced governance: AUTO_EXECUTE for routine transfers (<= 5 000 €), and TRIGGER_BPMN for fraud and high-risk workflows.',
+                  badge: 'Flowable BPMN 6.8',
+                  badgeColor: 'success' as const,
+                  icon: ShieldCheck,
+                },
+              ].map(({ title, desc, badge, badgeColor, icon: Icon }) => (
+                <Card
+                  key={title}
+                  variant='outlined'
+                  sx={{
+                    p: 1.8,
+                    borderRadius: 3,
+                    bgcolor: 'action.hover',
+                    border: 1,
+                    borderColor: 'divider',
+                    transition: 'all 0.2s',
+                    '&:hover': { borderColor: 'primary.main', bgcolor: 'action.selected' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Icon className='w-4 h-4 text-orange-500' />
+                      <Typography variant='subtitle2' sx={{ fontWeight: 800, color: 'text.primary', fontSize: 12.5 }}>
+                        {title}
+                      </Typography>
+                    </Box>
+                    <Chip label={badge} size='small' color={badgeColor} sx={{ height: 20, fontSize: 10, fontWeight: 700 }} />
+                  </Box>
+                  <Typography variant='caption' color='text.secondary' sx={{ lineHeight: 1.5, display: 'block' }}>
+                    {desc}
+                  </Typography>
+                </Card>
+              ))}
+            </Box>
+          )}
 
           {/* TAB 1: Live Settlements Feed */}
           {activeTab === 'live' && (
@@ -687,8 +782,8 @@ export default function LoginPage() {
                 >
                   <Sparkles className='w-4 h-4 text-white' />
                 </Box>
-                <Typography variant='h6' sx={{ fontWeight: 900 }}>
-                  FinBank
+                <Typography variant='subtitle1' sx={{ fontWeight: 900, lineHeight: 1.1 }}>
+                  Banking Agent
                 </Typography>
               </Box>
 
@@ -696,6 +791,44 @@ export default function LoginPage() {
                 <LanguageToggle />
                 <ThemeToggle />
               </Stack>
+            </Box>
+
+            {/* Autonomous AI Agent Banner Pill */}
+            <Box
+              sx={{
+                mb: 2.5,
+                p: 1.5,
+                borderRadius: 3.5,
+                background: 'linear-gradient(135deg, rgba(232, 97, 26, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%)',
+                border: 1,
+                borderColor: 'rgba(232, 97, 26, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+              }}
+            >
+              <Box
+                className='ai-halo-orbit'
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  bgcolor: '#0f172a',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Bot className='w-4 h-4 text-orange-400' />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant='subtitle2' sx={{ fontWeight: 800, fontSize: 12, color: 'text.primary', lineHeight: 1.2 }}>
+                  Assistant Client Bancaire avec IA Hybride
+                </Typography>
+                <Typography variant='caption' sx={{ color: 'text.secondary', fontSize: 10.5, display: 'block', mt: 0.2 }}>
+                  Prise en charge autonome · Supervision Sensitive Line & RAG
+                </Typography>
+              </Box>
             </Box>
 
             {/* Quick Demo Fill Buttons for Easy Evaluation */}
@@ -741,11 +874,26 @@ export default function LoginPage() {
 
             {/* Title & Prompt */}
             <Stack spacing={0.75} sx={{ mb: 3.5 }}>
-              <Typography variant='caption' sx={{ color: 'primary.main', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 800 }}>
-                {text.secureAccess}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  icon={<Bot className='w-3.5 h-3.5' />}
+                  label='Hybrid AI'
+                  size='small'
+                  color='primary'
+                  sx={{ fontWeight: 800, fontSize: 10.5 }}
+                />
+                <Chip
+                  label='Qwen2.5:7b · pgvector RAG'
+                  size='small'
+                  variant='outlined'
+                  sx={{ fontWeight: 700, fontSize: 10.5 }}
+                />
+              </Box>
+              <Typography variant='h5' sx={{ fontWeight: 900, lineHeight: 1.2, letterSpacing: '-0.02em', mt: 0.5 }}>
+                {text.projectTitle}
               </Typography>
-              <Typography variant='h4' sx={{ fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-                {text.welcomeBack}
+              <Typography variant='caption' sx={{ color: 'primary.main', fontWeight: 800, display: 'block', mb: 0.5 }}>
+                {text.projectSubtitle}
               </Typography>
               <Typography variant='body2' color='text.secondary'>
                 {text.signInPrompt}
@@ -753,6 +901,16 @@ export default function LoginPage() {
             </Stack>
 
             {/* Account Locked Warning */}
+            {searchParams.get('email-updated') === '1' && (
+              <Box sx={{ mb: 2.5, p: 2, borderRadius: 3, bgcolor: 'success.main', color: 'success.contrastText' }}>
+                <Typography variant='body2' sx={{ fontWeight: 700 }}>
+                  {locale === 'fr'
+                    ? 'Votre adresse e-mail a été modifiée. Connectez-vous avec votre nouvelle adresse.'
+                    : 'Your email address was updated. Sign in using your new email address.'}
+                </Typography>
+              </Box>
+            )}
+
             {lockedUntil && (
               <Box sx={{ mb: 2.5, p: 2, borderRadius: 3, bgcolor: 'warning.main', color: 'warning.contrastText' }}>
                 <Typography variant='body2' sx={{ fontWeight: 700 }}>

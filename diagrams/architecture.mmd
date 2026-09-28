@@ -1,0 +1,108 @@
+%% Architecture globale de FinBank
+%% Compatible avec Draw.io : Arrange > Insert > Advanced > Mermaid
+flowchart LR
+    Client["Client"]
+    Admin["Administrateur<br/>ou support"]
+
+    subgraph Front["Frontend React / TypeScript"]
+        UI["Interface web"]
+        Analytics["Tableau de bord<br/>et analytics"]
+        AdminRag["Administration<br/>des documents RAG"]
+    end
+
+    subgraph Backend["Backend principal FinBank"]
+        API["API REST<br/>Spring Boot"]
+        Auth["Authentification<br/>et autorisation JWT"]
+        Chat["ChatService"]
+        Intent["Detection d'intention"]
+        Sensitive["Sensitive Line<br/>et validation metier"]
+        Banking["Services bancaires<br/>comptes, transactions, cartes"]
+        Investment["Service investissements"]
+        Audit["Audit et notifications"]
+    end
+
+    subgraph AI["Intelligence artificielle"]
+        Ollama["Ollama local<br/>qwen2.5:7b"]
+        Embeddings["Ollama embeddings<br/>nomic-embed-text"]
+        Rules["Regles deterministes<br/>fallback"]
+        Optional["OpenAI / Azure OpenAI<br/>optionnel"]
+    end
+
+    subgraph Knowledge["Base de connaissances"]
+        RAG["Service RAG"]
+        Documents["Documents RAG"]
+        Pgvector["Recherche vectorielle<br/>pgvector"]
+    end
+
+    subgraph Fallback["Service auxiliaire optionnel"]
+        Agent["ai-agent<br/>Python / FastAPI"]
+    end
+
+    subgraph Workflow["Orchestration des processus sensibles"]
+        Flowable["Flowable BPMN"]
+        Transfer["Validation des virements<br/>importants"]
+        Fraud["Gestion des suspicions<br/>de fraude"]
+        Personal["Modification des donnees<br/>personnelles sensibles"]
+    end
+
+    subgraph Data["Donnees et infrastructure"]
+        PostgreSQL["PostgreSQL<br/>comptes, transactions, investissements"]
+        Redis["Redis<br/>cache"]
+        Kafka["Apache Kafka<br/>evenements et audit"]
+    end
+
+    Client --> UI
+    Admin --> UI
+    UI --> API
+    Analytics --> API
+    AdminRag --> API
+
+    API --> Auth
+    API --> Chat
+    API --> Banking
+    API --> Investment
+    Chat --> Intent
+    Intent --> Ollama
+    Ollama -.->|si indisponible| Rules
+    Intent -.->|si configure| Optional
+    Intent --> Sensitive
+
+    Sensitive -->|operation faible risque| Banking
+    Sensitive -->|operation sensible| Flowable
+    Chat -.->|demande ambiguë| Agent
+    Agent -.->|API REST authentifiee| API
+
+    Chat -->|recherche documentaire| RAG
+    RAG --> Pgvector
+    Embeddings --> Documents
+    Documents --> PostgreSQL
+    Pgvector --> PostgreSQL
+    AdminRag -->|creer, modifier, reindexer| Documents
+
+    Flowable --> Transfer
+    Flowable --> Fraud
+    Flowable --> Personal
+    Transfer --> PostgreSQL
+    Fraud --> PostgreSQL
+    Personal --> PostgreSQL
+    Banking --> PostgreSQL
+    Investment --> PostgreSQL
+    API --> Redis
+    API --> Kafka
+    Kafka --> Audit
+    Audit --> PostgreSQL
+    Audit -->|notifications| UI
+
+    classDef actor fill:#fff2cc,stroke:#b8860b,stroke-width:2px,color:#000;
+    classDef frontend fill:#dae8fc,stroke:#2f5597,stroke-width:1px,color:#000;
+    classDef backend fill:#e2f0d9,stroke:#548235,stroke-width:1px,color:#000;
+    classDef external fill:#fce4d6,stroke:#c55a11,stroke-width:1px,color:#000;
+    classDef knowledge fill:#fff2cc,stroke:#bf9000,stroke-width:1px,color:#000;
+    classDef data fill:#e4dfec,stroke:#7030a0,stroke-width:1px,color:#000;
+
+    class Client,Admin actor;
+    class UI,Analytics,AdminRag frontend;
+    class API,Auth,Chat,Intent,Sensitive,Banking,Investment,Audit backend;
+    class Ollama,Embeddings,Rules,Optional,Agent,Flowable,Transfer,Fraud,Personal external;
+    class RAG,Documents,Pgvector knowledge;
+    class PostgreSQL,Redis,Kafka data;

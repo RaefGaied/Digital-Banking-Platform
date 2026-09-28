@@ -107,7 +107,7 @@ public class NotificationController {
             @PathVariable UUID id,
             Authentication authentication) {
         try {
-            Notification notification = notificationService.markAsRead(id);
+            Notification notification = notificationService.markAsRead(id, resolveAuthenticatedUserId(authentication));
 
             log.info("Notification marked as read: {}", id);
 
@@ -265,6 +265,8 @@ public class NotificationController {
         private String body;
         private boolean isRead;
         private String createdAt;
+        private String referenceType;
+        private Long referenceId;
 
         public NotificationResponse(Notification notification) {
             this.id = notification.getId();
@@ -274,6 +276,8 @@ public class NotificationController {
             this.body = notification.getBody();
             this.isRead = notification.getIsRead();
             this.createdAt = notification.getCreatedAt().toString();
+            this.referenceType = notification.getReferenceType();
+            this.referenceId = notification.getReferenceId();
         }
     }
 

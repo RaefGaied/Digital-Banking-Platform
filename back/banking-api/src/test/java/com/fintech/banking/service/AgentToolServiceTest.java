@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fintech.banking.domain.entity.BankingAgent;
 import com.fintech.banking.domain.entity.Session;
+import com.fintech.banking.domain.entity.SupportTicket;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.AgentDecision;
 import com.fintech.banking.domain.enums.CardBrand;
 import com.fintech.banking.domain.enums.CardType;
 import com.fintech.banking.domain.enums.IntentType;
 import com.fintech.banking.domain.enums.TransactionStatus;
+import com.fintech.banking.domain.enums.TicketType;
 import com.fintech.banking.domain.entity.Card;
 import com.fintech.banking.domain.vo.IntentResult;
 import com.fintech.banking.dto.request.TransactionRequest;
@@ -111,6 +113,49 @@ class AgentToolServiceTest {
         assertEquals("request_transfer_details", result.getAction());
         assertTrue(result.getBotMessage().contains("cannot retrieve"));
         verify(transactionService, Mockito.never()).transfer(Mockito.anyString(), Mockito.any(TransactionRequest.class));
+    }
+
+    @Test
+    void givesEmailChangeRequestATicketReferenceAndSafeNextSteps() {
+        UUID userId = UUID.randomUUID();
+        User user = new User();
+        user.setId(userId);
+        user.setEmail("client@example.com");
+
+        BankingAgent agent = new BankingAgent();
+        agent.setUserId(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(supportTicketService.createTicketWithWorkflow(
+                eq(userId),
+                eq("Vérification de modification d'adresse e-mail"),
+                any(String.class),
+                eq(TicketType.DATA_UPDATE),
+                eq(userId),
+                eq("dataUpdateValidationProcess"),
+                any(Map.class)))
+                .thenReturn(SupportTicket.builder().id(42L).build());
+
+        IntentResult intentResult = new IntentResult();
+        intentResult.setIntent(IntentType.UPDATE_SENSITIVE_DATA);
+        intentResult.setConfidence(0.95);
+
+        AgentToolService.AgentToolResult result = agentToolService.executeToolAction(
+                agent, new Session(), intentResult, "je veux modifier mon email");
+
+        assertTrue(result.getBotMessage().contains("n'a pas encore été modifiée"));
+        assertTrue(result.getBotMessage().contains("#42"));
+        assertTrue(result.getBotMessage().contains("Aide et support"));
+        assertTrue(result.getBotMessage().contains("Ne partagez jamais"));
+        assertEquals(42L, result.getDetails().get("supportTicketId"));
+        verify(supportTicketService).createTicketWithWorkflow(
+                eq(userId),
+                eq("Vérification de modification d'adresse e-mail"),
+                any(String.class),
+                eq(TicketType.DATA_UPDATE),
+                eq(userId),
+                eq("dataUpdateValidationProcess"),
+                any(Map.class));
     }
 
     @Test

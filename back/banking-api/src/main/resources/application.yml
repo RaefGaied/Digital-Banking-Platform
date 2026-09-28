@@ -65,6 +65,9 @@ spring:
       chat:
         options:
           model: ${OLLAMA_MODEL:llama3.2}
+          num-predict: 256
+          num-ctx: 4096
+          keep-alive: 10m
       embedding:
         model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
 

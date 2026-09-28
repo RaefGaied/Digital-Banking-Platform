@@ -5,7 +5,10 @@ import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.UserRole;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.AdminService;
+import com.fintech.banking.service.AdminTicketAssistantService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,6 +29,7 @@ import java.util.UUID;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AdminTicketAssistantService adminTicketAssistantService;
     private final UserRepository userRepository;
 
     private UUID resolveAdminId(Authentication authentication) {
@@ -72,6 +76,39 @@ public class AdminController {
         requireAdmin(authentication);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ResponseEntity.ok(PageResponse.from(adminService.getTasks(pageable)));
+    }
+
+    @GetMapping("/tickets")
+    public ResponseEntity<PageResponse<AdminService.TicketSummaryResponse>> tickets(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        requireAdmin(authentication);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(PageResponse.from(adminService.getTickets(pageable)));
+    }
+
+    @PostMapping("/tickets/{ticketId}/action")
+    public ResponseEntity<AdminService.TicketSummaryResponse> actOnGeneralTicket(
+            Authentication authentication,
+            @PathVariable Long ticketId,
+            @Valid @RequestBody AdminService.GeneralTicketActionRequest request) {
+        requireAdmin(authentication);
+        return ResponseEntity.ok(adminService.handleGeneralTicketAction(
+                ticketId,
+                resolveAdminId(authentication),
+                resolveAdminEmail(authentication),
+                request));
+    }
+
+    @PostMapping("/tickets/{ticketId}/ai-draft")
+    public ResponseEntity<AiTicketReplyDraftResponse> draftGeneralTicketReply(
+            Authentication authentication,
+            @PathVariable Long ticketId,
+            @Valid @RequestBody AiTicketReplyDraftRequest request) {
+        requireAdmin(authentication);
+        return ResponseEntity.ok(new AiTicketReplyDraftResponse(
+                adminTicketAssistantService.draftReply(ticketId, request.getQuestion())));
     }
 
     @GetMapping("/tasks/{taskId}")
@@ -148,5 +185,15 @@ public class AdminController {
             @PathVariable UUID eventId) {
         requireAdmin(authentication);
         return ResponseEntity.ok(adminService.resolveSecurityEvent(eventId, resolveAdminEmail(authentication)));
+    }
+
+    public record AiTicketReplyDraftRequest(
+            @NotBlank @Size(max = 1000) String question) {
+        public String getQuestion() {
+            return question;
+        }
+    }
+
+    public record AiTicketReplyDraftResponse(String draft) {
     }
 }

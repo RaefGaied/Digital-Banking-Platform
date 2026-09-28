@@ -337,6 +337,10 @@ public class SupportTicketController {
         private String priority;
         private String attachmentName;
         private String attachmentType;
+        private java.time.LocalDateTime createdAt;
+        private java.time.LocalDateTime updatedAt;
+        private java.time.LocalDateTime resolvedAt;
+        private java.time.LocalDateTime closedAt;
 
         public TicketResponse(SupportTicket ticket) {
             this.id = ticket.getId();
@@ -348,6 +352,10 @@ public class SupportTicketController {
             this.priority = ticket.getPriority().toString();
             this.attachmentName = ticket.getAttachmentName();
             this.attachmentType = ticket.getAttachmentType();
+            this.createdAt = ticket.getCreatedAt();
+            this.updatedAt = ticket.getUpdatedAt();
+            this.resolvedAt = ticket.getResolvedAt();
+            this.closedAt = ticket.getClosedAt();
         }
     }
 

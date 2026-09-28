@@ -164,9 +164,12 @@ def format_transactions(txns, user_id):
     )
 
 # ================= MAIN =================
-def run_agent(query, token, user_id):
+def run_agent(query, token, user_id, conversation_context=""):
 
-    context = get_context(user_id)
+    # Prefer the authenticated, database-backed chat session context from Java.
+    # The file-based user memory is only a backward-compatible fallback and can
+    # otherwise mix messages from separate chat sessions.
+    context = conversation_context.strip() if conversation_context and conversation_context.strip() else get_context(user_id)
     q = query.lower()
 
     if q.strip() in {"hi", "hello", "hey", "bonjour", "salut"}:

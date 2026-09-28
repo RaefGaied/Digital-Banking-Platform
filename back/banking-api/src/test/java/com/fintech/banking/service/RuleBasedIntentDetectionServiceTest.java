@@ -70,4 +70,9 @@ class RuleBasedIntentDetectionServiceTest {
         assertEquals("FR", service.detectIntent("Quel est mon solde ?").getDetectedLanguage());
         assertEquals("EN", service.detectIntent("What is my account balance?").getDetectedLanguage());
     }
+
+    @Test
+    void detectsFrenchNewSupportTicketRequest() {
+        assertEquals(IntentType.SUPPORT, service.detectIntent("je veux créer un nouveau ticket").getIntent());
+    }
 }

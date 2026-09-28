@@ -5,8 +5,11 @@ import type {
   AdminTaskDetail,
   AdminTaskSummary,
   AdminSecurityEvent,
+  AdminTicketSummary,
   AdminUserSummary,
   FlowableAdminTask,
+  FlowableProcessDetails,
+  FlowableProcessSummary,
   PageResponse,
   RagDocument,
   TaskActionRequest,
@@ -57,6 +60,18 @@ export const adminApi = {
     return response.data;
   },
 
+  getFlowableProcesses: async (page = 0, size = 20): Promise<PageResponse<FlowableProcessSummary>> => {
+    const response = await api.get<PageResponse<FlowableProcessSummary>>('/admin/flowable/processes', {
+      params: { page, size },
+    });
+    return response.data;
+  },
+
+  getFlowableProcessDetails: async (processInstanceId: string): Promise<FlowableProcessDetails> => {
+    const response = await api.get<FlowableProcessDetails>(`/admin/flowable/processes/${processInstanceId}`);
+    return response.data;
+  },
+
   getFlowableTaskDetails: async (taskId: string): Promise<{
     taskId: string;
     name: string;
@@ -86,6 +101,26 @@ export const adminApi = {
     synthetic?: boolean;
   }>> => {
     const response = await api.get(`/admin/flowable/processes/${processInstanceId}/trace`);
+    return response.data;
+  },
+
+  getTickets: async (page = 0, size = 10): Promise<PageResponse<AdminTicketSummary>> => {
+    const response = await api.get<PageResponse<AdminTicketSummary>>('/admin/tickets', {
+      params: { page, size },
+    });
+    return response.data;
+  },
+
+  actOnGeneralTicket: async (
+    ticketId: number,
+    request: { action: 'TAKE_OWNERSHIP' | 'REQUEST_INFO' | 'SEND_UPDATE' | 'RESOLVE'; comment?: string },
+  ): Promise<AdminTicketSummary> => {
+    const response = await api.post<AdminTicketSummary>(`/admin/tickets/${ticketId}/action`, request);
+    return response.data;
+  },
+
+  draftGeneralTicketReply: async (ticketId: number, question: string): Promise<{ draft: string }> => {
+    const response = await api.post<{ draft: string }>(`/admin/tickets/${ticketId}/ai-draft`, { question });
     return response.data;
   },
 

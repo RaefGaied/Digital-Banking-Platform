@@ -45,6 +45,8 @@ import {
   X,
   Lock,
   Unlock,
+  Loader2,
+  Bot,
 } from 'lucide-react';
 import { XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { accountApi } from '../api/account';
@@ -157,10 +159,30 @@ export default function DashboardPage() {
   const [hideBalance, setHideBalance] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'EUR' | 'GBP'>('USD');
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [copiedCardNum, setCopiedCardNum] = useState(false);
   const [frozenCard, setFrozenCard] = useState(false);
   const [quickSendSuccess, setQuickSendSuccess] = useState<string | null>(null);
   const [activeContact, setActiveContact] = useState<string | null>(null);
+
+  const handleDownloadReceiptPdf = async (transactionId: string) => {
+    try {
+      setDownloadingReceipt(true);
+      const blob = await accountApi.downloadReceipt(transactionId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `finbank-transaction-${transactionId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download PDF receipt', err);
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  };
 
   const currencyRate = selectedCurrency === 'EUR' ? 0.92 : selectedCurrency === 'GBP' ? 0.77 : 1;
   const currencySymbol = selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'GBP' ? '£' : '$';
@@ -582,6 +604,179 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* ── HYBRID AI AGENT ASSISTANT HUB ── */}
+      <Card
+        className='cyber-shimmer ai-neural-glow'
+        sx={{
+          borderRadius: 5,
+          position: 'relative',
+          overflow: 'hidden',
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(99,102,241,0.22) 0%, rgba(232,97,26,0.16) 45%, rgba(18,18,22,0.98) 100%)'
+            : 'linear-gradient(135deg, rgba(238,242,255,0.98) 0%, rgba(255,247,237,0.95) 50%, rgba(255,255,255,0.98) 100%)',
+          border: 1.5,
+          borderColor: isDark ? 'rgba(99,102,241,0.35)' : 'rgba(232,97,26,0.25)',
+          boxShadow: isDark
+            ? '0 16px 40px -10px rgba(0,0,0,0.65)'
+            : '0 16px 40px -10px rgba(232,97,26,0.12)',
+        }}
+      >
+        <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', lg: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', lg: 'center' },
+              gap: 3,
+            }}
+          >
+            <Stack direction='row' spacing={{ xs: 2, sm: 2.5 }} sx={{ alignItems: 'flex-start' }}>
+              {/* Animated AI Agent Avatar Orb */}
+              <Box
+                className='ai-halo-orbit'
+                sx={{
+                  width: { xs: 48, sm: 56 },
+                  height: { xs: 48, sm: 56 },
+                  borderRadius: 3.5,
+                  bgcolor: 'primary.main',
+                  color: '#ffffff',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 6px 20px rgba(232,97,26,0.4)',
+                  mt: 0.5,
+                }}
+              >
+                <Bot className='w-7 h-7' />
+              </Box>
+
+              <Box>
+                {/* Status Badges & Soundwave */}
+                <Stack direction='row' spacing={1} sx={{ alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 0.75 }}>
+                  <Chip
+                    icon={<Sparkles className='w-3.5 h-3.5 text-orange-500' />}
+                    label='CONSEILLER IA HYBRIDE EN LIGNE'
+                    size='small'
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: 10.5,
+                      bgcolor: isDark ? 'rgba(232,97,26,0.2)' : '#ffedd5',
+                      color: 'primary.main',
+                      border: 1,
+                      borderColor: 'primary.light',
+                    }}
+                  />
+                  <Chip
+                    icon={<ShieldCheck className='w-3.5 h-3.5 text-emerald-500' />}
+                    label='Sensitive Line (5 000 €)'
+                    size='small'
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 10.5,
+                      bgcolor: isDark ? 'rgba(16,185,129,0.18)' : '#ecfdf5',
+                      color: 'success.main',
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.25, borderRadius: 999, bgcolor: 'action.hover' }}>
+                    <Box className='ai-wave-bar' sx={{ height: 8 }} />
+                    <Box className='ai-wave-bar' sx={{ height: 12 }} />
+                    <Box className='ai-wave-bar' sx={{ height: 6 }} />
+                    <Typography sx={{ fontSize: 9.5, fontWeight: 700, color: 'text.secondary', ml: 0.5 }}>
+                      Qwen2.5:7b Local
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Typography variant='h5' sx={{ fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                  Votre Agent Bancaire Intelligent est à votre disposition
+                </Typography>
+                <Typography variant='body2' color='text.secondary' sx={{ maxWidth: 700, mt: 0.75, lineHeight: 1.7 }}>
+                  Ordonnez un virement instantané sécurisé par la Sensitive Line, interrogez vos plafonds et conditions tarifaires par RAG vectoriel, ou signalez un litige pris en charge par le workflow Flowable BPMN.
+                </Typography>
+
+                {/* Interactive Suggestion Chips */}
+                <Stack direction='row' spacing={1} sx={{ mt: 2.2, flexWrap: 'wrap', gap: 1 }}>
+                  <Chip
+                    clickable
+                    onClick={() => navigate('/chat?prompt=Effectuer%20un%20virement%20s%C3%A9curis%C3%A9')}
+                    label='💸 Virement rapide (≤ 5 000 €)'
+                    size='small'
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      borderRadius: 2.5,
+                      bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      border: 1,
+                      borderColor: 'divider',
+                      transition: 'all 0.2s',
+                      '&:hover': { borderColor: 'primary.main', bgcolor: 'action.selected', transform: 'translateY(-1px)' },
+                    }}
+                  />
+                  <Chip
+                    clickable
+                    onClick={() => navigate('/chat?prompt=Quels%20sont%20mes%20plafonds%20et%20tarifs%20?')}
+                    label='📑 Plafonds & Tarifs (RAG)'
+                    size='small'
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      borderRadius: 2.5,
+                      bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      border: 1,
+                      borderColor: 'divider',
+                      transition: 'all 0.2s',
+                      '&:hover': { borderColor: 'primary.main', bgcolor: 'action.selected', transform: 'translateY(-1px)' },
+                    }}
+                  />
+                  <Chip
+                    clickable
+                    onClick={() => navigate('/chat?prompt=Je%20souhaite%20contester%20une%20op%C3%A9ration')}
+                    label='🛡️ Contester un débit (BPMN)'
+                    size='small'
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      borderRadius: 2.5,
+                      bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      border: 1,
+                      borderColor: 'divider',
+                      transition: 'all 0.2s',
+                      '&:hover': { borderColor: 'primary.main', bgcolor: 'action.selected', transform: 'translateY(-1px)' },
+                    }}
+                  />
+                </Stack>
+              </Box>
+            </Stack>
+
+            {/* Call to action button */}
+            <Button
+              variant='contained'
+              size='large'
+              startIcon={<Bot className='w-5 h-5' />}
+              onClick={() => navigate('/chat')}
+              sx={{
+                borderRadius: 3.5,
+                fontWeight: 800,
+                px: 3.5,
+                py: 1.4,
+                flexShrink: 0,
+                bgcolor: 'primary.main',
+                boxShadow: '0 8px 24px -4px rgba(232,97,26,0.45)',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                  transform: 'scale(1.03)',
+                  boxShadow: '0 12px 28px -4px rgba(232,97,26,0.6)',
+                },
+              }}
+            >
+              Lancer l'Agent IA
+            </Button>
           </Box>
         </CardContent>
       </Card>
@@ -1253,10 +1448,10 @@ export default function DashboardPage() {
                 </Box>
                 <Box>
                   <Typography variant='subtitle1' sx={{ fontWeight: 800 }}>
-                    Official Receipt
+                    FinBank International
                   </Typography>
-                  <Typography variant='caption' color='text.secondary'>
-                    FinBank ClearSettle #TX-{selectedReceipt.id}
+                  <Typography variant='caption' color='primary.main' sx={{ fontWeight: 700, display: 'block' }}>
+                    Avis d'Opération Officiel · Certifié Conforme
                   </Typography>
                 </Box>
               </Stack>
@@ -1275,7 +1470,7 @@ export default function DashboardPage() {
                 </Typography>
                 <Chip
                   icon={<CheckCircle2 className='w-3.5 h-3.5' />}
-                  label='Verified & Cleared'
+                  label='Compensé & Validé · Règlement Immédiat'
                   color='success'
                   size='small'
                   variant='outlined'
@@ -1289,20 +1484,20 @@ export default function DashboardPage() {
                   <Typography variant='body2' sx={{ fontWeight: 700 }}>{selectedReceipt.description || selectedReceipt.type}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant='caption' color='text.secondary'>Date & Time</Typography>
+                  <Typography variant='caption' color='text.secondary'>Date & Heure d'Exécution</Typography>
                   <Typography variant='body2' sx={{ fontWeight: 700 }}>{new Date(selectedReceipt.createdAt).toLocaleString()}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant='caption' color='text.secondary'>Settlement Network</Typography>
-                  <Typography variant='body2' sx={{ fontWeight: 700, color: 'text.primary' }}>SEPA Instant / FedWire RTGS</Typography>
+                  <Typography variant='caption' color='text.secondary'>Canal de Transmission</Typography>
+                  <Typography variant='body2' sx={{ fontWeight: 700, color: 'text.primary' }}>Services Bancaires Numériques Sécurisés</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant='caption' color='text.secondary'>Fee</Typography>
-                  <Typography variant='body2' sx={{ fontWeight: 700, color: 'success.main' }}>$0.00 (Tier Free)</Typography>
+                  <Typography variant='caption' color='text.secondary'>Norme de Règlement</Typography>
+                  <Typography variant='body2' sx={{ fontWeight: 700, color: 'text.primary' }}>Système Interbancaire SEPA (ISO 20022)</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant='caption' color='text.secondary'>Security Status</Typography>
-                  <Typography variant='body2' sx={{ fontWeight: 700, color: 'text.primary' }}>256-bit TLS Encrypted</Typography>
+                  <Typography variant='caption' color='text.secondary'>Frais de Traitement</Typography>
+                  <Typography variant='body2' sx={{ fontWeight: 700, color: 'success.main' }}>0.00 EUR (Inclus)</Typography>
                 </Box>
               </Stack>
             </DialogContent>
@@ -1311,10 +1506,12 @@ export default function DashboardPage() {
               <Button
                 fullWidth
                 variant='contained'
-                startIcon={<Download className='w-4 h-4' />}
-                onClick={() => setSelectedReceipt(null)}
+                startIcon={downloadingReceipt ? <Loader2 className='w-4 h-4 animate-spin' /> : <Download className='w-4 h-4' />}
+                disabled={downloadingReceipt}
+                onClick={() => handleDownloadReceiptPdf(selectedReceipt.id)}
+                sx={{ py: 1.2, fontWeight: 700 }}
               >
-                Download PDF Statement
+                {downloadingReceipt ? 'Génération du PDF...' : 'Télécharger le Reçu PDF Officiel'}
               </Button>
             </DialogActions>
           </>

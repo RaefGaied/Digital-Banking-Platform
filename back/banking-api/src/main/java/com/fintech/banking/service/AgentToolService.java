@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fintech.banking.domain.entity.BankingAgent;
 import com.fintech.banking.domain.entity.Session;
+import com.fintech.banking.domain.entity.SupportTicket;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.AgentDecision;
 import com.fintech.banking.domain.enums.CardBrand;
@@ -395,14 +396,50 @@ public class AgentToolService {
                                                    IntentResult intentResult,
                                                    Map<String, Object> details) {
         try {
-            String subject = buildSupportSubject(intent);
+            boolean emailUpdate = intent == IntentType.UPDATE_SENSITIVE_DATA && isEmailUpdateRequest(userMessage);
+            if (emailUpdate) {
+                supportTicketService.findLatestEmailChangeTicket(resolveUserId(email)).ifPresent(ticket -> {
+                    details.put("existingEmailTicketId", ticket.getId());
+                    details.put("existingEmailTicketStatus", ticket.getStatus().name());
+                });
+                Object existingTicketId = details.get("existingEmailTicketId");
+                Object existingTicketStatus = details.get("existingEmailTicketStatus");
+                if (existingTicketId != null && "RESOLVED".equals(existingTicketStatus)) {
+                    return new AgentToolResult(
+                            localized(userMessage,
+                                    "Your email verification ticket #" + existingTicketId + " has been approved. Your login email has not changed yet. Open Profile > Complete email change, enter the new address, and confirm your current password. You do not need another ticket.",
+                                    "Votre demande de vérification de l’e-mail, ticket #" + existingTicketId + ", a été approuvée. Votre adresse de connexion n’a pas encore changé. Ouvrez Profil > Compléter la modification de l’e-mail, saisissez la nouvelle adresse et confirmez votre mot de passe actuel. Vous n’avez pas besoin d’un nouveau ticket."),
+                            "email_change_approved",
+                            details,
+                            null,
+                            false,
+                            false,
+                            null);
+                }
+                if (existingTicketId != null && ("OPEN".equals(existingTicketStatus)
+                        || "IN_PROGRESS".equals(existingTicketStatus))) {
+                    return new AgentToolResult(
+                            localized(userMessage,
+                                    "Your email-change request is already being reviewed in ticket #" + existingTicketId + ". Track it under Help & Support > Your recent tickets. You do not need to open another ticket.",
+                                    "Votre demande de modification d’e-mail est déjà en cours d’examen dans le ticket #" + existingTicketId + ". Suivez-le dans Aide et support > Vos tickets récents. Vous n’avez pas besoin d’ouvrir un autre ticket."),
+                            "email_change_pending",
+                            details,
+                            null,
+                            false,
+                            false,
+                            null);
+                }
+            }
+            String subject = emailUpdate ? localized(userMessage,
+                    "Email address change verification",
+                    "Vérification de modification d'adresse e-mail") : buildSupportSubject(intent);
             String description = "Demande sensible détectée via le chat : " + userMessage;
             String processKey = determineProcessKey(intent);
             Map<String, Object> variables = new HashMap<>();
             variables.put("userEmail", email);
             variables.put("intent", intent.name());
             variables.put("message", userMessage);
-            supportTicketService.createTicketWithWorkflow(
+            SupportTicket ticket = supportTicketService.createTicketWithWorkflow(
                     resolveUserId(email),
                     subject,
                     description,
@@ -413,9 +450,16 @@ public class AgentToolService {
 
             details.put("ticketProcess", processKey);
             details.put("ticketType", intent.name());
+            details.put("supportTicketId", ticket.getId());
 
             return new AgentToolResult(
-                    "Votre demande a été transmise à notre équipe de vérification. Nous revenons vers vous sous peu.",
+                    emailUpdate
+                            ? localized(userMessage,
+                                    "Your email address has not been changed yet because this request requires identity verification. Support ticket #" + ticket.getId() + " is open. Track it under Help & Support > Your recent tickets. Never share your password or a one-time verification code in chat.",
+                                    "Votre adresse e-mail n'a pas encore été modifiée, car cette demande nécessite une vérification d'identité. Le ticket de support #" + ticket.getId() + " est ouvert. Suivez-le dans Aide et support > Vos tickets récents. Ne partagez jamais votre mot de passe ni un code de vérification à usage unique dans le chat.")
+                            : localized(userMessage,
+                                    "Your request was sent to our verification team. Support ticket #" + ticket.getId() + " is open. Track it under Help & Support > Your recent tickets.",
+                                    "Votre demande a été transmise à notre équipe de vérification. Le ticket de support #" + ticket.getId() + " est ouvert. Suivez-le dans Aide et support > Vos tickets récents."),
                     "create_support_ticket",
                     details,
                     null,
@@ -431,6 +475,16 @@ public class AgentToolService {
                     details,
                     null);
         }
+    }
+
+    private boolean isEmailUpdateRequest(String userMessage) {
+        if (userMessage == null) {
+            return false;
+        }
+        String normalized = userMessage.toLowerCase(Locale.ROOT);
+        boolean mentionsEmail = normalized.matches("(?s).*\\b(email|e-mail|courriel|mail)\\b.*");
+        boolean asksForChange = normalized.matches("(?s).*\\b(change|update|modify|modifier|changer|changez|mettre\\s+à\\s+jour|mise\\s+à\\s+jour)\\b.*");
+        return mentionsEmail && asksForChange;
     }
 
     public AgentToolResult handlePendingToolConfirmation(BankingAgent agent,

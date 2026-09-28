@@ -2,6 +2,7 @@ package com.fintech.banking.config;
 
 import javax.sql.DataSource;
 
+import org.flowable.engine.HistoryService;
 import org.flowable.engine.ProcessEngine;
 import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
@@ -54,5 +55,10 @@ public class FlowableConfig {
     @Bean
     public TaskService taskService(ProcessEngine processEngine) {
         return processEngine.getTaskService();
+    }
+
+    @Bean
+    public HistoryService historyService(ProcessEngine processEngine) {
+        return processEngine.getHistoryService();
     }
 }

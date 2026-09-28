@@ -4,6 +4,7 @@ import com.fintech.banking.service.FlowableService;
 import com.fintech.banking.service.FlowableTaskCompletionService;
 import org.flowable.task.api.Task;
 import org.springframework.http.ResponseEntity;
+import com.fintech.banking.dto.response.PageResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +36,24 @@ public class FlowableAdminController {
             return m;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/processes")
+    public ResponseEntity<PageResponse<Map<String, Object>>> listProcesses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(1, Math.min(size, 100));
+        List<Map<String, Object>> processes = flowableService.getProcessInstances(safePage, safeSize);
+        long total = flowableService.getProcessInstanceCount();
+        int totalPages = (int) Math.ceil((double) total / safeSize);
+        boolean last = safePage + 1 >= totalPages;
+        return ResponseEntity.ok(new PageResponse<>(processes, safePage, safeSize, total, totalPages, last));
+    }
+
+    @GetMapping("/processes/{processInstanceId}")
+    public ResponseEntity<Map<String, Object>> processDetails(@PathVariable String processInstanceId) {
+        return ResponseEntity.ok(flowableService.getProcessInstanceDetails(processInstanceId));
     }
 
     @GetMapping("/status")

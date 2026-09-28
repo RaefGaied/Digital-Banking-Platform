@@ -110,6 +110,7 @@ public class TransactionValidationService {
             .build();
 
         SupportTicket savedTicket = supportTicketRepository.save(ticket);
+        notificationService.notifyTicketCreated(userId, savedTicket.getId(), savedTicket.getSubject());
         trace.put("supportTicketId", savedTicket.getId());
         // Start Flowable process instance and persist process id
         java.util.Map<String, Object> vars = new java.util.HashMap<>();
@@ -130,7 +131,8 @@ public class TransactionValidationService {
                     .taskType(com.fintech.banking.domain.enums.TaskType.COMPLIANCE_REVIEW)
                     .build();
 
-            workflowTaskRepository.save(task);
+            WorkflowTask savedTask = workflowTaskRepository.save(task);
+            notificationService.notifyAdminsTaskCreated(savedTask.getId(), savedTask.getDescription());
         }
 
         if (processInstanceId != null) {

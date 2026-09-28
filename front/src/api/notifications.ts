@@ -1,6 +1,7 @@
 import api from './client';
+import type { PageResponse } from '../types';
 
-interface NotificationDto {
+export interface NotificationDto {
   id: string;
   type: string;
   channel: string;
@@ -8,6 +9,8 @@ interface NotificationDto {
   body: string;
   isRead: boolean;
   createdAt: string;
+  referenceType?: string | null;
+  referenceId?: number | null;
 }
 
 export const notificationsApi = {
@@ -21,5 +24,19 @@ export const notificationsApi = {
     const resp = await api.get('/notifications/unread', { params: { page, size } });
     const pageData = resp.data && resp.data.data;
     return (pageData && pageData.content) || [];
-  }
+  },
+
+  getNotifications: async (page = 0, size = 10): Promise<PageResponse<NotificationDto>> => {
+    const resp = await api.get('/notifications', { params: { page, size } });
+    return resp.data.data;
+  },
+
+  markAsRead: async (id: string): Promise<NotificationDto> => {
+    const response = await api.post(`/notifications/${id}/read`);
+    return response.data.data;
+  },
+
+  markAllAsRead: async (): Promise<void> => {
+    await api.post('/notifications/read-all');
+  },
 };

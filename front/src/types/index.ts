@@ -78,6 +78,8 @@ export interface AdminUserSummary {
 export interface AdminTicketSummary {
   id: number;
   userId: string;
+  customerName: string | null;
+  customerEmail: string | null;
   subject: string;
   description: string;
   status: string;
@@ -121,6 +123,26 @@ export interface FlowableAdminTask {
   assignee: string | null;
   createdTime: string;
   processInstanceId: string;
+}
+
+export interface FlowableProcessSummary {
+  id: string;
+  processDefinitionId: string;
+  processDefinitionKey?: string;
+  processDefinitionName?: string;
+  businessKey: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  endActivityId: string | null;
+  deleteReason: string | null;
+  active: boolean;
+  activeTaskId?: string;
+  activeTaskName?: string;
+}
+
+export interface FlowableProcessDetails {
+  processInstanceId: string;
+  variables: Record<string, unknown>;
 }
 
 export interface AdminAuditLog {
@@ -201,8 +223,8 @@ export interface SupportTicket {
   assignedAdminId: string | null;
   ownerId: string | null;
   flowableProcessId: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | null;
+  updatedAt: string | null;
   resolvedAt: string | null;
   closedAt: string | null;
 }

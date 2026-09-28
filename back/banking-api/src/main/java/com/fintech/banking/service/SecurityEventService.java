@@ -3,7 +3,6 @@ package com.fintech.banking.service;
 import com.fintech.banking.domain.entity.*;
 import com.fintech.banking.domain.enums.SecurityEventType;
 import com.fintech.banking.domain.enums.UserStatus;
-import com.fintech.banking.domain.enums.UserRole;
 import com.fintech.banking.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +69,9 @@ public class SecurityEventService {
         // Send notification
         notificationService.notifySecurityAlert(user.getId(),
                 "Your account has been blocked due to unauthorized access attempt");
+        notificationService.notifyAdminsSecurityAlert(
+                "Token reuse detected for user " + user.getEmail() + "; the account was blocked.",
+                null);
     }
 
     /**
@@ -101,14 +103,14 @@ public class SecurityEventService {
             securityEventRepository.save(event);
 
             // Send notification
+            notificationService.notifyAccountLocked(user.getId());
+            // Keep the detailed security alert for clients that already consume this type.
             notificationService.notifySecurityAlert(user.getId(),
                     "Your account has been locked due to multiple failed login attempts. Try again in 30 minutes.");
 
             // Also notify all admins so they see a small alert in the admin UI
             String adminMessage = "User " + user.getEmail() + " was locked due to failed logins";
-            userRepository.findAll().stream()
-                    .filter(u -> u.getRole() == UserRole.ADMIN)
-                    .forEach(admin -> notificationService.notifySecurityAlert(admin.getId(), adminMessage));
+            notificationService.notifyAdminsSecurityAlert(adminMessage, null);
         }
 
         userRepository.save(user);
@@ -146,6 +148,9 @@ public class SecurityEventService {
         securityEventRepository.save(event);
 
         createAuditLog(userId, "SUSPICIOUS_ACTIVITY", reason, "User", userId.toString(), null);
+        notificationService.notifyAdminsSecurityAlert(
+                "Suspicious activity for user " + userId + ": " + reason,
+                null);
     }
 
     /**

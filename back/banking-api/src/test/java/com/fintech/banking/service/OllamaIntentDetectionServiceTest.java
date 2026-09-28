@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("null")
@@ -25,18 +26,26 @@ class OllamaIntentDetectionServiceTest {
             detectedLanguage must be "FR" or "EN" depending on the language of the
             client message. Reply in French if the client writes in French; reply in
             English if the client writes in English (bilingual FR/EN support).
+            Use conversation context only to interpret references and follow-up questions.
+            Classify the current message, not an earlier request. Never reuse an amount,
+            destination account, or confirmation from history as authorization for a
+            financial action; require the user to provide the details again.
             """;
 
     @Test
-    void usesFastRuleBasedIntentForCommonBankingCommand() {
+    void sendsHighConfidenceBankingCommandsThroughOllamaBeforeUsingJavaRules() {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         ChatClient client = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        var parameters = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+        parameters.put("amount", 100);
+        parameters.put("targetAccountNumber", "204060-8");
         IntentResult modelResult = new IntentResult(
                 IntentType.TRANSFER,
-                null,
+                parameters,
                 0.95,
                 null,
-                null);
+                false);
+        modelResult.setDetectedLanguage("EN");
 
         when(builder.build()).thenReturn(client);
         when(client.prompt()
@@ -51,12 +60,14 @@ class OllamaIntentDetectionServiceTest {
                 .detectIntent("Transfer 100 to account 204060-8");
 
         assertEquals(IntentType.TRANSFER, result.getIntent());
-        assertEquals(0.9, result.getConfidence());
+        assertEquals(0.95, result.getConfidence());
         assertNotNull(result.getParameters());
         assertEquals(100, result.getParameters().get("amount").asInt());
         assertEquals("204060-8", result.getParameters().get("targetAccountNumber").asText());
         assertEquals(false, result.getIsSensitive());
         assertEquals("EN", result.getDetectedLanguage());
+        verify(client.prompt().system(SYSTEM_PROMPT).user("Transfer 100 to account 204060-8").call())
+                .entity(IntentResult.class);
     }
 
     @Test
@@ -79,5 +90,30 @@ class OllamaIntentDetectionServiceTest {
         assertEquals(IntentType.TRANSFER, result.getIntent());
         assertEquals("204060-8", result.getParameters()
                 .get("targetAccountNumber").asText());
+    }
+
+    @Test
+    void generatesContextualReplyUsingRecentConversationAndVerifiedHelpContent() {
+        ChatClient.Builder builder = mock(ChatClient.Builder.class);
+        ChatClient client = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        when(builder.build()).thenReturn(client);
+        when(client.prompt()
+                .system(org.mockito.ArgumentMatchers.anyString())
+                .user(org.mockito.ArgumentMatchers.<String>argThat(prompt ->
+                        prompt.contains("Current user message:\nHow do I follow it?")
+                                && prompt.contains("ticket #24")
+                                && prompt.contains("Verified help content")))
+                .call()
+                .content())
+                .thenReturn("Open Help & Support and select ticket #24 to see its current status.");
+
+        String reply = new OllamaIntentDetectionService(
+                builder, new RuleBasedIntentDetectionService())
+                .generateReply(
+                        "How do I follow it?",
+                        "BOT: Your request is open in ticket #24.",
+                        "Tickets are listed in Help & Support.");
+
+        assertEquals("Open Help & Support and select ticket #24 to see its current status.", reply);
     }
 }

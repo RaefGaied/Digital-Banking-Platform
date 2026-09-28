@@ -74,7 +74,7 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
         } else if (lower.matches(".*\\b(notification|notifications|alerte|alert|message reçu|message recu)\\b.*")) {
             intent = IntentType.NOTIFICATIONS;
             confidence = 0.85;
-        } else if (lower.matches(".*\\b(aide|help|support|service client|question|assistance)\\b.*")) {
+        } else if (lower.matches(".*\\b(aide|help|support|service client|question|assistance|ticket|dossier)\\b.*")) {
             intent = IntentType.SUPPORT;
             confidence = 0.75;
         } else if (lower.matches(".*\\b(fraud|fraude|stolen|volé|roubo|suspicious)\\b.*")) {
@@ -83,7 +83,7 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
         } else if (lower.matches(".*\\b(claim|reclamation|réclamation|plainte)\\b.*")) {
             intent = IntentType.CLAIM;
             confidence = 0.85;
-        } else if (lower.matches(".*\\b(update|change|modifier|mise à jour|mettre à jour|actualiser)\\b.*")) {
+        } else if (lower.matches(".*\\b(update|change|changer|changement|modifier|modification|mise à jour|mettre à jour|actualiser)\\b.*")) {
             intent = IntentType.UPDATE_SENSITIVE_DATA;
             confidence = 0.8;
         }

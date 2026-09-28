@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { isAxiosError } from 'axios';
 import { userApi } from '../api/user';
 import { formatDate } from '../utils/formatters';
 import {
@@ -25,12 +26,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { profileApi } from '../api/profile';
+import { supportTicketsApi } from '../api/supportTickets';
 import Enable2faModal from '../components/auth/Enable2faModal';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, userRole } = useAuth();
+  const queryClient = useQueryClient();
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [showNotifSuccess, setShowNotifSuccess] = useState(false);
@@ -41,10 +44,41 @@ export default function ProfilePage() {
   const [showEnableModal, setShowEnableModal] = useState(false);
   const [otpauthUri, setOtpauthUri] = useState<string | null>(null);
   const [secretValue, setSecretValue] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailChangeError, setEmailChangeError] = useState('');
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['user'],
     queryFn: userApi.getMe,
+  });
+
+  const emailTicketsQuery = useQuery({
+    queryKey: ['my-support-tickets'],
+    queryFn: () => supportTicketsApi.listMine(0, 50),
+    enabled: userRole !== 'ADMIN',
+    refetchInterval: 30000,
+  });
+  const emailChangeTickets = emailTicketsQuery.data?.content.filter(
+    (ticket) => ticket.ticketType === 'DATA_UPDATE'
+      && /email|e-mail|courriel|adresse\s+e|modif(?:ier|er)\s+mon\s+email/i.test(
+        `${ticket.subject ?? ''} ${ticket.description ?? ''}`
+      )
+  ) ?? [];
+  const approvedEmailChangeTicket = emailChangeTickets.find((ticket) => ticket.status === 'RESOLVED');
+  const pendingEmailChangeTicket = emailChangeTickets.find(
+    (ticket) => ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'
+  );
+  const changeEmailMutation = useMutation({
+    mutationFn: () => profileApi.changeEmail(newEmail, emailPassword),
+    onSuccess: () => {
+      logout();
+      navigate('/login?email-updated=1', { replace: true });
+    },
+    onError: (error: unknown) => {
+      const serverError = isAxiosError<{ error?: string }>(error) ? error.response?.data?.error : undefined;
+      setEmailChangeError(serverError || 'Unable to update your email. Please try again.');
+    },
   });
 
   const changePasswordMutation = useMutation({
@@ -100,8 +134,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
-  const queryClient = useQueryClient();
 
   const handleStartEnable = async () => {
     try {
@@ -198,6 +230,73 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+            {userRole !== 'ADMIN' && (
+              <div className='mt-5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800/40 p-4 sm:p-5'>
+                <h4 className='font-bold text-slate-900 dark:text-zinc-100'>Complete email change</h4>
+                {emailTicketsQuery.isLoading ? (
+                  <p className='mt-1 text-sm text-slate-500 dark:text-zinc-400'>Checking your verification ticket…</p>
+                ) : emailTicketsQuery.isError ? (
+                  <p role='alert' className='mt-1 text-sm text-rose-600 dark:text-rose-400'>
+                    Could not check your email-verification ticket. Reload the page and try again.
+                  </p>
+                ) : approvedEmailChangeTicket ? (
+                  <form
+                    className='mt-3 grid gap-3 sm:grid-cols-2'
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      setEmailChangeError('');
+                      changeEmailMutation.mutate();
+                    }}
+                  >
+                    <p className='sm:col-span-2 text-sm text-emerald-700 dark:text-emerald-300'>
+                      Identity review for ticket #{approvedEmailChangeTicket.id} is approved. Enter the new email and confirm your current password. Your email changes only when you submit this form.
+                    </p>
+                    <label className='grid gap-1 text-xs font-semibold text-slate-600 dark:text-zinc-300'>
+                      New email address
+                      <input
+                        type='email'
+                        required
+                        autoComplete='email'
+                        value={newEmail}
+                        onChange={(event) => setNewEmail(event.target.value)}
+                        className='rounded-xl border border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm'
+                      />
+                    </label>
+                    <label className='grid gap-1 text-xs font-semibold text-slate-600 dark:text-zinc-300'>
+                      Current password
+                      <input
+                        type='password'
+                        required
+                        autoComplete='current-password'
+                        value={emailPassword}
+                        onChange={(event) => setEmailPassword(event.target.value)}
+                        className='rounded-xl border border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm'
+                      />
+                    </label>
+                    {emailChangeError && (
+                      <p role='alert' className='sm:col-span-2 text-sm font-semibold text-rose-600 dark:text-rose-400'>
+                        {emailChangeError}
+                      </p>
+                    )}
+                    <button
+                      type='submit'
+                      disabled={changeEmailMutation.isPending}
+                      className='sm:col-span-2 justify-self-start rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60'
+                    >
+                      {changeEmailMutation.isPending ? 'Updating email…' : 'Confirm email change'}
+                    </button>
+                  </form>
+                ) : pendingEmailChangeTicket ? (
+                  <p className='mt-1 text-sm text-slate-600 dark:text-zinc-400'>
+                    Email-change ticket #{pendingEmailChangeTicket.id} is {pendingEmailChangeTicket.status.toLowerCase()}. You can enter the new address here after the identity review is approved.
+                  </p>
+                ) : (
+                  <p className='mt-1 text-sm text-slate-600 dark:text-zinc-400'>
+                    Request an email change in Banking Agent Chat first. The form becomes available here after an administrator approves the identity-verification ticket.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Preferences & Settings */}

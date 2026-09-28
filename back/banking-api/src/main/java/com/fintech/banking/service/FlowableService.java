@@ -14,6 +14,7 @@ import org.flowable.engine.RepositoryService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.history.HistoricActivityInstance;
+import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.flowable.common.engine.api.FlowableObjectNotFoundException;
 import org.flowable.engine.runtime.ProcessInstance;
@@ -28,6 +29,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class FlowableService {
+
+    private final NotificationService notificationService;
 
     @Autowired(required = false)
     private RuntimeService runtimeService;
@@ -56,6 +59,9 @@ public class FlowableService {
             throw new IllegalStateException("No active BPMN process definition found for key: " + processKey);
         }
         ProcessInstance instance = runtimeService.startProcessInstanceByKey(processKey, variables);
+        if (instance != null) {
+            notificationService.notifyAdminsWorkflowStarted(instance.getId(), processKey);
+        }
         return instance == null ? null : instance.getId();
     }
 
@@ -165,6 +171,65 @@ public class FlowableService {
         liveEntry.put("endTime", null);
         liveEntry.put("completed", false);
         return List.of(liveEntry);
+    }
+
+    public List<Map<String, Object>> getProcessInstances(int page, int size) {
+        if (historyService == null) {
+            return List.of();
+        }
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(1, Math.min(size, 100));
+        return historyService.createHistoricProcessInstanceQuery()
+                .orderByProcessInstanceStartTime()
+                .desc()
+                .listPage(safePage * safeSize, safeSize)
+                .stream()
+                .map(this::toProcessInstanceEntry)
+                .toList();
+    }
+
+    public long getProcessInstanceCount() {
+        return historyService == null
+                ? 0
+                : historyService.createHistoricProcessInstanceQuery().count();
+    }
+
+    public Map<String, Object> getProcessInstanceDetails(String processInstanceId) {
+        Map<String, Object> details = new java.util.LinkedHashMap<>();
+        details.put("processInstanceId", processInstanceId);
+        details.put("variables", getProcessVariables(processInstanceId));
+        return details;
+    }
+
+    private Map<String, Object> toProcessInstanceEntry(HistoricProcessInstance instance) {
+        Map<String, Object> entry = new java.util.LinkedHashMap<>();
+        entry.put("id", instance.getId());
+        entry.put("processDefinitionId", instance.getProcessDefinitionId());
+        entry.put("businessKey", instance.getBusinessKey());
+        entry.put("startedAt", instance.getStartTime());
+        entry.put("endedAt", instance.getEndTime());
+        entry.put("endActivityId", instance.getEndActivityId());
+        entry.put("deleteReason", instance.getDeleteReason());
+        entry.put("active", instance.getEndTime() == null && instance.getDeleteReason() == null);
+        if (repositoryService != null) {
+            var definition = repositoryService.createProcessDefinitionQuery()
+                    .processDefinitionId(instance.getProcessDefinitionId())
+                    .singleResult();
+            if (definition != null) {
+                entry.put("processDefinitionKey", definition.getKey());
+                entry.put("processDefinitionName", definition.getName());
+            }
+        }
+        if (taskService != null) {
+            Task activeTask = taskService.createTaskQuery()
+                    .processInstanceId(instance.getId())
+                    .singleResult();
+            if (activeTask != null) {
+                entry.put("activeTaskId", activeTask.getId());
+                entry.put("activeTaskName", activeTask.getName());
+            }
+        }
+        return entry;
     }
 
     private List<Map<String, Object>> fallbackTrace(String processInstanceId) {

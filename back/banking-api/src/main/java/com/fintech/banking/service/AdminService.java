@@ -7,6 +7,7 @@ import com.fintech.banking.domain.entity.SupportTicket;
 import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.entity.WorkflowTask;
 import com.fintech.banking.domain.enums.ActionType;
+import com.fintech.banking.domain.enums.AdminTicketAction;
 import com.fintech.banking.domain.enums.SecurityEventType;
 import com.fintech.banking.domain.enums.SessionStatus;
 import com.fintech.banking.domain.enums.TaskType;
@@ -82,6 +83,33 @@ public class AdminService {
         return workflowTaskRepository.findAll(pageable).map(this::toTaskSummary);
     }
 
+    public Page<TicketSummaryResponse> getTickets(Pageable pageable) {
+        return supportTicketRepository.findAll(pageable).map(this::toTicketSummary);
+    }
+
+    public TicketSummaryResponse handleGeneralTicketAction(
+            Long ticketId,
+            UUID adminId,
+            String adminEmail,
+            GeneralTicketActionRequest request) {
+        if (request == null || request.getAction() == null) {
+            throw new IllegalArgumentException("Ticket action is required");
+        }
+        SupportTicket ticket = supportTicketService.handleGeneralTicketAction(
+                ticketId,
+                adminId,
+                request.getAction(),
+                request.getComment());
+        auditLogService.log(
+                adminEmail,
+                "ADMIN_GENERAL_TICKET_" + request.getAction().name(),
+                "SupportTicket",
+                ticketId.toString(),
+                "General ticket action: " + request.getAction().name(),
+                null);
+        return toTicketSummary(ticket);
+    }
+
     public TaskDetailResponse getTask(Long taskId) {
         WorkflowTask task = workflowTaskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
@@ -100,6 +128,10 @@ public class AdminService {
         SupportTicket ticket = null;
         if (task.getSupportTicketId() != null) {
             ticket = supportTicketRepository.findById(task.getSupportTicketId()).orElse(null);
+        }
+        if (ticket != null && ticket.getTicketType() == com.fintech.banking.domain.enums.TicketType.GENERAL) {
+            throw new IllegalArgumentException(
+                    "General support tickets must be handled from the support ticket inbox, not approved or rejected as workflow decisions");
         }
 
         String comment = request.getComment() == null || request.getComment().isBlank()
@@ -151,6 +183,9 @@ public class AdminService {
         }
 
         WorkflowTask savedTask = workflowTaskRepository.save(task);
+        if (action == ActionType.APPROVE || action == ActionType.REJECT) {
+            notificationService.notifyAdminsTaskResolved(savedTask.getId(), action.name());
+        }
         auditLogService.log(
                 adminEmail,
                 "ADMIN_TASK_ACTION",
@@ -221,6 +256,12 @@ public class AdminService {
 
         event.resolve();
         SecurityEvent saved = securityEventRepository.save(event);
+        notificationService.notifySecurityAlert(
+                saved.getUserId(),
+                "A security alert related to your account was reviewed by an administrator.");
+        notificationService.notifyAdminsSecurityAlert(
+                "Security event " + saved.getType() + " for user " + saved.getUserId() + " was resolved.",
+                null);
 
         auditLogService.log(
                 adminEmail,
@@ -268,9 +309,12 @@ public class AdminService {
     }
 
     private TicketSummaryResponse toTicketSummary(SupportTicket ticket) {
+        User customer = userRepository.findById(ticket.getUserId()).orElse(null);
         return TicketSummaryResponse.builder()
                 .id(ticket.getId())
                 .userId(ticket.getUserId())
+                .customerName(customer != null ? customer.getName() : null)
+                .customerEmail(customer != null ? customer.getEmail() : null)
                 .subject(ticket.getSubject())
                 .description(ticket.getDescription())
                 .status(ticket.getStatus() != null ? ticket.getStatus().name() : null)
@@ -370,6 +414,8 @@ public class AdminService {
     public static class TicketSummaryResponse {
         private Long id;
         private UUID userId;
+        private String customerName;
+        private String customerEmail;
         private String subject;
         private String description;
         private String status;
@@ -444,5 +490,12 @@ public class AdminService {
         public void setComment(String comment) {
             this.comment = comment;
         }
+
+    }
+
+    @Data
+    public static class GeneralTicketActionRequest {
+        private AdminTicketAction action;
+        private String comment;
     }
 }

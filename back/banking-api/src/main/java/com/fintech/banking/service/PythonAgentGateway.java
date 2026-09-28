@@ -36,13 +36,20 @@ public class PythonAgentGateway {
     }
 
     public Optional<String> ask(String query, String bearerToken) {
+        return ask(query, "", bearerToken);
+    }
+
+    public Optional<String> ask(String query, String conversationContext, String bearerToken) {
         if (!enabled || query == null || query.isBlank() || bearerToken == null || bearerToken.isBlank()) {
             return Optional.empty();
         }
 
         try {
-            String body = objectMapper.writeValueAsString(Map.of("query", query));
-            log.debug("Sending Python agent chat payload: {}", body);
+            String body = objectMapper.writeValueAsString(Map.of(
+                    "query", query,
+                    "conversationContext", conversationContext == null ? "" : conversationContext));
+            log.debug("Sending Python agent chat payload with {} context characters",
+                    conversationContext == null ? 0 : conversationContext.length());
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl.replaceAll("/$", "") + "/chat"))
                     .timeout(Duration.ofSeconds(3))
@@ -67,5 +74,31 @@ public class PythonAgentGateway {
             log.warn("Python agent unavailable; using Java fallback: {}", ex.getMessage());
         }
         return Optional.empty();
+    }
+
+    public boolean isAvailable() {
+        if (!enabled) {
+            return false;
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl.replaceAll("/$", "") + "/health"))
+                    .timeout(Duration.ofSeconds(1))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(
+                    request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 != 2) {
+                return false;
+            }
+            return objectMapper.readTree(response.body()).path("status").asText().equalsIgnoreCase("ok");
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.warn("Interrupted while checking Python agent availability");
+            return false;
+        } catch (Exception ex) {
+            log.debug("Python agent is unavailable: {}", ex.getMessage());
+            return false;
+        }
     }
 }

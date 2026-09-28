@@ -227,6 +227,13 @@ When a tool call is executed, persist these fields in the agent context:
 7. MCP tool `agent.recordLastTransaction` stores the transaction id.
 8. Admin later uses `flowable.listAdminTasks` and `flowable.completeTask`.
 
+For `UPDATE_SENSITIVE_DATA` requests to change an email address, the chat does not
+modify the profile directly. It creates a `DATA_UPDATE` verification ticket, tells
+the customer the address is unchanged until review is complete, returns the ticket
+reference, and points to **Help & Support > Your recent tickets**. The chat also
+warns customers not to share passwords or one-time verification codes. If ticket
+creation fails, the bot must say the request was not submitted.
+
 ## Minimal MCP server responsibility
 
 The MCP server should only:

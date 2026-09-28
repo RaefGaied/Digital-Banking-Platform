@@ -25,6 +25,12 @@ import type { CreateSupportTicketRequest, SupportTicket } from '../types';
 type HelpTopic = { icon: React.ElementType; label: string; description: string; route: string };
 type HelpFaq = { question: string; answer: string };
 
+function formatTicketDate(value?: string | null) {
+  if (!value) return 'Date indisponible';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Date indisponible' : date.toLocaleString();
+}
+
 export default function HelpPage() {
   const navigate = useNavigate();
   const { locale } = useI18n();
@@ -36,10 +42,12 @@ export default function HelpPage() {
   const [priority, setPriority] = useState('MEDIUM');
   const [attachment, setAttachment] = useState<File | null>(null);
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [expandedTicketId, setExpandedTicketId] = useState<number | null>(null);
 
   const ticketsQuery = useQuery({
     queryKey: ['my-support-tickets'],
     queryFn: () => supportTicketsApi.listMine(0, 20),
+    refetchInterval: 30000,
   });
 
   const createTicketMutation = useMutation({
@@ -407,19 +415,54 @@ export default function HelpPage() {
                     {ticketsQuery.data?.content.slice(0, 5).map((ticket: SupportTicket) => (
                       <div
                         key={ticket.id}
-                        className='flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/50 dark:border-zinc-800 text-xs'
+                        className='rounded-lg bg-slate-50 dark:bg-zinc-800/40 border border-slate-200/50 dark:border-zinc-800 text-xs'
                       >
-                        <div className='min-w-0 pr-2'>
-                          <p className='font-semibold text-slate-900 dark:text-zinc-100 truncate'>{ticket.subject}</p>
-                          <p className='text-[10px] text-slate-400 dark:text-zinc-500'>#{ticket.id} · {new Date(ticket.createdAt).toLocaleDateString()}</p>
-                        </div>
-                        <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                            : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                        }`}>
-                          {ticket.status}
-                        </span>
+                        <button
+                          type='button'
+                          aria-expanded={expandedTicketId === ticket.id}
+                          onClick={() => setExpandedTicketId(expandedTicketId === ticket.id ? null : ticket.id)}
+                          className='flex w-full items-center justify-between gap-2 p-2 text-left'
+                        >
+                          <span className='min-w-0 pr-2'>
+                            <span className='block truncate font-semibold text-slate-900 dark:text-zinc-100'>{ticket.subject}</span>
+                            <span className='block text-[10px] text-slate-400 dark:text-zinc-500'>#{ticket.id} · {formatTicketDate(ticket.createdAt)}</span>
+                          </span>
+                          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                          }`}>
+                            {ticket.status}
+                          </span>
+                        </button>
+                        {expandedTicketId === ticket.id && (
+                          <div className='border-t border-slate-200/70 dark:border-zinc-700 px-3 py-2.5'>
+                            <p className='font-semibold text-slate-700 dark:text-zinc-300'>
+                              {ticket.ticketType} · {ticket.priority}
+                            </p>
+                            <p className='mt-1 whitespace-pre-wrap text-slate-600 dark:text-zinc-400'>
+                              {ticket.description || (locale === 'fr' ? 'Aucune description fournie.' : 'No description provided.')}
+                            </p>
+                            {ticket.status === 'RESOLVED'
+                              && ticket.ticketType === 'DATA_UPDATE'
+                              && /email|e-mail|courriel|adresse\s+e|modif(?:ier|er)\s+mon\s+email/i.test(
+                                `${ticket.subject ?? ''} ${ticket.description ?? ''}`
+                              ) && (
+                                <div className='mt-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-2 text-emerald-800 dark:text-emerald-300'>
+                                  {locale === 'fr'
+                                    ? 'Vérification approuvée : votre adresse n’a pas changé automatiquement. Terminez la modification dans Profil > Compléter la modification de l’e-mail.'
+                                    : 'Verification approved: your email was not changed automatically. Finish the change in Profile > Complete email change.'}
+                                  <button
+                                    type='button'
+                                    onClick={() => navigate('/profile')}
+                                    className='ml-1 font-bold underline'
+                                  >
+                                    {locale === 'fr' ? 'Ouvrir le profil' : 'Open Profile'}
+                                  </button>
+                                </div>
+                              )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

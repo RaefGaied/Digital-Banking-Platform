@@ -1,99 +1,51 @@
-%% Diagramme de cas d'utilisation global - FinBank
+%% Diagramme global de cas d'utilisation - FinBank
+%% Les raffinements par module seront presentes au chapitre 3.
 %% Compatible avec Draw.io : Arrange > Insert > Advanced > Mermaid
 flowchart LR
     Client(("Client"))
-    Admin(("Administrateur<br/>ou support"))
-    Payment(("Passerelle de<br/>paiement"))
-    AI(("Service IA"))
-    Flowable(("Flowable<br/>BPMN"))
-    Notify(("Service de<br/>notification"))
+    Admin(("Administrateur / support"))
 
-    subgraph FinBank["Systeme FinBank"]
+    subgraph FinBank["FinBank - plateforme bancaire"]
         direction TB
 
-        subgraph Security["Authentification et securite"]
-            Register(("S'inscrire"))
-            Login(("S'authentifier"))
-            Profile(("Gerer le profil"))
+        subgraph ClientCases["Services principaux du client"]
+            Auth(("Acceder a la plateforme"))
+            Account(("Consulter ses informations bancaires"))
+            Operations(("Effectuer des operations bancaires"))
+            PaymentMethods(("Gerer ses moyens de paiement"))
+            Investments(("Gerer ses investissements"))
+            Analytics(("Consulter son tableau de bord financier"))
+            Assistant(("Utiliser l'assistant bancaire"))
+            Profile(("Gerer son profil"))
+            Support(("Soumettre et suivre une demande de support"))
         end
 
-        subgraph Banking["Operations bancaires"]
-            Dashboard(("Consulter le tableau<br/>de bord"))
-            Account(("Consulter le compte<br/>et le solde"))
-            History(("Consulter l'historique<br/>des transactions"))
-            Transfer(("Effectuer un<br/>virement"))
-            Pix(("Gerer les paiements<br/>PIX"))
-            Cards(("Gerer les cartes<br/>bancaires"))
-            Investments(("Gerer les<br/>investissements"))
-            Analytics(("Consulter les<br/>analyses"))
+        subgraph AdminCases["Services principaux d'administration"]
+            Users(("Administrer les utilisateurs"))
+            SupportTasks(("Traiter les demandes et taches sensibles"))
+            Supervise(("Superviser l'activite et les evenements de securite"))
+            Knowledge(("Gerer la base de connaissances"))
         end
-
-        subgraph Assistance["Assistance et supervision"]
-            Chat(("Utiliser l'assistant<br/>bancaire"))
-            Claim(("Soumettre et suivre<br/>une reclamation"))
-            Notifications(("Consulter les<br/>notifications"))
-            Users(("Gerer les<br/>utilisateurs"))
-            Tasks(("Traiter les taches<br/>sensibles"))
-            Audit(("Consulter les<br/>journaux d'audit"))
-        end
-
-        Detect(("Analyser l'intention"))
-        Validate(("Valider une operation<br/>sensible"))
-        Execute(("Executer le paiement"))
-        NotifyClient(("Notifier le client"))
     end
 
-    Client --> Register
-    Client --> Login
-    Client --> Dashboard
+    Client --> Auth
     Client --> Account
-    Client --> History
-    Client --> Transfer
-    Client --> Pix
-    Client --> Cards
+    Client --> Operations
+    Client --> PaymentMethods
     Client --> Investments
     Client --> Analytics
+    Client --> Assistant
     Client --> Profile
-    Client --> Chat
-    Client --> Claim
-    Client --> Notifications
+    Client --> Support
 
-    Admin --> Login
+    Admin --> Auth
     Admin --> Users
-    Admin --> Tasks
-    Admin --> Audit
-    Admin --> Claim
-
-    Payment --> Execute
-    AI --> Detect
-    Flowable --> Validate
-    Notify --> NotifyClient
-
-    Register -.->|inclut| Login
-    Dashboard -.->|inclut| Login
-    Account -.->|inclut| Login
-    History -.->|inclut| Login
-    Transfer -.->|inclut| Login
-    Pix -.->|inclut| Login
-    Cards -.->|inclut| Login
-    Investments -.->|inclut| Login
-    Profile -.->|inclut| Login
-    Chat -.->|inclut| Login
-    Claim -.->|inclut| Login
-
-    Chat -.->|analyse le message| Detect
-    Transfer -.->|operation sensible| Validate
-    Pix -.->|declenche| Execute
-    Transfer -.->|declenche| Execute
-    Validate -.->|operation autorisee| Execute
-    Transfer -.->|confirme| NotifyClient
-    Investments -.->|alerte de rendement| NotifyClient
-    Claim -.->|mise a jour| NotifyClient
-    Validate -.->|trace| Audit
+    Admin --> SupportTasks
+    Admin --> Supervise
+    Admin --> Knowledge
 
     classDef actor fill:#fff2cc,stroke:#b8860b,stroke-width:2px,color:#000;
     classDef usecase fill:#dae8fc,stroke:#2f5597,stroke-width:1px,color:#000;
-    classDef internal fill:#e2f0d9,stroke:#548235,stroke-width:1px,color:#000;
-    class Client,Admin,Payment,AI,Flowable,Notify actor;
-    class Register,Login,Profile,Dashboard,Account,History,Transfer,Pix,Cards,Investments,Analytics,Chat,Claim,Notifications,Users,Tasks,Audit usecase;
-    class Detect,Validate,Execute,NotifyClient internal;
+
+    class Client,Admin actor;
+    class Auth,Account,Operations,PaymentMethods,Investments,Analytics,Assistant,Profile,Support,Users,SupportTasks,Supervise,Knowledge usecase;

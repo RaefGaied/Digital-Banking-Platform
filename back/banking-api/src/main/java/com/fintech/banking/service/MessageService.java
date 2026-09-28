@@ -77,6 +77,15 @@ public class MessageService {
         return messageRepository.findBySessionIdOrderByCreatedAtDesc(sessionId, pageable);
     }
 
+    public List<Message> getRecentSessionMessages(UUID sessionId, int limit) {
+        if (limit < 1) {
+            throw new IllegalArgumentException("Message limit must be positive");
+        }
+        return messageRepository.findBySessionIdOrderByCreatedAtDesc(
+                sessionId,
+                org.springframework.data.domain.PageRequest.of(0, limit)).getContent();
+    }
+
     /**
      * Gets all messages for a session (list, ascending order for conversation)
      */

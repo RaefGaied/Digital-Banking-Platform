@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import jwt, logging, json, os, re, time
 from config import JWT_SECRET
 from agent import run_agent
+from llm import GROQ_API_KEY, OLLAMA_BASE_URL, OLLAMA_MODEL, OPENAI_API_KEY
 from memory_store import append_user_mem
 
 app = FastAPI()
@@ -56,11 +58,29 @@ def get_accno(token):
 class ChatRequest(BaseModel):
     query: str = ""
     message: str = ""
+    conversationContext: str = ""
 
 # ================= HEALTH =================
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    if OPENAI_API_KEY or GROQ_API_KEY:
+        return {"status": "ok"}
+
+    try:
+        import requests
+
+        response = requests.get(f"{OLLAMA_BASE_URL.rstrip('/')}/api/tags", timeout=1)
+        response.raise_for_status()
+        models = response.json().get("models", [])
+        if any(model.get("name") == OLLAMA_MODEL or model.get("model") == OLLAMA_MODEL for model in models):
+            return {"status": "ok"}
+    except Exception as exc:
+        logging.debug("No local AI provider is ready: %s", exc)
+
+    return JSONResponse(
+        status_code=503,
+        content={"status": "unavailable", "detail": "No AI model provider is ready"},
+    )
 
 # ================= CHAT =================
 @app.post("/chat")
@@ -101,6 +121,7 @@ async def chat(request: Request):
     query = str(payload.get("query") or payload.get("message") or "").strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query is required")
+    conversation_context = str(payload.get("conversationContext") or "")
 
     logging.info(f"Incoming Query: {query}")
 
@@ -127,7 +148,7 @@ async def chat(request: Request):
 
     # ===== AGENT =====
     try:
-        reply = run_agent(query, token, user_id)
+        reply = run_agent(query, token, user_id, conversation_context)
     except Exception as e:
         logging.error(f"AGENT FAILURE: {e}")
         reply = "⚠️ System issue, please try again later"

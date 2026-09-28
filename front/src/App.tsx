@@ -86,6 +86,8 @@ export default function App() {
                       <Route path='rag' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><RagTestPage /></RequireRole>} />
                       <Route path='sessions' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><SessionsPage /></RequireRole>} />
                       <Route path='sessions/:id/chat' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><ChatPage /></RequireRole>} />
+                      <Route path='chat' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><ChatPage /></RequireRole>} />
+                      <Route path='chat/:id' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><ChatPage /></RequireRole>} />
                       <Route path='agents' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><AgentsPage /></RequireRole>} />
                     </Route>
                     <Route path='*' element={<Navigate to='/login' replace />} />

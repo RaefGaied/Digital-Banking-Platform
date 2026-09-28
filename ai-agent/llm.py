@@ -157,6 +157,10 @@ STRICT RULES:
 - NEVER answer these manually
 - DO NOT use "reply" if a tool is available
 - NEVER call transferMoney unless user clearly provides BOTH amount AND receiver
+- Use recent conversation only to understand references and follow-up questions.
+- Classify the current message, not a previous request.
+- Never reuse a previous amount, destination account, or confirmation as authorization for a new financial action.
+- If the current message does not explicitly provide required transfer details, ask the user to provide them again.
 
 Return ONLY JSON:
 
@@ -167,10 +171,11 @@ Return ONLY JSON:
   "reply": ""
 }}
 
-Context:
+Recent conversation (oldest to newest):
 {context}
 
-User: {query}
+Current user message:
+{query}
 """
 
     # ===== TRY LOCAL OLLAMA (no API key or provider quota) =====
