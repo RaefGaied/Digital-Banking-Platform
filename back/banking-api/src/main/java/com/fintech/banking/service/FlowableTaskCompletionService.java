@@ -48,19 +48,31 @@ public class FlowableTaskCompletionService {
 
         Map<String, Object> vars = body == null ? new HashMap<>() : new HashMap<>(body);
         boolean approved = readBoolean(vars.get("approved"), processVars.get("approved"));
+        Object decisionFallback = vars.containsKey("decision") || vars.containsKey("approved")
+                ? null
+                : processVars.get("decision");
         String decision = readDecision(
                 vars.get("decision"),
-                processVars.get("decision"),
+                decisionFallback,
                 processVars.get("intent"),
                 approved);
-        if ("BLOQUER".equals(decision)) {
-            approved = true;
+        validateDataUpdateDecision(task, decision);
+        if (task != null
+                && "taskValidationAdmin".equals(task.getTaskDefinitionKey())
+                && "REQUEST_INFO".equals(decision)) {
+            vars.put("infoCount", readInteger(processVars.get("infoCount")) + 1);
         }
+        approved = "APPROVE".equals(decision) || "BLOQUER".equals(decision);
+        final boolean decisionApproved = approved;
         vars.put("approved", approved);
         vars.put("decision", decision);
         flowableService.completeTask(taskId, vars);
-        notificationService.notifyAdminsWorkflowResolved(taskId, decision);
-        final boolean decisionApproved = approved;
+        if (!"REQUEST_INFO".equals(decision)
+                && !"CONTACTER".equals(decision)
+                && !"ESCALATE".equals(decision)
+                && !"CONTINUE".equals(decision)) {
+            notificationService.notifyAdminsWorkflowResolved(taskId, decision);
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("taskId", taskId);
@@ -106,6 +118,20 @@ public class FlowableTaskCompletionService {
         return value != null && Boolean.parseBoolean(String.valueOf(value));
     }
 
+    private int readInteger(Object value) {
+        if (value instanceof Number number) {
+            return Math.max(0, number.intValue());
+        }
+        if (value == null) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(String.valueOf(value)));
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid workflow information request count", ex);
+        }
+    }
+
     private String readDecision(Object primary, Object fallback, Object intent, boolean approved) {
         Object value = primary != null ? primary : fallback;
         if (value == null || String.valueOf(value).isBlank()) {
@@ -121,10 +147,33 @@ public class FlowableTaskCompletionService {
         String normalized = String.valueOf(value).trim().toUpperCase();
         if (!normalized.equals("APPROVE") && !normalized.equals("REJECT")
                 && !normalized.equals("REQUEST_INFO") && !normalized.equals("BLOQUER")
-                && !normalized.equals("CONTACTER") && !normalized.equals("FAUX_POSITIF")) {
+                && !normalized.equals("CONTACTER") && !normalized.equals("FAUX_POSITIF")
+                && !normalized.equals("ESCALATE") && !normalized.equals("CONTINUE")) {
             throw new IllegalArgumentException("Unsupported task decision: " + value);
         }
         return normalized;
+    }
+
+    private void validateDataUpdateDecision(Task task, String decision) {
+        if (task == null || task.getTaskDefinitionKey() == null) {
+            return;
+        }
+        String taskDefinitionKey = task.getTaskDefinitionKey();
+        boolean valid = switch (taskDefinitionKey) {
+            case "dataUpdateTask", "taskValidationAdmin" -> "APPROVE".equals(decision)
+                    || "REJECT".equals(decision)
+                    || "REQUEST_INFO".equals(decision)
+                    || "ESCALATE".equals(decision);
+            case "followupTask" -> "CONTINUE".equals(decision);
+            case "escalatedReviewTask" -> "APPROVE".equals(decision)
+                    || "REJECT".equals(decision)
+                    || "REQUEST_INFO".equals(decision);
+            default -> true;
+        };
+        if (!valid) {
+            throw new IllegalArgumentException(
+                    "Decision " + decision + " is not valid for workflow task " + taskDefinitionKey);
+        }
     }
 
     private void handleTransactionOutcome(Transaction transaction, boolean approved) {
@@ -161,12 +210,22 @@ public class FlowableTaskCompletionService {
         TicketStatus targetStatus = switch (decision) {
             case "APPROVE", "BLOQUER", "FAUX_POSITIF" -> TicketStatus.RESOLVED;
             case "REJECT" -> TicketStatus.CLOSED;
-            case "REQUEST_INFO", "CONTACTER" -> TicketStatus.IN_PROGRESS;
+            case "REQUEST_INFO", "CONTACTER", "ESCALATE" -> TicketStatus.IN_PROGRESS;
+            case "CONTINUE" -> null;
             default -> throw new IllegalArgumentException("Unsupported ticket decision: " + decision);
         };
 
+        if (targetStatus == null) {
+            return;
+        }
+
         // Keep status timestamps and client notifications consistent for every
         // entry point that completes a Flowable task.
-        supportTicketService.updateTicketStatus(ticket.getId(), targetStatus);
+        if ("REQUEST_INFO".equals(decision) || "ESCALATE".equals(decision) || "REJECT".equals(decision)) {
+            supportTicketService.updateTicketStatusFromWorkflow(ticket.getId(), targetStatus);
+        } else {
+            supportTicketService.updateTicketStatus(ticket.getId(), targetStatus);
+        }
     }
+
 }

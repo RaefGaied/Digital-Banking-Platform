@@ -1,0 +1,332 @@
+% ============================================================
+\chapter{Étude et réalisation du Sprint 3}
+\label{chap:sprint3}
+% ============================================================
+
+\section{Introduction}
+\label{sec:intro_sprint3}
+
+Dans ce chapitre, nous présentons l'étude et la réalisation du
+\textbf{troisième sprint} de la plateforme FinBank. Après la mise en
+place du backend et de la sécurité au Sprint 2, ce sprint est consacré
+aux principales opérations bancaires proposées à l'utilisateur.
+
+Le travail réalisé concerne la consultation du compte, les dépôts, les
+retraits et les virements, ainsi que la consultation de l'historique et
+le téléchargement des reçus. Il comprend également la gestion des
+cartes, des investissements et des clés de paiement.
+
+Le chapitre présente d'abord le backlog du sprint, puis la conception
+des fonctionnalités à travers les diagrammes UML. Enfin, il décrit la
+réalisation des services bancaires et prévoit des emplacements pour les
+captures d'écran de l'application et de la documentation API.
+
+\section{Backlog du Sprint}
+\label{sec:backlog_sprint3}
+
+Le tableau~\ref{tab:backlog_sprint3} présente les principales tâches
+planifiées pour le Sprint 3.
+
+\begin{table}[htbp]
+\centering
+\caption{Backlog du Sprint 3}
+\label{tab:backlog_sprint3}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|p{10cm}|c|}
+\hline
+\textbf{ID} & \textbf{Tâches} & \textbf{Estimation} \\
+\hline
+S3-T1 & Consulter le compte et afficher le solde disponible & 2 jours \\
+\hline
+S3-T2 & Implémenter les dépôts et les retraits & 3 jours \\
+\hline
+S3-T3 & Implémenter les virements entre comptes avec contrôle du solde & 4 jours \\
+\hline
+S3-T4 & Enregistrer les transactions et consulter l'historique & 2 jours \\
+\hline
+S3-T5 & Générer et télécharger les reçus des transactions & 2 jours \\
+\hline
+S3-T6 & Développer la gestion des cartes bancaires & 3 jours \\
+\hline
+S3-T7 & Développer les investissements et leur remboursement & 3 jours \\
+\hline
+S3-T8 & Gérer les clés de paiement et les virements par clé & 2 jours \\
+\hline
+S3-T9 & Vérifier les règles métier et documenter les endpoints & 2 jours \\
+\hline
+\multicolumn{2}{|r|}{\textbf{Total}} & \textbf{23 jours} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conception}
+\label{sec:conception_sprint3}
+
+La conception du Sprint 3 décrit les interactions de l'utilisateur
+authentifié avec les services bancaires. Les opérations sont réalisées
+par le backend en respectant les règles de propriété des comptes, de
+solde disponible et de validation des données.
+
+\subsection{Diagramme de cas d'utilisation}
+\label{subsec:usecase_sprint3}
+
+Le diagramme de cas d'utilisation regroupe les fonctionnalités
+bancaires accessibles à l'utilisateur : consulter son compte, effectuer
+des opérations, gérer ses moyens de paiement, investir et consulter
+ses opérations passées.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/usecase_sprint3.png}{%
+  \includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{Figures/usecase_sprint3.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de cas d'utilisation du Sprint 3.}}
+}
+\caption{Diagramme de cas d'utilisation du Sprint 3}
+\label{fig:usecase_sprint3}
+\end{figure}
+
+\subsection{Diagramme de classes du Sprint 3}
+\label{subsec:classes_sprint3}
+
+Le diagramme de classes présente les entités métier principales de ce
+sprint. Un utilisateur possède un ou plusieurs comptes, transactions,
+cartes, investissements et clés de paiement. Une transaction peut
+associer un compte source et un compte cible, selon son type.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/classes_sprint3.png}{%
+  \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{Figures/classes_sprint3.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de classes du Sprint 3.}}
+}
+\caption{Diagramme de classes du Sprint 3}
+\label{fig:classes_sprint3}
+\end{figure}
+
+\subsection{Description textuelle : Consulter son compte}
+\label{subsec:desc_compte_sprint3}
+
+\begin{table}[htbp]
+\centering
+\caption{Cas d'utilisation : Consulter son compte}
+\label{tab:uc_compte_sprint3}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3.2cm}|p{10.5cm}|}
+\hline
+\textbf{Élément} & \textbf{Description} \\
+\hline
+Titre & Consulter son compte \\
+\hline
+Acteur & Utilisateur (\texttt{USER}) \\
+\hline
+But & Consulter le numéro du compte, son solde et son état. \\
+\hline
+Précondition & L'utilisateur est authentifié et possède un compte. \\
+\hline
+Postcondition & Les informations actualisées du compte sont affichées. \\
+\hline
+Scénario principal &
+1. L'utilisateur ouvre son espace bancaire. \newline
+2. Le système identifie l'utilisateur authentifié. \newline
+3. Le système recherche son compte. \newline
+4. Le système retourne le solde et les informations du compte. \\
+\hline
+Scénario alternatif & Si le compte est introuvable ou inactif, le système retourne un message explicite. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Description textuelle : Effectuer un virement}
+\label{subsec:desc_virement_sprint3}
+
+\begin{table}[htbp]
+\centering
+\caption{Cas d'utilisation : Effectuer un virement}
+\label{tab:uc_virement_sprint3}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3.2cm}|p{10.5cm}|}
+\hline
+\textbf{Élément} & \textbf{Description} \\
+\hline
+Titre & Effectuer un virement \\
+\hline
+Acteur & Utilisateur (\texttt{USER}) \\
+\hline
+But & Transférer un montant vers un compte destinataire. \\
+\hline
+Précondition & L'utilisateur est authentifié, le montant est positif et les comptes sont valides. \\
+\hline
+Postcondition & La transaction est enregistrée avec son statut et les soldes sont mis à jour lorsque l'opération est validée. \\
+\hline
+Scénario principal &
+1. L'utilisateur saisit le compte cible et le montant. \newline
+2. Le système vérifie les données et le solde disponible. \newline
+3. Le système débite le compte source et crédite le compte cible. \newline
+4. Le système enregistre la transaction. \newline
+5. Le système retourne le résultat de l'opération. \\
+\hline
+Scénario alternatif & En cas de solde insuffisant, de compte invalide ou de validation nécessaire, la transaction est refusée ou placée dans l'état approprié. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Diagramme de classes participantes : Opération bancaire}
+\label{subsec:participants_banking_sprint3}
+
+Ce diagramme met en évidence l'interface, le contrôleur, le service,
+les repositories et les entités mobilisés lors d'une opération bancaire.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/participants_operation_bancaire.png}{%
+  \includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{Figures/participants_operation_bancaire.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de classes participantes d'une opération bancaire.}}
+}
+\caption{Diagramme de classes participantes -- Opération bancaire}
+\label{fig:participants_operation_sprint3}
+\end{figure}
+
+\subsection{Diagramme de séquence : Effectuer un virement}
+\label{subsec:seq_virement_sprint3}
+
+Le diagramme de séquence décrit le traitement d'un virement depuis la
+requête de l'utilisateur jusqu'à l'enregistrement de la transaction.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/seq_virement.png}{%
+  \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{Figures/seq_virement.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de séquence d'un virement.}}
+}
+\caption{Diagramme de séquence -- Effectuer un virement}
+\label{fig:seq_virement_sprint3}
+\end{figure}
+
+\section{Réalisation}
+\label{sec:realisation_sprint3}
+
+Cette section présente les fonctionnalités implémentées durant le
+Sprint 3 et leur intégration dans l'API REST de FinBank.
+
+\subsection{Gestion des comptes et des transactions}
+\label{subsec:comptes_transactions_sprint3}
+
+Le contrôleur \texttt{AccountController} expose la consultation du
+compte de l'utilisateur authentifié. Les opérations de dépôt, de
+retrait et de virement sont regroupées dans le
+\texttt{TransactionController}. Chaque requête est associée à
+l'utilisateur issu du contexte de sécurité et non à un identifiant
+fourni librement par le client.
+
+Le service métier vérifie notamment la validité du montant, l'état des
+comptes et la disponibilité du solde. Après le traitement, une entité
+\texttt{Transaction} est créée avec son type et son statut. L'historique
+permet ensuite de retrouver les opérations de l'utilisateur.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/swagger_transactions_sprint3.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/swagger_transactions_sprint3.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture Swagger des comptes et transactions.}}
+}
+\caption{Documentation Swagger des comptes et transactions}
+\label{fig:swagger_transactions_sprint3}
+\end{figure}
+
+\subsection{Historique et téléchargement des reçus}
+\label{subsec:historique_recus_sprint3}
+
+L'utilisateur peut consulter la liste de ses transactions à partir de
+l'endpoint d'historique. Il peut également télécharger le reçu PDF
+d'une transaction. Avant de produire le document, le backend vérifie
+que l'utilisateur est propriétaire du compte source ou du compte cible
+associé à l'opération.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/history_receipt_sprint3.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/history_receipt_sprint3.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture de l'historique et du téléchargement d'un reçu.}}
+}
+\caption{Historique des transactions et téléchargement d'un reçu}
+\label{fig:history_receipt_sprint3}
+\end{figure}
+
+\subsection{Gestion des cartes et des investissements}
+\label{subsec:cartes_investissements_sprint3}
+
+Le module des cartes permet à l'utilisateur de consulter ses cartes,
+d'en créer une, de modifier ses informations autorisées et de la
+supprimer. Le module des investissements permet de consulter les
+investissements, d'investir un montant et de demander le remboursement
+d'un investissement existant.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/cards_investments_sprint3.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/cards_investments_sprint3.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé aux captures des cartes et des investissements.}}
+}
+\caption{Interfaces de gestion des cartes et des investissements}
+\label{fig:cards_investments_sprint3}
+\end{figure}
+
+\subsection{Clés de paiement}
+\label{subsec:cles_paiement_sprint3}
+
+Le module des clés de paiement permet d'enregistrer et de consulter les
+clés associées à l'utilisateur. Une clé peut également être recherchée
+afin d'identifier un destinataire avant l'exécution d'un transfert.
+Les opérations restent protégées par l'authentification et les
+validations métier du backend.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/payment_keys_sprint3.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/payment_keys_sprint3.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture de la gestion des clés de paiement.}}
+}
+\caption{Gestion des clés de paiement}
+\label{fig:payment_keys_sprint3}
+\end{figure}
+
+\subsection{Vérification de la réalisation}
+\label{subsec:verification_sprint3}
+
+Les fonctionnalités du sprint sont accessibles à travers les
+contrôleurs \texttt{/accounts}, \texttt{/transactions},
+\texttt{/cards}, \texttt{/investments} et \texttt{/pix}. Les réponses
+retournées par l'API utilisent des DTO afin de séparer les données
+exposées des entités persistantes. Les erreurs de validation, de
+propriété et de solde sont retournées à l'utilisateur sous forme de
+réponses HTTP adaptées.
+
+\section{Conclusion}
+\label{sec:conclusion_sprint3}
+
+Ce chapitre a présenté l'étude et la réalisation du Sprint 3 de
+FinBank. La conception a été décrite à travers le diagramme de cas
+d'utilisation, le diagramme de classes, le diagramme de classes
+participantes et le diagramme de séquence du virement.
+
+La réalisation de ce sprint a permis d'ajouter les fonctionnalités
+bancaires opérationnelles : consultation des comptes, dépôts, retraits,
+virements, historique, reçus, cartes, investissements et clés de
+paiement. Ces services constituent le socle fonctionnel utilisé par les
+interfaces et les processus présentés dans les chapitres suivants.

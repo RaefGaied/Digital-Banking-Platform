@@ -66,12 +66,26 @@ public class AdminTicketAssistantService {
                 %s
                 """.formatted(ticket.getSubject(), ticket.getDescription());
 
-        String draft = intentDetectionService.generateReply(prompt, ticketContext, verifiedHelp);
+        String draft = null;
+        try {
+            draft = intentDetectionService.generateReply(prompt, ticketContext, verifiedHelp);
+        } catch (RuntimeException ex) {
+            // AI slow or down: fall through to a template draft instead of failing the admin's action
+        }
         if (draft == null || draft.isBlank()) {
-            throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "The AI provider is unavailable or did not produce a reply draft");
+            return fallbackDraft(ticket, question, "EN".equals(language));
         }
         return draft.trim();
+    }
+
+    private String fallbackDraft(SupportTicket ticket, String question, boolean english) {
+        if (english) {
+            return "Hello,\n\nThank you for contacting us about \"" + ticket.getSubject()
+                    + "\". Our team is reviewing your request. To help us move forward: " + question
+                    + "\n\nWe will update you as soon as we have more information.\n\nBest regards,\nFinBank Support";
+        }
+        return "Bonjour,\n\nMerci de nous avoir contactés au sujet de « " + ticket.getSubject()
+                + " ». Notre équipe examine votre demande. Pour nous permettre d'avancer : " + question
+                + "\n\nNous reviendrons vers vous dès que nous aurons plus d'informations.\n\nCordialement,\nSupport FinBank";
     }
 }

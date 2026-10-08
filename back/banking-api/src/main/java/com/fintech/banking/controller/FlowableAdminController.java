@@ -30,6 +30,7 @@ public class FlowableAdminController {
             java.util.Map<String,Object> m = new java.util.HashMap<>();
             m.put("id", t.getId());
             m.put("name", t.getName());
+            m.put("taskDefinitionKey", t.getTaskDefinitionKey());
             m.put("assignee", t.getAssignee());
             m.put("createdTime", t.getCreateTime());
             m.put("processInstanceId", t.getProcessInstanceId());

@@ -51,7 +51,10 @@ class AgentToolServiceTest {
             transactionService,
             cardService,
             supportTicketService,
-            userRepository
+            userRepository,
+            Mockito.mock(com.fintech.banking.repository.PaymentKeyRepository.class),
+            Mockito.mock(com.fintech.banking.repository.AccountRepository.class),
+            Mockito.mock(PaymentKeyService.class)
     );
 
     @Test

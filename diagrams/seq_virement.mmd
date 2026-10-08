@@ -1,0 +1,25 @@
+sequenceDiagram
+    actor C as Client
+    participant TC as TransactionController
+    participant TS as TransactionServiceImpl
+    participant AR as AccountRepository
+    participant TR as TransactionRepository
+
+    C->>TC: POST /transactions/transfer (JWT, compte cible, montant)
+    TC->>TS: transfer(request)
+    TS->>AR: charger comptes source et cible
+    AR-->>TS: Account source, Account cible
+    alt solde insuffisant ou compte introuvable
+        TS-->>TC: erreur métier
+        TC-->>C: réponse d'erreur
+    else montant <= seuil (5000)
+        TS->>AR: debit(source) et credit(cible)
+        TS->>TR: save(Transaction COMPLETED)
+        TS-->>TC: transaction
+        TC-->>C: 200 OK
+    else montant > seuil (5000)
+        TS->>TR: save(Transaction PENDING)
+        TS->>TS: démarrer la validation administrateur (voir chapitre Flowable)
+        TS-->>TC: transaction PENDING
+        TC-->>C: 200 OK (en attente de validation)
+    end

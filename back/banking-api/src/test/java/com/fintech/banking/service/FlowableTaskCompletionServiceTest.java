@@ -21,6 +21,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -124,5 +125,71 @@ class FlowableTaskCompletionServiceTest {
         verify(supportTicketService).updateTicketStatus(32L, TicketStatus.RESOLVED);
         verify(notificationService).notifyAdminsWorkflowResolved("fraud-task-32", "FAUX_POSITIF");
         org.junit.jupiter.api.Assertions.assertEquals("FAUX_POSITIF", result.get("decision"));
+    }
+
+    @Test
+    void requestingInformationKeepsDataUpdateTicketInProgress() {
+        SupportTicket ticket = SupportTicket.builder()
+                .id(41L)
+                .userId(UUID.randomUUID())
+                .ticketType(TicketType.DATA_UPDATE)
+                .status(TicketStatus.OPEN)
+                .build();
+        when(task.getProcessInstanceId()).thenReturn("data-update-process-41");
+        when(task.getTaskDefinitionKey()).thenReturn("dataUpdateTask");
+        when(flowableService.getTaskById("task-41")).thenReturn(task);
+        when(flowableService.getProcessVariables("data-update-process-41"))
+                .thenReturn(Map.of("supportTicketId", "41"));
+        when(supportTicketRepository.findById(41L)).thenReturn(Optional.of(ticket));
+
+        Map<String, Object> result = completionService.completeTask(
+                "task-41",
+                Map.of("decision", "REQUEST_INFO"));
+
+        verify(flowableService).completeTask(eq("task-41"), any(Map.class));
+        verify(supportTicketService).updateTicketStatusFromWorkflow(41L, TicketStatus.IN_PROGRESS);
+        verify(notificationService, never()).notifyAdminsWorkflowResolved("task-41", "REQUEST_INFO");
+        org.junit.jupiter.api.Assertions.assertEquals("REQUEST_INFO", result.get("decision"));
+    }
+
+    @Test
+    void requestedInformationCountAdvancesForTheRenamedAdminBpmnTask() {
+        when(task.getProcessInstanceId()).thenReturn("data-update-process-43");
+        when(task.getTaskDefinitionKey()).thenReturn("taskValidationAdmin");
+        when(flowableService.getTaskById("task-43")).thenReturn(task);
+        when(flowableService.getProcessVariables("data-update-process-43"))
+                .thenReturn(Map.of("infoCount", 2));
+
+        completionService.completeTask("task-43", Map.of("decision", "REQUEST_INFO"));
+
+        org.mockito.ArgumentCaptor<Map<String, Object>> variables =
+                org.mockito.ArgumentCaptor.forClass(Map.class);
+        verify(flowableService).completeTask(eq("task-43"), variables.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(3, variables.getValue().get("infoCount"));
+    }
+
+    @Test
+    void escalationKeepsDataUpdateTicketOpenForPriorityReview() {
+        SupportTicket ticket = SupportTicket.builder()
+                .id(42L)
+                .userId(UUID.randomUUID())
+                .ticketType(TicketType.DATA_UPDATE)
+                .status(TicketStatus.OPEN)
+                .build();
+        when(task.getProcessInstanceId()).thenReturn("data-update-process-42");
+        when(task.getTaskDefinitionKey()).thenReturn("dataUpdateTask");
+        when(flowableService.getTaskById("task-42")).thenReturn(task);
+        when(flowableService.getProcessVariables("data-update-process-42"))
+                .thenReturn(Map.of("supportTicketId", "42"));
+        when(supportTicketRepository.findById(42L)).thenReturn(Optional.of(ticket));
+
+        Map<String, Object> result = completionService.completeTask(
+                "task-42",
+                Map.of("decision", "ESCALATE"));
+
+        verify(flowableService).completeTask(eq("task-42"), any(Map.class));
+        verify(supportTicketService).updateTicketStatusFromWorkflow(42L, TicketStatus.IN_PROGRESS);
+        verify(notificationService, never()).notifyAdminsWorkflowResolved("task-42", "ESCALATE");
+        org.junit.jupiter.api.Assertions.assertEquals("ESCALATE", result.get("decision"));
     }
 }

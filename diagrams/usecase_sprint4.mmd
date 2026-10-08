@@ -1,0 +1,38 @@
+flowchart LR
+    U["Utilisateur (USER)"]
+    A["Administrateur (ADMIN)"]
+
+    UC1["Créer et gérer une session"]
+    UC2["Envoyer un message"]
+    UC3["Consulter la conversation"]
+    UC4["Poser une question à l'assistant"]
+    UC5["Détecter l'intention"]
+    UC6["Rechercher dans la base RAG"]
+    UC7["Extraire des informations d'un document"]
+    UC8["Gérer les documents de connaissance"]
+    UC9["Réindexer un document"]
+
+    U --> UC1
+    U --> UC2
+    U --> UC3
+    U --> UC4
+    U --> UC7
+    A --> UC8
+    A --> UC9
+
+    UC4 -.->|«include»| UC5
+    UC4 -.->|«include»| UC6
+    UC2 -.->|«include»| UC5
+    UC8 -.->|«include»| UC9
+
+    subgraph SYS["Système FinBank"]
+      UC1
+      UC2
+      UC3
+      UC4
+      UC5
+      UC6
+      UC7
+      UC8
+      UC9
+    end

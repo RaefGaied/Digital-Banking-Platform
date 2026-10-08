@@ -187,6 +187,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponse login(LoginRequest request) {
         User existingUser = userRepository.findByEmail(request.getEmail()).orElse(null);
+        // Release any admin lock left over from before admins were exempt from lockout.
+        if (existingUser != null && existingUser.getRole() == com.fintech.banking.domain.enums.UserRole.ADMIN
+                && (existingUser.getStatus() == com.fintech.banking.domain.enums.UserStatus.BLOCKED
+                        || existingUser.getLockedUntil() != null)) {
+            existingUser.setStatus(com.fintech.banking.domain.enums.UserStatus.ACTIVE);
+            existingUser.setFailedLoginAttempts(0);
+            existingUser.setLockedUntil(null);
+            userRepository.save(existingUser);
+        }
         if (existingUser != null && existingUser.getStatus() == com.fintech.banking.domain.enums.UserStatus.BLOCKED
                 && existingUser.getLockedUntil() != null
                 && LocalDateTime.now().isAfter(existingUser.getLockedUntil())) {

@@ -112,6 +112,16 @@ public class FlowableService {
         return taskService.createTaskQuery().taskId(taskId).singleResult();
     }
 
+    public Task getActiveTask(String processInstanceId, String taskDefinitionKey) {
+        if (taskService == null || processInstanceId == null || taskDefinitionKey == null) {
+            return null;
+        }
+        return taskService.createTaskQuery()
+                .processInstanceId(processInstanceId)
+                .taskDefinitionKey(taskDefinitionKey)
+                .singleResult();
+    }
+
     public Map<String, Object> getProcessVariables(String processInstanceId) {
         if (processInstanceId == null) return java.util.Map.of();
         if (runtimeService != null) {

@@ -17,6 +17,9 @@ import com.fintech.banking.dto.request.TransactionRequest;
 import com.fintech.banking.dto.response.AccountResponse;
 import com.fintech.banking.dto.response.TransactionResponse;
 import com.fintech.banking.repository.UserRepository;
+import com.fintech.banking.repository.AccountRepository;
+import com.fintech.banking.repository.PaymentKeyRepository;
+import com.fintech.banking.dto.request.PaymentTransferRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,7 +46,9 @@ public class AgentToolService {
     private final CardService cardService;
     private final SupportTicketService supportTicketService;
     private final UserRepository userRepository;
-
+    private final PaymentKeyRepository paymentKeyRepository;
+    private final AccountRepository accountRepository;
+    private final PaymentKeyService paymentKeyService;
     private static final Pattern CARD_EXPIRY_PATTERN = Pattern.compile("(?:^|\\D)(0?[1-9]|1[0-2])\\s*[/.-]\\s*(20\\d{2})(?:\\D|$)");
     private static final Pattern CARD_LAST_FOUR_PATTERN = Pattern.compile("(?:derniers? chiffres|last four|digits)[^0-9]*(\\d{4})", Pattern.CASE_INSENSITIVE);
 
@@ -253,14 +258,14 @@ public class AgentToolService {
                         ? localized(userMessage,
                         "I cannot retrieve or disclose another customer's account number. Ask the recipient for it or select a saved beneficiary, then provide the amount and destination account.",
                         "Je ne peux pas retrouver ni communiquer le numéro de compte d'un autre client. Demandez-le au bénéficiaire ou sélectionnez un bénéficiaire enregistré, puis indiquez le montant et le compte destinataire.")
-                        : localized(userMessage, "To make a transfer, provide the amount and destination account number.",
-                        "Pour effectuer un virement, indiquez le montant et le numéro de compte destinataire.");
+                        : localized(userMessage, "To make a transfer, provide the amount and the destination account number or the recipient's payment key.",
+                        "Pour effectuer un virement, indiquez le montant et le numéro de compte ou la clé de paiement du destinataire.");
             } else if (missingAmount) {
-                message = localized(userMessage, "What amount would you like to transfer to account " + targetAccount + "?",
-                        "Quel montant souhaitez-vous virer vers le compte " + targetAccount + " ?");
+                message = localized(userMessage, "What amount would you like to transfer to " + targetAccount + "?",
+                        "Quel montant souhaitez-vous virer vers " + targetAccount + " ?");
             } else {
-                message = localized(userMessage, "Which destination account number should receive " + amount + "?",
-                        "Quel numéro de compte doit recevoir " + amount + " ?");
+                message = localized(userMessage, "Which account number or payment key should receive " + amount + "?",
+                        "Quel numéro de compte ou quelle clé de paiement doit recevoir " + amount + " ?");
             }
             return new AgentToolResult(
                     message,
@@ -272,9 +277,11 @@ public class AgentToolService {
                     null);
         }
 
+        boolean viaPaymentKey = isPaymentKeyTarget(targetAccount);
         Map<String, Object> confirmationArgs = new HashMap<>();
         confirmationArgs.put("amount", amount);
         confirmationArgs.put("targetAccountNumber", targetAccount);
+        confirmationArgs.put("viaPaymentKey", viaPaymentKey);
         confirmationArgs.put("english", isEnglish(userMessage));
 
         details.put("targetAccountNumber", targetAccount);
@@ -282,15 +289,25 @@ public class AgentToolService {
         details.put("confirmationRequired", true);
 
         return new AgentToolResult(
-            localized(userMessage,
-                String.format("Do you confirm the transfer of %s to account %s? (yes/no)", amount, targetAccount),
-                String.format("Confirmez-vous le virement de %s vers le compte %s ? (oui/non)", amount, targetAccount)),
+            viaPaymentKey
+                ? localized(userMessage,
+                    String.format("Do you confirm the transfer of %s to payment key %s? (yes/no)", amount, targetAccount),
+                    String.format("Confirmez-vous le virement de %s vers la clé de paiement %s ? (oui/non)", amount, targetAccount))
+                : localized(userMessage,
+                    String.format("Do you confirm the transfer of %s to account %s? (yes/no)", amount, targetAccount),
+                    String.format("Confirmez-vous le virement de %s vers le compte %s ? (oui/non)", amount, targetAccount)),
                 "confirm_transfer",
                 details,
                 null,
                 false,
                 true,
                 confirmationArgs);
+    }
+
+    private boolean isPaymentKeyTarget(String target) {
+        String value = target.trim();
+        return accountRepository.findByNumber(value).isEmpty()
+                && paymentKeyRepository.findByKeyValueAndActiveTrue(value).isPresent();
     }
 
     private boolean forgotDestinationAccount(String userMessage) {
@@ -344,13 +361,24 @@ public class AgentToolService {
         }
 
         try {
-            TransactionRequest request = new TransactionRequest();
-            request.setAmount(amount);
-            request.setTargetAccountNumber(targetAccount);
-            request.setDescription("Virement confirmé via l'agent conversationnel");
-            request.setSessionId(session != null ? session.getId() : null);
-
-            TransactionResponse response = transactionService.transfer(email, request);
+            boolean viaPaymentKey = Boolean.TRUE.equals(args.get("viaPaymentKey"));
+            TransactionResponse response;
+            if (viaPaymentKey) {
+                PaymentTransferRequest keyRequest = new PaymentTransferRequest();
+                keyRequest.setPaymentKey(targetAccount);
+                keyRequest.setAmount(amount);
+                keyRequest.setDescription("Paiement par clé confirmé via l'agent conversationnel");
+                response = paymentKeyService.transfer(email, keyRequest);
+            } else {
+                TransactionRequest request = new TransactionRequest();
+                request.setAmount(amount);
+                request.setTargetAccountNumber(targetAccount);
+                request.setDescription("Virement confirmé via l'agent conversationnel");
+                request.setSessionId(session != null ? session.getId() : null);
+                response = transactionService.transfer(email, request);
+            }
+            String targetLabelEn = (viaPaymentKey ? "payment key " : "account ") + targetAccount;
+            String targetLabelFr = (viaPaymentKey ? "la clé de paiement " : "le compte ") + targetAccount;
             Map<String, Object> resultDetails = new HashMap<>();
             resultDetails.put("targetAccountNumber", targetAccount);
             resultDetails.put("transferAmount", amount);
@@ -359,12 +387,12 @@ public class AgentToolService {
             String message;
             if (response.getStatus() != null && response.getStatus().name().equals("PENDING")) {
                 message = localized(english,
-                        String.format("Your transfer of %s to account %s was submitted for validation.", amount, targetAccount),
-                        String.format("Votre virement de %s vers le compte %s a été soumis pour validation.", amount, targetAccount));
+                        String.format("Your transfer of %s to %s was submitted for validation.", amount, targetLabelEn),
+                        String.format("Votre virement de %s vers %s a été soumis pour validation.", amount, targetLabelFr));
             } else {
                 message = localized(english,
-                        String.format("Your transfer of %s to account %s was completed successfully.", amount, targetAccount),
-                        String.format("Votre virement de %s vers le compte %s a été effectué avec succès.", amount, targetAccount));
+                        String.format("Your transfer of %s to %s was completed successfully.", amount, targetLabelEn),
+                        String.format("Votre virement de %s vers %s a été effectué avec succès.", amount, targetLabelFr));
             }
 
             return new AgentToolResult(message, "execute_transfer", resultDetails, null, false, false, null);
@@ -372,12 +400,13 @@ public class AgentToolService {
             log.warn("Transfer failed for {}: {}", email, ex.getMessage());
             Map<String, Object> errorDetails = new HashMap<>();
             errorDetails.put("error", ex.getMessage());
-            boolean destinationNotFound = "Destination account not found".equals(ex.getMessage());
+            boolean destinationNotFound = "Destination account not found".equals(ex.getMessage())
+                || "Payment key not found".equals(ex.getMessage());
             String englishMessage = destinationNotFound
-                ? String.format("The destination account %s was not found. Check the account number and try again.", targetAccount)
+                ? String.format("The recipient %s was not found. Check the account number or payment key and try again.", targetAccount)
                 : "The transfer could not be completed. Check the amount and destination account, then try again.";
             String frenchMessage = destinationNotFound
-                ? String.format("Le compte destinataire %s est introuvable. Vérifiez le numéro de compte et réessayez.", targetAccount)
+                ? String.format("Le destinataire %s est introuvable. Vérifiez le numéro de compte ou la clé de paiement et réessayez.", targetAccount)
                 : "Le virement n'a pas pu être effectué. Vérifiez le montant et le compte destinataire, puis réessayez.";
             return new AgentToolResult(
                 localized(english, englishMessage, frenchMessage),

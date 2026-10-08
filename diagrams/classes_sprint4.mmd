@@ -1,0 +1,50 @@
+classDiagram
+    class User {
+      +UUID id
+      +String email
+      +UserRole role
+    }
+    class Session {
+      +UUID id
+      +UUID userId
+      +SessionStatus status
+      +String ipAddress
+      +UUID agentId
+      +LocalDateTime lastActivityAt
+      +open()
+      +close()
+      +isActive()
+    }
+    class Message {
+      +Long id
+      +UUID sessionId
+      +UUID senderId
+      +SenderType senderType
+      +String content
+      +String intent
+      +JsonNode parameters
+      +Boolean ragUsed
+      +String ragSource
+    }
+    class BankingAgent {
+      +UUID id
+      +UUID sessionId
+      +UUID userId
+      +JsonNode context
+      +AgentDecision decision
+    }
+    class RagDocument {
+      +Long id
+      +String title
+      +String content
+      +String source
+      +Boolean active
+      +LocalDateTime updatedAt
+    }
+
+    User "1" --> "0..*" Session : ouvre
+    Session "1" --> "0..*" Message : contient
+    Session "1" --> "0..1" BankingAgent : associe
+    User "1" --> "0..*" Message : envoie
+    User "1" --> "0..*" BankingAgent : utilise
+    Message ..> RagDocument : utilise comme source

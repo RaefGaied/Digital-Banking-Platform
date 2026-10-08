@@ -9,8 +9,10 @@ import com.fintech.banking.domain.enums.TicketType;
 import com.fintech.banking.domain.enums.WorkflowTaskStatus;
 import com.fintech.banking.repository.SupportTicketRepository;
 import com.fintech.banking.repository.WorkflowTaskRepository;
+import org.flowable.task.api.Task;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,11 +28,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class SupportTicketWorkflowTest {
@@ -204,5 +208,95 @@ class SupportTicketWorkflowTest {
                 54L, UUID.randomUUID(), AdminTicketAction.RESOLVE, "  "));
 
         verify(supportTicketRepository, never()).save(any(SupportTicket.class));
+    }
+
+    @Test
+    void requestedIdentityDocumentIsSavedAndCompletesTheClientWorkflowTask() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        SupportTicket ticket = SupportTicket.builder()
+                .id(71L)
+                .userId(customerId)
+                .ticketType(TicketType.DATA_UPDATE)
+                .flowableProcessId("process-71")
+                .status(TicketStatus.IN_PROGRESS)
+                .build();
+        Task uploadTask = mock(Task.class);
+        when(supportTicketRepository.findById(71L)).thenReturn(java.util.Optional.of(ticket));
+        when(supportTicketRepository.save(any(SupportTicket.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(flowableService.getActiveTask("process-71", "taskFournirPreuve")).thenReturn(uploadTask);
+        when(uploadTask.getId()).thenReturn("task-71");
+        when(uploadTask.getAssignee()).thenReturn(customerId.toString());
+
+        SupportTicket updated = supportTicketService.submitRequestedIdentityDocument(
+                71L,
+                customerId,
+                new MockMultipartFile("attachment", "identity.pdf", "application/pdf",
+                        "%PDF-1.7 test document".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+        assertEquals("identity.pdf", updated.getAttachmentName());
+        assertEquals("application/pdf", updated.getAttachmentType());
+        assertNotNull(updated.getAttachmentData());
+        verify(flowableService).completeTask(eq("task-71"), org.mockito.ArgumentMatchers.argThat(variables ->
+                Boolean.TRUE.equals(variables.get("identityDocumentProvided"))
+                        && "identity.pdf".equals(variables.get("identityDocumentName"))));
+    }
+
+    @Test
+    void requestsAnotherIdentityDocumentWhenWorkflowReturnsToClientEvenIfOneIsAlreadyStored() {
+        SupportTicket ticket = SupportTicket.builder()
+                .id(74L)
+                .userId(UUID.randomUUID())
+                .ticketType(TicketType.DATA_UPDATE)
+                .flowableProcessId("process-74")
+                .attachmentData("%PDF-1.7 existing".getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                .build();
+        when(flowableService.getActiveTask("process-74", "taskFournirPreuve"))
+                .thenReturn(mock(Task.class));
+
+        assertTrue(supportTicketService.isAwaitingIdentityDocument(ticket));
+    }
+
+    @Test
+    void identityDocumentCannotBeUploadedToAnotherUsersTicket() {
+        UUID ownerId = UUID.randomUUID();
+        SupportTicket ticket = SupportTicket.builder()
+                .id(72L)
+                .userId(ownerId)
+                .ticketType(TicketType.DATA_UPDATE)
+                .flowableProcessId("process-72")
+                .build();
+        when(supportTicketRepository.findById(72L)).thenReturn(java.util.Optional.of(ticket));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> supportTicketService.submitRequestedIdentityDocument(
+                        72L,
+                        UUID.randomUUID(),
+                        new MockMultipartFile("attachment", "identity.pdf", "application/pdf",
+                                "%PDF-1.7 test document".getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+
+        verify(flowableService, never()).completeTask(any(String.class), any(Map.class));
+    }
+
+    @Test
+    void identityDocumentMustHaveSupportedFileSignatureAndExtension() {
+        UUID customerId = UUID.randomUUID();
+        SupportTicket ticket = SupportTicket.builder()
+                .id(73L)
+                .userId(customerId)
+                .ticketType(TicketType.DATA_UPDATE)
+                .build();
+        when(supportTicketRepository.findById(73L)).thenReturn(java.util.Optional.of(ticket));
+        Task uploadTask = mock(Task.class);
+        when(flowableService.getActiveTask(null, "taskFournirPreuve")).thenReturn(uploadTask);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> supportTicketService.submitRequestedIdentityDocument(
+                        73L,
+                        customerId,
+                        new MockMultipartFile("attachment", "identity.pdf", "application/pdf",
+                                "not a PDF".getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+
+        verify(supportTicketRepository, never()).save(any(SupportTicket.class));
+        verify(flowableService, never()).completeTask(any(String.class), any(Map.class));
     }
 }

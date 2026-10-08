@@ -17,10 +17,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @RestController
@@ -104,10 +107,38 @@ public class SupportTicketController {
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new SuccessResponse("Ticket created successfully", new TicketResponse(ticket)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             log.error("Failed to create support ticket with attachment", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Failed to create ticket with attachment: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping(path = "/{id}/identity-document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadIdentityDocument(
+            @PathVariable Long id,
+            @RequestPart(name = "attachment") MultipartFile attachment,
+            Authentication authentication) {
+        try {
+            UUID userId = resolveAuthenticatedUserId(authentication);
+            SupportTicket ticket = supportTicketService.submitRequestedIdentityDocument(id, userId, attachment);
+            return ResponseEntity.ok(new SuccessResponse(
+                    "Identity document uploaded successfully",
+                    new TicketResponse(ticket, supportTicketService.isAwaitingIdentityDocument(ticket))));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
+        } catch (IOException e) {
+            log.error("Failed to read identity document for ticket {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to read identity document"));
         }
     }
 
@@ -118,6 +149,11 @@ public class SupportTicketController {
                     .orElse(null);
             if (ticket == null) {
                 return ResponseEntity.notFound().build();
+            }
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+            if (!isAdmin && !ticket.getUserId().equals(resolveAuthenticatedUserId(authentication))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
             if (ticket.getAttachmentData() == null || ticket.getAttachmentData().length == 0) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -150,7 +186,9 @@ public class SupportTicketController {
                 return ResponseEntity.notFound().build();
             }
 
-            return ResponseEntity.ok(new SuccessResponse("Ticket retrieved", new TicketResponse(ticket)));
+            return ResponseEntity.ok(new SuccessResponse(
+                    "Ticket retrieved",
+                    new TicketResponse(ticket, supportTicketService.isAwaitingIdentityDocument(ticket))));
         } catch (Exception e) {
             log.error("Failed to retrieve ticket", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -171,7 +209,9 @@ public class SupportTicketController {
             Pageable pageable = PageRequest.of(page, size);
 
             Page<SupportTicket> tickets = supportTicketService.getUserTickets(userId, pageable);
-            var responses = tickets.getContent().stream().map(TicketResponse::new)
+            var responses = tickets.getContent().stream()
+                    .map(ticket -> new TicketResponse(
+                            ticket, supportTicketService.isAwaitingIdentityDocument(ticket)))
                     .collect(java.util.stream.Collectors.toList());
             var pageResp = new com.fintech.banking.dto.response.PageResponse<>(
                     responses,
@@ -337,6 +377,7 @@ public class SupportTicketController {
         private String priority;
         private String attachmentName;
         private String attachmentType;
+        private boolean awaitingIdentityDocument;
         private java.time.LocalDateTime createdAt;
         private java.time.LocalDateTime updatedAt;
         private java.time.LocalDateTime resolvedAt;
@@ -352,10 +393,16 @@ public class SupportTicketController {
             this.priority = ticket.getPriority().toString();
             this.attachmentName = ticket.getAttachmentName();
             this.attachmentType = ticket.getAttachmentType();
+            this.awaitingIdentityDocument = false;
             this.createdAt = ticket.getCreatedAt();
             this.updatedAt = ticket.getUpdatedAt();
             this.resolvedAt = ticket.getResolvedAt();
             this.closedAt = ticket.getClosedAt();
+        }
+
+        public TicketResponse(SupportTicket ticket, boolean awaitingIdentityDocument) {
+            this(ticket);
+            this.awaitingIdentityDocument = awaitingIdentityDocument;
         }
     }
 

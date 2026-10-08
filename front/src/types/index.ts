@@ -85,6 +85,7 @@ export interface AdminTicketSummary {
   status: string;
   priority: string;
   ticketType: string;
+  attachmentName: string | null;
   assignedAdminId: string | null;
   ownerId: string | null;
   flowableProcessId: string | null;
@@ -120,6 +121,7 @@ export interface AdminTaskDetail {
 export interface FlowableAdminTask {
   id: string;
   name: string;
+  taskDefinitionKey: string;
   assignee: string | null;
   createdTime: string;
   processInstanceId: string;
@@ -166,6 +168,23 @@ export interface AdminSecurityEvent {
   deviceId: string | null;
   resolved: boolean;
   timestamp: string;
+}
+
+export interface AdminSecurityEventResolutionRequest {
+  incidentSummary: string;
+  investigationFindings: string;
+  correctiveActions: string;
+  preventiveMeasures?: string;
+}
+
+export interface AdminSecurityEventAnalysis {
+  explanation: string;
+  incidentSummary: string;
+  investigationFindings: string;
+  correctiveActions: string;
+  preventiveMeasures: string;
+  aiAssessment: string | null;
+  aiGenerated: boolean;
 }
 
 export interface AdminDashboardResponse {
@@ -220,6 +239,7 @@ export interface SupportTicket {
   priority: string;
   attachmentName?: string | null;
   attachmentType?: string | null;
+  awaitingIdentityDocument?: boolean;
   assignedAdminId: string | null;
   ownerId: string | null;
   flowableProcessId: string | null;

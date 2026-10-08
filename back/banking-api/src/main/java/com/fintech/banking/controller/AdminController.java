@@ -5,6 +5,7 @@ import com.fintech.banking.domain.entity.User;
 import com.fintech.banking.domain.enums.UserRole;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.AdminService;
+import com.fintech.banking.service.AdminSecurityEventAssistantService;
 import com.fintech.banking.service.AdminTicketAssistantService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +31,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final AdminTicketAssistantService adminTicketAssistantService;
+    private final AdminSecurityEventAssistantService adminSecurityEventAssistantService;
     private final UserRepository userRepository;
 
     private UUID resolveAdminId(Authentication authentication) {
@@ -182,9 +184,21 @@ public class AdminController {
     @PostMapping("/security-events/{eventId}/resolve")
     public ResponseEntity<AdminService.SecurityEventResponse> resolveSecurityEvent(
             Authentication authentication,
+            @PathVariable UUID eventId,
+            @Valid @RequestBody AdminService.SecurityEventResolutionRequest request) {
+        requireAdmin(authentication);
+        return ResponseEntity.ok(adminService.resolveSecurityEvent(
+                eventId,
+                resolveAdminEmail(authentication),
+                request));
+    }
+
+    @PostMapping("/security-events/{eventId}/ai-analysis")
+    public ResponseEntity<AdminSecurityEventAssistantService.Analysis> analyzeSecurityEvent(
+            Authentication authentication,
             @PathVariable UUID eventId) {
         requireAdmin(authentication);
-        return ResponseEntity.ok(adminService.resolveSecurityEvent(eventId, resolveAdminEmail(authentication)));
+        return ResponseEntity.ok(adminSecurityEventAssistantService.analyze(eventId));
     }
 
     public record AiTicketReplyDraftRequest(

@@ -18,6 +18,8 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
     private static final Pattern AMOUNT_PATTERN = Pattern.compile("(\\d+[,.]?\\d*)");
     private static final Pattern ACCOUNT_PATTERN = Pattern.compile("(?:compte|account|num(?:\\u00e9|e)?ro|no\\.|n°)\\s*([A-Za-z0-9-]{6,})", Pattern.CASE_INSENSITIVE);
     private static final Pattern STANDALONE_ACCOUNT_PATTERN = Pattern.compile("(?<![\\d\\w])\\d[\\d-]{5,}(?![\\d\\w])");
+    private static final Pattern PAYMENT_KEY_PATTERN = Pattern.compile("(?:cl[ée]|key|pix)(?:\\s+de\\s+paiement|\\s+paiement|\\s+payment)?(?:\\s+(?:est|is))?\\s*:?\\s*(\\+?[A-Za-z0-9._@-]{4,})", Pattern.CASE_INSENSITIVE);
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");
     private static final Pattern HISTORY_LIMIT_PATTERN = Pattern.compile("last\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
 
     @Override
@@ -93,6 +95,12 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
         extractAccountNumber(text, params);
         extractHistoryLimit(text, params);
 
+        boolean hasAmountAndTarget = params.has("amount") && params.has("targetAccountNumber");
+        if (hasAmountAndTarget && (intent == null || intent == IntentType.PAYMENT
+                || intent == IntentType.PIX || intent == IntentType.ACCOUNT)) {
+            intent = IntentType.TRANSFER;
+            confidence = 0.85;
+        }
         IntentResult result = new IntentResult();
         result.setIntent(intent);
         result.setParameters(params);
@@ -126,6 +134,18 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
     }
 
     private boolean isPartOfAccountNumber(String text, int start, int end) {
+        Matcher keyMatcher = PAYMENT_KEY_PATTERN.matcher(text);
+        while (keyMatcher.find()) {
+            if (start >= keyMatcher.start(1) && end <= keyMatcher.end(1)) {
+                return true;
+            }
+        }
+        Matcher standaloneMatcher = STANDALONE_ACCOUNT_PATTERN.matcher(text);
+        while (standaloneMatcher.find()) {
+            if (start >= standaloneMatcher.start() && end <= standaloneMatcher.end()) {
+                return true;
+            }
+        }
         Matcher accountMatcher = ACCOUNT_PATTERN.matcher(text);
         while (accountMatcher.find()) {
             if (start >= accountMatcher.start(1) && end <= accountMatcher.end(1)) {
@@ -136,6 +156,16 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
     }
 
     private void extractAccountNumber(String text, ObjectNode params) {
+        Matcher keyMatcher = PAYMENT_KEY_PATTERN.matcher(text);
+        if (keyMatcher.find()) {
+            params.put("targetAccountNumber", keyMatcher.group(1));
+            return;
+        }
+        Matcher emailMatcher = EMAIL_PATTERN.matcher(text);
+        if (emailMatcher.find()) {
+            params.put("targetAccountNumber", emailMatcher.group());
+            return;
+        }
         Matcher matcher = ACCOUNT_PATTERN.matcher(text);
         if (matcher.find()) {
             params.put("targetAccountNumber", matcher.group(1));

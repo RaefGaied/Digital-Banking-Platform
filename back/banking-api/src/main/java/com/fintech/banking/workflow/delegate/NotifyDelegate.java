@@ -27,6 +27,8 @@ public class NotifyDelegate implements JavaDelegate {
         UUID userId = parseUserId(execution.getVariable("userId"));
         String activityId = execution.getCurrentActivityId();
         Object amount = execution.getVariable("amount");
+        Long ticketId = parseTicketId(execution.getVariable("supportTicketId"));
+        String comment = stringValue(execution.getVariable("comment"));
 
         try {
             if (userId == null) {
@@ -34,7 +36,24 @@ public class NotifyDelegate implements JavaDelegate {
                 return;
             }
             switch (activityId == null ? "" : activityId) {
-                case "taskNotifyApprouve" -> notificationService.notifyTransferApproved(userId, String.valueOf(amount));
+                case "notifyRejectedTask" -> notificationService.notifyTicketUpdated(
+                        userId,
+                        ticketId,
+                        messageOrDefault(comment, "Your sensitive data update request has been rejected."));
+                case "notifyInfoTask" -> notificationService.notifyInfoRequested(
+                        userId,
+                        ticketId,
+                        messageOrDefault(comment,
+                                "Please provide the additional information needed to continue reviewing your request."));
+                case "notifyEscalationTask" -> notificationService.notifyTicketUpdated(
+                        userId,
+                        ticketId,
+                        "Your request has been escalated for priority review.");
+                case "taskNotifyApprouve" -> {
+                    if (ticketId == null) {
+                        notificationService.notifyTransferApproved(userId, String.valueOf(amount));
+                    }
+                }
                 case "taskNotifyRejet" -> notificationService.notifyTransferRejected(userId, "Rejete par l'administrateur");
                 case "taskNotifyCompteBloque", "Task_NotifyCompteBloque" -> notificationService.notifyAccountLocked(userId);
                 case "taskNotifySoldeInsuffisant" -> notificationService.notifySecurityAlert(userId, "Solde insuffisant pour le virement");
@@ -60,5 +79,25 @@ public class NotifyDelegate implements JavaDelegate {
         } catch (IllegalArgumentException ex) {
             return null;
         }
+    }
+
+    private Long parseTicketId(Object raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(raw.toString());
+        } catch (NumberFormatException ex) {
+            log.warn("notifyDelegate: invalid supportTicketId {}", raw);
+            return null;
+        }
+    }
+
+    private String stringValue(Object raw) {
+        return raw == null ? null : raw.toString();
+    }
+
+    private String messageOrDefault(String message, String defaultMessage) {
+        return message == null || message.isBlank() ? defaultMessage : message.trim();
     }
 }

@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -105,7 +106,7 @@ class AdminTicketAssistantServiceTest {
     }
 
     @Test
-    void returnsUnavailableWhenProviderCannotGenerateADraft() {
+    void returnsTemplateDraftWhenProviderCannotGenerateADraft() {
         SupportTicket ticket = SupportTicket.builder()
                 .id(30L)
                 .subject("Card issue")
@@ -118,9 +119,9 @@ class AdminTicketAssistantServiceTest {
         when(ragKnowledgeService.buildContextSnippet(anyString())).thenReturn("");
         when(intentDetectionService.generateReply(anyString(), anyString(), anyString())).thenReturn(null);
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> assistantService.draftReply(30L, "Explain the process."));
+        String draft = assistantService.draftReply(30L, "Explain the process.");
 
-        assertEquals(503, exception.getStatusCode().value());
+        assertTrue(draft.contains("Card issue"));
+        assertTrue(draft.contains("Explain the process."));
     }
 }

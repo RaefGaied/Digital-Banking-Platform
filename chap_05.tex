@@ -1,0 +1,343 @@
+% ============================================================
+\chapter{Étude et réalisation du Sprint 4}
+\label{chap:sprint4}
+% ============================================================
+
+\section{Introduction}
+\label{sec:intro_sprint4}
+
+Ce chapitre présente l'étude et la réalisation du
+\textbf{quatrième sprint} de la plateforme FinBank. Après la mise en
+place des opérations bancaires, ce sprint enrichit la plateforme par
+un assistant bancaire conversationnel et une base de connaissances
+interrogeable.
+
+Les travaux réalisés concernent la détection d'intention, la gestion
+des sessions et des messages, la recherche augmentée par récupération
+\textbf{(RAG)}, ainsi que la gestion des documents utilisés comme
+sources de connaissance. Une fonctionnalité d'extraction de données
+à partir d'un texte ou d'un fichier est également intégrée.
+
+\section{Backlog du Sprint}
+\label{sec:backlog_sprint4}
+
+Le tableau~\ref{tab:backlog_sprint4} présente les principales tâches
+réalisées durant le Sprint 4.
+
+\begin{table}[htbp]
+\centering
+\caption{Backlog du Sprint 4}
+\label{tab:backlog_sprint4}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|p{10cm}|c|}
+\hline
+\textbf{ID} & \textbf{Tâches} & \textbf{Estimation} \\
+\hline
+S4-T1 & Mettre en place la détection d'intention des demandes utilisateur & 3 jours \\
+\hline
+S4-T2 & Développer la création et le suivi des sessions conversationnelles & 3 jours \\
+\hline
+S4-T3 & Développer l'envoi, la conservation et la consultation des messages & 3 jours \\
+\hline
+S4-T4 & Intégrer le service de dialogue de l'assistant bancaire & 4 jours \\
+\hline
+S4-T5 & Mettre en place la recherche dans la base de connaissances RAG & 4 jours \\
+\hline
+S4-T6 & Gérer les documents de connaissance et leur réindexation & 3 jours \\
+\hline
+S4-T7 & Ajouter l'extraction d'informations depuis un texte ou un fichier & 2 jours \\
+\hline
+S4-T8 & Intégrer et vérifier l'interface de conversation & 2 jours \\
+\hline
+\multicolumn{2}{|r|}{\textbf{Total}} & \textbf{24 jours} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conception}
+\label{sec:conception_sprint4}
+
+La conception du Sprint 4 décrit les interactions entre l'utilisateur,
+l'assistant bancaire et les services de traitement du langage. Elle
+prend également en compte le rôle de l'administrateur, qui gère les
+documents constituant la base de connaissances.
+
+\subsection{Diagramme de cas d'utilisation}
+\label{subsec:usecase_sprint4}
+
+L'utilisateur authentifié peut créer une session, envoyer des
+messages, consulter la conversation et poser une question à
+l'assistant. Le système détecte l'intention et recherche, lorsque cela
+est nécessaire, des informations dans la base de connaissances RAG.
+L'administrateur peut gérer, activer, désactiver et réindexer les
+documents de cette base.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/usecase_sprint4.png}{%
+  \includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{Figures/usecase_sprint4.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de cas d'utilisation du Sprint 4.}}
+}
+\caption{Diagramme de cas d'utilisation du Sprint 4}
+\label{fig:usecase_sprint4}
+\end{figure}
+
+\subsection{Diagramme de classes du Sprint 4}
+\label{subsec:classes_sprint4}
+
+Le diagramme de classes présente les entités dédiées à l'assistant :
+\texttt{Session}, \texttt{Message}, \texttt{BankingAgent} et
+\texttt{RagDocument}. Une session appartient à un utilisateur et peut
+être associée à un agent bancaire. Les messages sont rattachés à la
+session et conservent notamment l'expéditeur, l'intention détectée et
+les informations relatives à l'utilisation du RAG.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/classes_sprint4.png}{%
+  \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{Figures/classes_sprint4.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de classes du Sprint 4.}}
+}
+\caption{Diagramme de classes du Sprint 4}
+\label{fig:classes_sprint4}
+\end{figure}
+
+\subsection{Description textuelle : Interagir avec l'assistant}
+\label{subsec:desc_assistant_sprint4}
+
+\begin{table}[htbp]
+\centering
+\caption{Cas d'utilisation : Interagir avec l'assistant bancaire}
+\label{tab:uc_assistant_sprint4}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3.2cm}|p{10.5cm}|}
+\hline
+\textbf{Élément} & \textbf{Description} \\
+\hline
+Titre & Interagir avec l'assistant bancaire \\
+\hline
+Acteur & Utilisateur (\texttt{USER}) ou Administrateur (\texttt{ADMIN}) \\
+\hline
+But & Obtenir une réponse ou une orientation à partir d'une demande exprimée en langage naturel. \\
+\hline
+Précondition & L'utilisateur est authentifié et possède une session ouverte. \\
+\hline
+Postcondition & Le message et la réponse de l'assistant sont conservés dans la conversation. \\
+\hline
+Scénario principal &
+1. L'utilisateur ouvre ou crée une session. \newline
+2. Il saisit une question. \newline
+3. Le système enregistre le message. \newline
+4. Le système détecte l'intention. \newline
+5. Le système recherche un contexte pertinent. \newline
+6. L'assistant produit une réponse. \newline
+7. Le système affiche et conserve la réponse. \\
+\hline
+Scénario alternatif & Si le service intelligent est indisponible, le système retourne une erreur explicite et conserve l'état de la demande. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Description textuelle : Gérer les documents de connaissance}
+\label{subsec:desc_documents_sprint4}
+
+\begin{table}[htbp]
+\centering
+\caption{Cas d'utilisation : Gérer les documents de connaissance}
+\label{tab:uc_documents_sprint4}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3.2cm}|p{10.5cm}|}
+\hline
+\textbf{Élément} & \textbf{Description} \\
+\hline
+Titre & Gérer les documents de connaissance \\
+\hline
+Acteur & Administrateur (\texttt{ADMIN}) \\
+\hline
+But & Maintenir les contenus utilisés par la recherche RAG. \\
+\hline
+Précondition & L'administrateur est authentifié et autorisé. \\
+\hline
+Postcondition & Le document est créé, modifié, supprimé ou réindexé selon l'opération demandée. \\
+\hline
+Scénario principal &
+1. L'administrateur ouvre la gestion de la base de connaissances. \newline
+2. Il saisit ou modifie le titre et le contenu. \newline
+3. Le système valide les données. \newline
+4. Le système enregistre le document. \newline
+5. Le document peut être activé ou réindexé. \\
+\hline
+Scénario alternatif & Si l'acteur n'est pas administrateur ou si le contenu est invalide, l'opération est refusée. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Diagramme de classes participantes : Conversation}
+\label{subsec:participants_chat_sprint4}
+
+Ce diagramme représente les classes intervenant dans le traitement
+d'un message : l'interface de conversation, le contrôleur, le service
+de chat, la détection d'intention, la recherche RAG et les entités
+persistantes.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/participants_chat_sprint4.png}{%
+  \includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{Figures/participants_chat_sprint4.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de classes participantes de la conversation.}}
+}
+\caption{Diagramme de classes participantes -- Conversation}
+\label{fig:participants_chat_sprint4}
+\end{figure}
+
+\subsection{Diagramme de séquence : Question avec recherche RAG}
+\label{subsec:seq_rag_sprint4}
+
+Le diagramme de séquence décrit l'envoi d'une question, la détection
+de son intention, la recherche des passages pertinents et la
+construction du contexte transmis à l'assistant.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/seq_rag_sprint4.png}{%
+  \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{Figures/seq_rag_sprint4.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au diagramme de séquence d'une question RAG.}}
+}
+\caption{Diagramme de séquence -- Question et recherche RAG}
+\label{fig:seq_rag_sprint4}
+\end{figure}
+
+\section{Réalisation}
+\label{sec:realisation_sprint4}
+
+Cette section présente les composants développés pour fournir une
+expérience conversationnelle persistante et exploiter les documents de
+connaissance.
+
+\subsection{Détection d'intention}
+\label{subsec:intention_sprint4}
+
+L'endpoint \texttt{/ai/intent} reçoit le texte de la demande et
+retourne une intention ainsi que les informations associées lorsque
+la détection est disponible. Le résultat peut être utilisé par le
+service de conversation pour orienter le traitement de la demande.
+La solution peut s'appuyer sur le service de détection configuré dans
+le backend, avec une solution de repli lorsque le fournisseur
+d'intelligence artificielle n'est pas disponible.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/swagger_ai_sprint4.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/swagger_ai_sprint4.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture Swagger des endpoints d'intelligence artificielle.}}
+}
+\caption{Endpoints de détection d'intention et de recherche RAG}
+\label{fig:swagger_ai_sprint4}
+\end{figure}
+
+\subsection{Sessions et messages}
+\label{subsec:sessions_messages_sprint4}
+
+Le \texttt{SessionController} permet de créer, consulter, ouvrir et
+fermer les sessions. Il permet également de vérifier leur validité et
+de fermer toutes les sessions d'un utilisateur. Le
+\texttt{MessageController} assure l'enregistrement des messages, la
+consultation paginée et l'affichage de la conversation dans l'ordre
+chronologique.
+
+Chaque message conserve son contenu, son type d'expéditeur, son
+intention éventuelle, ses paramètres et les informations liées à
+l'utilisation du RAG. Cette traçabilité facilite la restitution de la
+conversation et l'analyse des échanges.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/chat_sessions_sprint4.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/chat_sessions_sprint4.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture de l'interface des sessions et de la conversation.}}
+}
+\caption{Gestion des sessions et des messages}
+\label{fig:chat_sessions_sprint4}
+\end{figure}
+
+\subsection{Recherche augmentée par récupération (RAG)}
+\label{subsec:rag_sprint4}
+
+L'endpoint \texttt{/ai/ask} reçoit une question, vérifie qu'elle n'est
+pas vide, puis recherche un nombre limité de résultats pertinents dans
+la base de connaissances. Les résultats sont assemblés dans un
+contexte et retournés avec la question, l'intention détectée, le
+niveau de confiance et l'indication de disponibilité des résultats.
+
+Cette approche permet de fournir des réponses fondées sur les
+documents enregistrés dans FinBank plutôt que sur une réponse isolée
+du modèle conversationnel.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/rag_search_sprint4.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/rag_search_sprint4.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture de la recherche RAG et de ses sources.}}
+}
+\caption{Recherche dans la base de connaissances RAG}
+\label{fig:rag_search_sprint4}
+\end{figure}
+
+\subsection{Gestion et réindexation des documents}
+\label{subsec:documents_rag_sprint4}
+
+Les documents de connaissance sont gérés par les endpoints
+\texttt{/admin/rag-documents}. L'administrateur peut les lister, les
+créer, les modifier, les supprimer et demander leur réindexation.
+Chaque opération vérifie explicitement le rôle administrateur. Le
+contenu, la source et l'état actif du document sont conservés afin de
+contrôler les éléments proposés lors de la recherche.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/rag_documents_sprint4.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/rag_documents_sprint4.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture de l'administration des documents RAG.}}
+}
+\caption{Administration des documents de connaissance}
+\label{fig:rag_documents_sprint4}
+\end{figure}
+
+\subsection{Extraction d'informations depuis un document}
+\label{subsec:extraction_document_sprint4}
+
+L'endpoint \texttt{/ai/extract-document} accepte un texte ou un fichier
+multipart. Le service d'extraction identifie les champs disponibles et
+retourne le type de document ainsi qu'un indicateur précisant si des
+données ont été trouvées. Cette fonctionnalité complète l'assistant en
+facilitant la lecture de contenus transmis par l'utilisateur.
+
+\section{Conclusion}
+\label{sec:conclusion_sprint4}
+
+Ce chapitre a présenté l'étude et la réalisation du Sprint 4 de
+FinBank. La conception a été décrite à travers les diagrammes de cas
+d'utilisation, de classes, de classes participantes et de séquence.
+
+La réalisation a permis d'intégrer la détection d'intention, les
+sessions et les messages conversationnels, la recherche RAG ainsi que
+la gestion des documents de connaissance. Ces composants constituent
+la base de l'assistant bancaire qui sera exploité par les interfaces et
+les workflows présentés dans les chapitres suivants.
+

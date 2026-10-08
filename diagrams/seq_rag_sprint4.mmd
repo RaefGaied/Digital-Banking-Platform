@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as Utilisateur
+    participant UI as Interface de conversation
+    participant MC as MessageController
+    participant CS as ChatService
+    participant ID as IntentDetectionService
+    participant RAG as RagKnowledgeService
+    participant MS as MessageRepository
+
+    U->>UI: Saisir une question
+    UI->>MC: POST /sessions/{id}/messages
+    MC->>CS: handleUserMessage(sessionId, userId, contenu)
+    CS->>ID: detectIntent(contenu)
+    ID-->>CS: IntentResult
+    CS->>RAG: search(question, 5)
+    RAG-->>CS: passages pertinents
+    CS->>CS: Construire le contexte
+    CS->>MS: Enregistrer le message et la réponse
+    MS-->>CS: Messages persistés
+    CS-->>MC: Réponse de l'assistant
+    MC-->>UI: 201 Created
+    UI-->>U: Afficher la réponse et les sources

@@ -131,6 +131,12 @@ def extract_transfer_details(query):
     if receiver_match:
         details["receiverAccno"] = receiver_match.group(1)
 
+    key_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", normalized) or re.search(
+        r"\b(?:key|cl[ée]|pix)(?:\s+(?:de\s+)?(?:payment|paiement))?\s*:?\s*(\+?[\w.@-]{4,})", normalized
+    )
+    if key_match and "receiverAccno" not in details:
+        details["receiverAccno"] = key_match.group(1) if key_match.lastindex else key_match.group(0)
+
     numbers = re.findall(r"\b\d+(?:\.\d+)?\b", normalized)
     if "amount" not in details and len(numbers) > 1:
         details["amount"] = float(numbers[0])
@@ -172,7 +178,10 @@ def run_agent(query, token, user_id, conversation_context=""):
     context = conversation_context.strip() if conversation_context and conversation_context.strip() else get_context(user_id)
     q = query.lower()
 
-    if q.strip() in {"hi", "hello", "hey", "bonjour", "salut"}:
+    if q.strip() in {"bonjour", "salut", "bonsoir", "coucou"}:
+        return "Bonjour ! Comment puis-je vous aider pour vos opérations bancaires aujourd’hui ?"
+
+    if q.strip() in {"hi", "hello", "hey"}:
         return "Hello! How can I help you with your banking needs today?"
 
     if (
@@ -301,7 +310,7 @@ def run_agent(query, token, user_id, conversation_context=""):
                             "status": "awaiting_details",
                             "created_at": datetime.datetime.now().timestamp()
                         }
-                        return "The destination account number was not found. Please provide a valid destination account number."
+                        return "The recipient was not found. Please provide a valid destination account number or payment key."
                     user_sessions.pop(user_id, None)
                     return "❌ Transfer failed. Please try again."
 

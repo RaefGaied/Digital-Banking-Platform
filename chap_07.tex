@@ -1,0 +1,256 @@
+% ============================================================
+\chapter{Tests, validation et finalisation}
+\label{chap:sprint6}
+% ============================================================
+
+\section{Introduction}
+\label{sec:intro_sprint6}
+
+Ce chapitre présente le \textbf{sixième et dernier sprint} de la
+plateforme FinBank. Il est consacré à la vérification du système, à la
+correction des anomalies et à la préparation de la livraison finale.
+
+La validation porte sur les services backend, les contrôleurs REST, les
+fonctionnalités de sécurité, les processus Flowable, l'assistant
+bancaire ainsi que les principales interfaces React. Les parcours
+utilisateur sont également vérifiés afin de s'assurer que les
+fonctionnalités développées au cours des sprints précédents restent
+cohérentes après leur intégration.
+
+\section{Backlog du Sprint}
+\label{sec:backlog_sprint6}
+
+\begin{table}[htbp]
+\centering
+\caption{Backlog du Sprint 6}
+\label{tab:backlog_sprint6}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|c|p{10cm}|c|}
+\hline
+\textbf{ID} & \textbf{Tâches} & \textbf{Estimation} \\
+\hline
+S6-T1 & Définir la stratégie et les scénarios de test du projet & 2 jours \\
+\hline
+S6-T2 & Exécuter les tests unitaires et d'intégration du backend & 4 jours \\
+\hline
+S6-T3 & Vérifier les contrôleurs REST, la sécurité et l'authentification & 3 jours \\
+\hline
+S6-T4 & Tester les processus BPMN, l'assistant RAG et les services métier & 3 jours \\
+\hline
+S6-T5 & Exécuter les tests frontend et les tests des parcours utilisateur & 3 jours \\
+\hline
+S6-T6 & Corriger les anomalies et effectuer les régressions nécessaires & 4 jours \\
+\hline
+S6-T7 & Finaliser la documentation technique et fonctionnelle & 2 jours \\
+\hline
+S6-T8 & Préparer la livraison et la soutenance du projet & 2 jours \\
+\hline
+\multicolumn{2}{|r|}{\textbf{Total}} & \textbf{23 jours} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Stratégie de test}
+\label{sec:strategie_tests_sprint6}
+
+La stratégie de test est organisée en plusieurs niveaux. Les tests
+unitaires vérifient le comportement d'une classe ou d'un service de
+manière isolée. Les tests d'intégration vérifient la collaboration entre
+les composants du backend. Les tests des contrôleurs valident les
+réponses HTTP, les règles d'accès et les données retournées par l'API.
+Enfin, les tests frontend vérifient le chargement des pages et les
+parcours utilisateur les plus importants.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/test_strategy_sprint6.png}{%
+  \includegraphics[width=\textwidth,height=0.75\textheight,keepaspectratio]{Figures/test_strategy_sprint6.png}%
+}{%
+  \fbox{\parbox[c][5cm][c]{0.88\textwidth}{\centering
+  Espace réservé au schéma de la stratégie de test.}}
+}
+\caption{Stratégie de test de la plateforme FinBank}
+\label{fig:test_strategy_sprint6}
+\end{figure}
+
+\section{Tests et validation}
+\label{sec:tests_validation_sprint6}
+
+\subsection{Tests unitaires du backend}
+\label{subsec:tests_unitaires_sprint6}
+
+Les tests unitaires couvrent les services métier et les composants
+techniques du backend. Ils concernent notamment l'authentification, la
+validation des transactions, la détection d'intention, la recherche
+RAG, l'extraction documentaire, les notifications et les traitements
+des tâches Flowable.
+
+Chaque test vérifie un comportement précis à partir de données
+contrôlées. Les scénarios nominaux sont complétés par des scénarios
+d'erreur, par exemple un montant invalide, une décision Flowable
+interdite ou l'indisponibilité d'un fournisseur d'intelligence
+artificielle.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/backend_tests_sprint6.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/backend_tests_sprint6.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture de l'exécution des tests backend.}}
+}
+\caption{Exécution des tests unitaires et d'intégration du backend}
+\label{fig:backend_tests_sprint6}
+\end{figure}
+
+\subsection{Tests des contrôleurs et de la sécurité}
+\label{subsec:tests_controleurs_sprint6}
+
+Les tests des contrôleurs vérifient l'accès aux endpoints et la forme
+des réponses. Les fonctionnalités d'inscription, de connexion, de
+rafraîchissement du jeton, de profil et de double authentification sont
+testées avec des cas valides et invalides.
+
+Les règles de sécurité sont également vérifiées afin de confirmer
+qu'un utilisateur ne peut pas accéder aux ressources réservées à
+l'administrateur et qu'une requête non authentifiée est correctement
+refusée. Les opérations bancaires sont contrôlées pour s'assurer
+qu'elles restent liées à l'utilisateur authentifié.
+
+\subsection{Tests des processus BPMN et de l'assistant}
+\label{subsec:tests_bpmn_rag_sprint6}
+
+Les scénarios Flowable vérifient le démarrage des processus, la
+création des tâches, la validation des décisions et la mise à jour de
+l'état final. Les scénarios de rejet, d'escalade et de traitement
+incomplet sont également pris en compte lorsque le processus le
+prévoit.
+
+Pour l'assistant bancaire, les tests vérifient la détection
+d'intention, la conservation des messages, la recherche dans la base
+RAG et la gestion d'une réponse lorsque les fournisseurs d'IA sont
+indisponibles. L'extraction d'informations depuis un texte ou un
+document est également vérifiée.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/workflow_rag_tests_sprint6.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/workflow_rag_tests_sprint6.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture des tests BPMN et RAG.}}
+}
+\caption{Validation des workflows BPMN et de l'assistant bancaire}
+\label{fig:workflow_rag_tests_sprint6}
+\end{figure}
+
+\subsection{Tests frontend et parcours utilisateur}
+\label{subsec:tests_frontend_sprint6}
+
+Les tests frontend vérifient que l'application est accessible et que
+les pages essentielles se chargent correctement. Les parcours
+contrôlés comprennent l'affichage de la page de connexion, l'accès au
+tableau de bord, la navigation vers les opérations bancaires, la
+conversation avec l'assistant et l'accès aux écrans administrateur.
+
+Les tests vérifient également que les routes protégées respectent le
+rôle de l'utilisateur et que l'interface affiche les états d'erreur
+lorsqu'une requête échoue.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/frontend_tests_sprint6.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/frontend_tests_sprint6.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé à la capture de l'exécution des tests frontend.}}
+}
+\caption{Tests des interfaces et des parcours utilisateur}
+\label{fig:frontend_tests_sprint6}
+\end{figure}
+
+\section{Correction des anomalies}
+\label{sec:correction_anomalies_sprint6}
+
+Après l'exécution des tests, les anomalies sont classées selon leur
+impact sur la sécurité, les fonctionnalités et l'expérience
+utilisateur. Les problèmes bloquants sont corrigés en priorité, puis
+les erreurs de validation, d'affichage et de navigation sont traitées.
+
+Une nouvelle exécution des scénarios concernés est effectuée après
+chaque correction. Cette démarche permet de vérifier que la correction
+résout l'anomalie sans introduire de régression dans une fonctionnalité
+déjà validée.
+
+\begin{table}[htbp]
+\centering
+\caption{Catégories de vérification finale}
+\label{tab:verification_finale_sprint6}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{4.2cm}|p{8.8cm}|}
+\hline
+\textbf{Catégorie} & \textbf{Éléments vérifiés} \\
+\hline
+Sécurité & Authentification, autorisations, rôles, 2FA et routes protégées. \\
+\hline
+Fonctionnel & Comptes, transactions, cartes, investissements, assistant et workflows. \\
+\hline
+Intégration & Communication frontend/backend, persistence et processus Flowable. \\
+\hline
+Interface & Navigation, affichage des données, messages d'erreur et responsive design. \\
+\hline
+Documentation & Endpoints REST, diagrammes, instructions d'installation et utilisation. \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Finalisation et préparation de la livraison}
+\label{sec:finalisation_sprint6}
+
+La finalisation consiste à vérifier la cohérence des sources, des
+configurations et de la documentation. Les variables nécessaires à
+l'exécution sont identifiées, les étapes de démarrage du backend et du
+frontend sont documentées et les fonctionnalités principales sont
+regroupées dans une version livrable.
+
+Les diagrammes UML et BPMN sont également révisés afin de rester
+alignés avec les composants réellement implémentés. Les captures
+d'écran, les résultats de tests et les éléments nécessaires à la
+soutenance sont ensuite insérés dans le rapport.
+
+\begin{figure}[htbp]
+\centering
+\IfFileExists{Figures/delivery_sprint6.png}{%
+  \includegraphics[width=0.9\textwidth]{Figures/delivery_sprint6.png}%
+}{%
+  \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering
+  Espace réservé au schéma de préparation de la livraison finale.}}
+}
+\caption{Préparation de la livraison de la plateforme}
+\label{fig:delivery_sprint6}
+\end{figure}
+
+\section{Conclusion générale}
+\label{sec:conclusion_sprint6}
+
+Ce chapitre a présenté le dernier sprint du projet FinBank. Les tests
+unitaires, d'intégration, de sécurité et frontend ont permis de
+contrôler les principaux composants de la plateforme. Les parcours
+bancaires, l'assistant conversationnel, les processus BPMN et les
+interfaces ont été vérifiés à différents niveaux.
+
+Les corrections et les régressions ont contribué à stabiliser la
+solution avant sa livraison. La finalisation de la documentation, des
+diagrammes et des captures prépare la présentation du projet et
+constitue la dernière étape de sa réalisation.
+
+\section*{Bilan du projet}
+\addcontentsline{toc}{section}{Bilan du projet}
+
+Au terme des six sprints, FinBank propose un backend sécurisé, des
+services bancaires opérationnels, un assistant enrichi par une base de
+connaissances, des workflows BPMN et des interfaces adaptées aux
+utilisateurs et aux administrateurs. L'ensemble forme une plateforme
+bancaire modulaire dont les composants peuvent évoluer
+indépendamment.
+

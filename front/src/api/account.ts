@@ -22,6 +22,25 @@ export const accountApi = {
     return response.data;
   },
 
+  payByKey: async (data: {
+    paymentKey: string;
+    amount: number;
+    description?: string;
+  }): Promise<Transaction> => {
+    const response = await api.post<Transaction>('/pix/transfer', data);
+    return response.data;
+  },
+
+  getMyPaymentKeys: async (): Promise<{ id: string; keyType: string; keyValue: string }[]> => {
+    const response = await api.get('/pix/keys');
+    return response.data;
+  },
+
+  registerPaymentKey: async (data: { keyType: 'EMAIL' | 'PHONE' | 'RANDOM'; keyValue: string }) => {
+    const response = await api.post('/pix/keys', data);
+    return response.data;
+  },
+
   getHistory: async (): Promise<Transaction[]> => {
     const response = await api.get<Transaction[]>('/transactions/history');
     return response.data;

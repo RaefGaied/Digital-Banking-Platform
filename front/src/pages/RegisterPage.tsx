@@ -27,6 +27,8 @@ import {
   Globe,
   CheckCircle2,
   Lock,
+  Wallet,
+  Bot,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n } from '../i18n/I18nContext';
@@ -39,7 +41,7 @@ export default function RegisterPage() {
   const { locale } = useI18n();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'metal' | 'infinite'>('metal');
+  const [activeFeature, setActiveFeature] = useState<number>(0);
 
   // Password strength calculation
   const passwordStrength = useMemo(() => {
@@ -68,9 +70,20 @@ export default function RegisterPage() {
           heroTitle2: 'du futur.',
           heroDesc:
             'Créez votre compte en 2 minutes : IBAN personnel instantané, cartes virtuelles biométriques et virements SEPA instantanés à zéro frais.',
-          tierStandard: 'Standard Numérique',
-          tierMetal: 'Black Metal VIP',
-          tierInfinite: 'Founder Infinite',
+          featuresHeader: 'Services inclus dès l’ouverture',
+          featureIncludedChip: '100% Inclus sans frais',
+          feat1Title: 'Compte & IBAN Dédié',
+          feat1Tag: '0€ / mois • SEPA Instant',
+          feat1Desc: 'IBAN personnel et virements en direct',
+          feat1Detail: 'Activation instantanée de votre IBAN personnel. Émettez et recevez des virements SEPA en temps réel sans frais de tenue de compte.',
+          feat2Title: 'Cartes Intelligentes',
+          feat2Tag: 'Virtuelle & Physique',
+          feat2Desc: 'Contrôle total & biométrie 3DS',
+          feat2Detail: 'Générez des cartes virtuelles éphémères pour vos achats en ligne, ajustez vos plafonds en direct et bloquez votre carte en 1 clic.',
+          feat3Title: 'Assistant IA 24/7',
+          feat3Tag: 'Copilote Dédié',
+          feat3Desc: 'Analyses & ordres en langage naturel',
+          feat3Detail: 'Bénéficiez de conseils financiers sur mesure, d’alertes de dépenses prédictives et d’une assistance continue 24/7.',
           newAccount: 'Inscription Sécurisée',
           createAccount: 'Créer votre compte',
           joinUsers: 'Rejoignez plus de 2.4 millions de clients satisfaits dans le monde',
@@ -89,9 +102,20 @@ export default function RegisterPage() {
           heroTitle2: 'private banking.',
           heroDesc:
             'Set up in under 2 minutes: instant multi-currency IBANs, biometric virtual cards, and zero-fee instant global settlement.',
-          tierStandard: 'Digital Standard',
-          tierMetal: 'Black Metal VIP',
-          tierInfinite: 'Founder Infinite',
+          featuresHeader: 'Privileges included with your account',
+          featureIncludedChip: 'Fully Included • Zero Fees',
+          feat1Title: 'Dedicated Account & IBAN',
+          feat1Tag: '$0 / mo • Instant SEPA',
+          feat1Desc: 'Personal IBAN & instant transfers',
+          feat1Detail: 'Immediate activation of your personal multi-currency IBAN. Send and receive real-time SEPA settlements with zero maintenance fees.',
+          feat2Title: 'Smart Biometric Cards',
+          feat2Tag: 'Virtual & Physical',
+          feat2Desc: 'Dynamic limits & instant freeze',
+          feat2Detail: 'Issue disposable virtual cards for secure web payments, customize transaction limits in real time, and freeze cards in 1 tap.',
+          feat3Title: '24/7 AI Banking Agent',
+          feat3Tag: 'Dedicated Copilot',
+          feat3Desc: 'Predictive analytics & natural orders',
+          feat3Detail: 'Enjoy AI-guided wealth insights, automated spending forecasts, and natural language command execution around the clock.',
           newAccount: 'Secure Onboarding',
           createAccount: 'Create Your Account',
           joinUsers: 'Join over 2.4 million private clients worldwide',
@@ -104,6 +128,30 @@ export default function RegisterPage() {
           alreadyHaveAccount: 'Already have an account?',
           signIn: 'Sign in to account',
         };
+
+  const accountFeatures = [
+    {
+      icon: Wallet,
+      title: text.feat1Title,
+      tag: text.feat1Tag,
+      desc: text.feat1Desc,
+      detail: text.feat1Detail,
+    },
+    {
+      icon: CreditCard,
+      title: text.feat2Title,
+      tag: text.feat2Tag,
+      desc: text.feat2Desc,
+      detail: text.feat2Detail,
+    },
+    {
+      icon: Bot,
+      title: text.feat3Title,
+      tag: text.feat3Tag,
+      desc: text.feat3Desc,
+      detail: text.feat3Detail,
+    },
+  ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -227,22 +275,35 @@ export default function RegisterPage() {
           </Typography>
         </Box>
 
-        {/* Interactive Tier Selection Preview */}
+        {/* Included Services & Features Preview */}
         <Box sx={{ my: 2 }}>
-          <Typography variant='caption' sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1.5, display: 'block', mb: 1.5 }}>
-            Select Your Membership Tier
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
+            <Typography variant='caption' sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              {text.featuresHeader}
+            </Typography>
+            <Chip
+              label={text.featureIncludedChip}
+              size='small'
+              icon={<CheckCircle2 className='w-3 h-3 text-emerald-500' />}
+              sx={{
+                height: 22,
+                fontSize: 10,
+                fontWeight: 800,
+                bgcolor: 'rgba(232,97,26,0.08)',
+                color: 'primary.main',
+                border: 1,
+                borderColor: 'rgba(232,97,26,0.25)',
+              }}
+            />
+          </Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
-            {[
-              { id: 'free', name: text.tierStandard, fee: '$0/mo', perks: 'Free IBAN · Virtual Card' },
-              { id: 'metal', name: text.tierMetal, fee: '$9/mo', perks: '1% Cashback · Free FX · Black Card', hot: true },
-              { id: 'infinite', name: text.tierInfinite, fee: '$25/mo', perks: 'Concierge · VIP Lounge · Uncapped' },
-            ].map((plan) => {
-              const active = selectedPlan === plan.id;
+            {accountFeatures.map((feat, idx) => {
+              const active = activeFeature === idx;
+              const Icon = feat.icon;
               return (
                 <Card
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan.id as any)}
+                  key={feat.title}
+                  onClick={() => setActiveFeature(idx)}
                   variant='outlined'
                   sx={{
                     p: 2,
@@ -253,41 +314,60 @@ export default function RegisterPage() {
                     borderColor: active ? 'primary.main' : 'divider',
                     transition: 'all 0.2s ease',
                     position: 'relative',
-                    boxShadow: active ? '0 8px 20px -4px rgba(232,97,26,0.2)' : 'none',
+                    boxShadow: active ? '0 8px 20px -4px rgba(232,97,26,0.22)' : 'none',
                     transform: active ? 'translateY(-2px)' : 'none',
+                    '&:hover': {
+                      borderColor: active ? 'primary.main' : 'text.secondary',
+                      transform: 'translateY(-2px)',
+                    },
                   }}
                 >
-                  {plan.hot && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: -10,
-                        right: 12,
-                        bgcolor: 'primary.main',
-                        color: '#ffffff',
-                        px: 1,
-                        py: 0.2,
-                        borderRadius: 999,
-                        fontSize: 9,
-                        fontWeight: 900,
-                        letterSpacing: 1,
-                      }}
-                    >
-                      POPULAR
-                    </Box>
-                  )}
-                  <Typography variant='subtitle2' sx={{ fontWeight: 800 }}>
-                    {plan.name}
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 2,
+                      bgcolor: active ? 'primary.main' : 'action.selected',
+                      color: active ? '#ffffff' : 'primary.main',
+                      display: 'grid',
+                      placeItems: 'center',
+                      mb: 1,
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <Icon className='w-4 h-4' />
+                  </Box>
+                  <Typography variant='subtitle2' sx={{ fontWeight: 800, fontSize: '0.85rem', lineHeight: 1.2 }}>
+                    {feat.title}
                   </Typography>
-                  <Typography variant='h6' sx={{ fontWeight: 900, my: 0.5, color: active ? 'primary.main' : 'text.primary' }}>
-                    {plan.fee}
+                  <Typography variant='caption' sx={{ color: 'primary.main', fontWeight: 800, fontSize: 11, display: 'block', mt: 0.5 }}>
+                    {feat.tag}
                   </Typography>
-                  <Typography variant='caption' color='text.secondary' sx={{ fontSize: 11, display: 'block' }}>
-                    {plan.perks}
+                  <Typography variant='caption' color='text.secondary' sx={{ fontSize: 11, display: 'block', mt: 0.5, lineHeight: 1.3 }}>
+                    {feat.desc}
                   </Typography>
                 </Card>
               );
             })}
+          </Box>
+          {/* Active Feature Interactive Spotlight */}
+          <Box
+            sx={{
+              mt: 1.5,
+              p: 1.5,
+              borderRadius: 3,
+              bgcolor: 'action.hover',
+              border: 1,
+              borderColor: 'divider',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.25,
+            }}
+          >
+            <Sparkles className='w-4 h-4 text-primary shrink-0' style={{ color: '#e8611a' }} />
+            <Typography variant='caption' color='text.secondary' sx={{ fontSize: 11.5, lineHeight: 1.4 }}>
+              {accountFeatures[activeFeature].detail}
+            </Typography>
           </Box>
         </Box>
 

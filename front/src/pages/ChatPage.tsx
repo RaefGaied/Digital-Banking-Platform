@@ -155,10 +155,10 @@ export default function ChatPage() {
             <Bot className='w-10 h-10 text-white animate-pulse' />
           </div>
           <h2 className='text-xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight'>
-            Connexion au Core Agent IA Bancaire
+            Connexion à l’Assistant Bancaire
           </h2>
           <p className='text-xs text-slate-500 dark:text-zinc-400 mt-2 leading-relaxed'>
-            Synchronisation de votre contexte client avec le moteur décisionnel Spring AI (Qwen2.5:7b) et Flowable BPMN...
+            Initialisation de votre session sécurisée et synchronisation de vos comptes en cours...
           </p>
 
           <div className='flex justify-center items-center gap-1.5 my-6'>
@@ -602,39 +602,30 @@ export default function ChatPage() {
 
         {/* ── AUTONOMOUS AGENT THINKING HUD (when processing) ── */}
         {sendMutation.isPending && (
-          <div className='flex gap-3 max-w-xl mr-auto animate-fade-in'>
+          <div className='flex gap-3 max-w-md mr-auto animate-fade-in'>
             <div className='w-8 h-8 rounded-2xl ai-halo-orbit flex items-center justify-center bg-slate-900 text-white shrink-0 shadow-md'>
-              <Bot className='w-4 h-4 text-orange-400 animate-spin' />
+              <Bot className='w-4 h-4 text-orange-400' />
             </div>
 
-            <div className='rounded-3xl p-4 bg-white dark:bg-zinc-850 border border-orange-500/30 shadow-lg text-xs leading-relaxed space-y-2.5'>
-              <div className='flex items-center gap-2 text-orange-600 dark:text-orange-400 font-bold'>
+            <div className='rounded-2xl px-4 py-3 bg-white dark:bg-zinc-850 border border-orange-500/30 shadow-md text-xs space-y-2'>
+              <div className='flex items-center gap-2 text-orange-600 dark:text-orange-400 font-semibold'>
                 <Sparkles className='w-3.5 h-3.5 animate-spin' />
-                <span>
-                  {thinkingSeconds >= 20
-                    ? 'Le modèle prend plus de temps que prévu...'
-                    : "L'Agent IA traite votre demande..."}
+                <span className='tracking-tight'>
+                  {thinkingSeconds >= 12
+                    ? "L'agent est toujours en train de réfléchir..."
+                    : "L'agent est en train de réfléchir..."}
                 </span>
-                <span className='ml-auto font-mono text-[10px] text-slate-500 dark:text-zinc-400'>
+                <span className='ml-auto font-mono text-[10px] text-slate-400 dark:text-zinc-500'>
                   {thinkingSeconds}s
                 </span>
               </div>
 
-              <div className='flex items-center gap-1'>
+              <div className='flex items-center gap-1 py-0.5'>
                 <div className='ai-wave-bar' />
                 <div className='ai-wave-bar' />
                 <div className='ai-wave-bar' />
                 <div className='ai-wave-bar' />
                 <div className='ai-wave-bar' />
-              </div>
-
-              <div className='text-[11px] text-slate-600 dark:text-zinc-400'>
-                L’IA et les vérifications nécessaires sont en cours. Les demandes bancaires restent validées par le serveur.
-                {thinkingSeconds >= 20 && (
-                  <p className='mt-1 text-[11px] text-slate-500 dark:text-zinc-400'>
-                    Le premier message peut prendre plus de temps pendant le chargement du modèle. Si Ollama et l’agent IA sont indisponibles, le message ne sera pas enregistré.
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -643,7 +634,7 @@ export default function ChatPage() {
         {sendMutation.isError && (
           <div role='alert' className='max-w-xl mr-auto rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200'>
             {axios.isAxiosError(sendMutation.error) && sendMutation.error.response?.status === 503
-              ? 'Chat en pause : Ollama et l’agent IA sont indisponibles. Votre message n’a pas été enregistré. Réessayez lorsque l’un des services sera rétabli.'
+              ? 'Service momentanément indisponible : votre assistant bancaire ne répond pas pour le moment. Veuillez réessayer dans quelques instants.'
               : 'Impossible d’obtenir une réponse du serveur. Vérifiez votre conversation avant de renvoyer le message pour éviter un doublon.'}
           </div>
         )}

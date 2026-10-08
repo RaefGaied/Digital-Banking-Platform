@@ -17,6 +17,7 @@ import {
   Sparkles,
   Send,
   Loader2,
+  Upload,
 } from 'lucide-react';
 import { useI18n } from '../i18n/I18nContext';
 import { supportTicketsApi } from '../api/supportTickets';
@@ -31,6 +32,11 @@ function formatTicketDate(value?: string | null) {
   return Number.isNaN(date.getTime()) ? 'Date indisponible' : date.toLocaleString();
 }
 
+function isSupportedIdentityDocument(file: File) {
+  const extension = file.name.toLowerCase().split('.').pop();
+  return ['pdf', 'jpg', 'jpeg', 'png'].includes(extension ?? '') && file.size <= 10 * 1024 * 1024;
+}
+
 export default function HelpPage() {
   const navigate = useNavigate();
   const { locale } = useI18n();
@@ -41,6 +47,8 @@ export default function HelpPage() {
   const [ticketType, setTicketType] = useState('GENERAL');
   const [priority, setPriority] = useState('MEDIUM');
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [requestedDocument, setRequestedDocument] = useState<File | null>(null);
+  const [documentMessage, setDocumentMessage] = useState<string | null>(null);
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [expandedTicketId, setExpandedTicketId] = useState<number | null>(null);
 
@@ -67,6 +75,43 @@ export default function HelpPage() {
       );
     },
   });
+
+  const uploadIdentityDocumentMutation = useMutation({
+    mutationFn: ({ ticketId, file }: { ticketId: number; file: File }) =>
+      supportTicketsApi.uploadIdentityDocument(ticketId, file),
+    onSuccess: () => {
+      setRequestedDocument(null);
+      setDocumentMessage(
+        locale === 'fr'
+          ? 'Votre justificatif a été transmis à l’équipe de vérification.'
+          : 'Your document has been sent to the verification team.'
+      );
+      void queryClient.invalidateQueries({ queryKey: ['my-support-tickets'] });
+    },
+    onError: () => {
+      setDocumentMessage(
+        locale === 'fr'
+          ? 'Le justificatif n’a pas pu être transmis. Vérifiez le fichier et réessayez.'
+          : 'The document could not be uploaded. Check the file and try again.'
+      );
+    },
+  });
+
+  const downloadAttachment = async (ticket: SupportTicket) => {
+    try {
+      const file = await supportTicketsApi.downloadAttachment(ticket.id);
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = ticket.attachmentName || `ticket-${ticket.id}-attachment`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch {
+      setDocumentMessage(
+        locale === 'fr' ? 'Impossible de télécharger le justificatif.' : 'Unable to download the document.'
+      );
+    }
+  };
 
   const ticketTypeChoices = useMemo(
     () =>
@@ -380,6 +425,44 @@ export default function HelpPage() {
                   <option value='HIGH'>{locale === 'fr' ? 'Priorité Haute' : 'High Priority'}</option>
                 </select>
               </div>
+              {ticketType === 'DATA_UPDATE' && (
+                <div className='rounded-xl border border-slate-200 dark:border-zinc-700 p-3'>
+                  <label className='block text-xs font-semibold text-slate-700 dark:text-zinc-300'>
+                    {locale === 'fr'
+                      ? 'Joindre une copie de votre pièce d’identité (facultatif)'
+                      : 'Attach a copy of your identity document (optional)'}
+                    <input
+                      type='file'
+                      accept='.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png'
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        if (file && !isSupportedIdentityDocument(file)) {
+                          setAttachment(null);
+                          setDocumentMessage(
+                            locale === 'fr'
+                              ? 'Choisissez un fichier PDF, JPG ou PNG de 10 Mo maximum.'
+                              : 'Choose a PDF, JPG, or PNG file up to 10 MB.'
+                          );
+                          event.target.value = '';
+                          return;
+                        }
+                        setAttachment(file);
+                        setDocumentMessage(null);
+                      }}
+                      className='mt-2 block w-full text-xs text-slate-600 dark:text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-orange-700'
+                    />
+                  </label>
+                  <p className='mt-1 text-[10px] text-slate-500 dark:text-zinc-500'>
+                    {locale === 'fr' ? 'Formats acceptés : PDF, JPG, PNG · 10 Mo maximum.' : 'Accepted formats: PDF, JPG, PNG · 10 MB maximum.'}
+                  </p>
+                  {attachment && (
+                    <p className='mt-1 text-[10px] text-slate-600 dark:text-zinc-400'>{attachment.name}</p>
+                  )}
+                  {documentMessage && (
+                    <p className='mt-1 text-[10px] text-red-600 dark:text-red-400'>{documentMessage}</p>
+                  )}
+                </div>
+              )}
 
               <button
                 type='button'
@@ -443,6 +526,77 @@ export default function HelpPage() {
                             <p className='mt-1 whitespace-pre-wrap text-slate-600 dark:text-zinc-400'>
                               {ticket.description || (locale === 'fr' ? 'Aucune description fournie.' : 'No description provided.')}
                             </p>
+                            {ticket.attachmentName && (
+                              <button
+                                type='button'
+                                onClick={() => void downloadAttachment(ticket)}
+                                className='mt-2 flex items-center gap-1 font-semibold text-primary-600 hover:underline dark:text-primary-400'
+                              >
+                                <FileText className='h-3.5 w-3.5' />
+                                {locale === 'fr' ? 'Télécharger le justificatif' : 'Download attachment'}
+                                <span className='font-normal'>({ticket.attachmentName})</span>
+                              </button>
+                            )}
+                            {ticket.awaitingIdentityDocument && (
+                              <div className='mt-3 rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-900/50 dark:bg-orange-950/20'>
+                                <p className='text-xs font-semibold text-orange-900 dark:text-orange-200'>
+                                  {locale === 'fr'
+                                    ? 'Un justificatif d’identité est demandé pour poursuivre la vérification.'
+                                    : 'An identity document is required to continue the review.'}
+                                </p>
+                                <label className='mt-2 block text-[11px] font-medium text-slate-700 dark:text-zinc-300'>
+                                  {locale === 'fr' ? 'Choisir un fichier PDF, JPG ou PNG (10 Mo maximum)' : 'Choose a PDF, JPG, or PNG file (up to 10 MB)'}
+                                  <input
+                                    type='file'
+                                    accept='.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png'
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0] ?? null;
+                                      if (file && !isSupportedIdentityDocument(file)) {
+                                        setRequestedDocument(null);
+                                        setDocumentMessage(
+                                          locale === 'fr'
+                                            ? 'Choisissez un fichier PDF, JPG ou PNG de 10 Mo maximum.'
+                                            : 'Choose a PDF, JPG, or PNG file up to 10 MB.'
+                                        );
+                                        event.target.value = '';
+                                        return;
+                                      }
+                                      setRequestedDocument(file);
+                                      setDocumentMessage(null);
+                                    }}
+                                    className='mt-1 block w-full text-xs text-slate-600 dark:text-zinc-400'
+                                  />
+                                </label>
+                                {requestedDocument && (
+                                  <p className='mt-1 text-[10px] text-slate-600 dark:text-zinc-400'>
+                                    {requestedDocument.name}
+                                  </p>
+                                )}
+                                <button
+                                  type='button'
+                                  disabled={!requestedDocument || uploadIdentityDocumentMutation.isPending}
+                                  onClick={() => {
+                                    if (!requestedDocument) return;
+                                    setDocumentMessage(null);
+                                    uploadIdentityDocumentMutation.mutate({
+                                      ticketId: ticket.id,
+                                      file: requestedDocument,
+                                    });
+                                  }}
+                                  className='mt-2 inline-flex items-center gap-1 rounded-lg bg-orange-600 px-3 py-2 text-[11px] font-semibold text-white disabled:opacity-50'
+                                >
+                                  {uploadIdentityDocumentMutation.isPending
+                                    ? <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                                    : <Upload className='h-3.5 w-3.5' />}
+                                  {locale === 'fr' ? 'Transmettre le justificatif' : 'Upload document'}
+                                </button>
+                                {documentMessage && (
+                                  <p className='mt-2 text-[11px] text-slate-700 dark:text-zinc-300'>
+                                    {documentMessage}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                             {ticket.status === 'RESOLVED'
                               && ticket.ticketType === 'DATA_UPDATE'
                               && /email|e-mail|courriel|adresse\s+e|modif(?:ier|er)\s+mon\s+email/i.test(

@@ -57,6 +57,16 @@ def transfer_money(token, payload):
         headers=headers(token),
         timeout=5
     )
+    if res.status_code == 404 or (res.status_code >= 400 and "destination account not found" in res.text.lower()):
+        # The recipient may be a payment key (Pix) instead of an account number
+        key_res = requests.post(
+            f"{BASE_URL}/pix/transfer",
+            json={"paymentKey": payload.get("targetAccountNumber"), "amount": payload.get("amount")},
+            headers=headers(token),
+            timeout=5
+        )
+        if 200 <= key_res.status_code < 300:
+            res = key_res
     if not 200 <= res.status_code < 300:
         detail = res.text.strip()
         try:

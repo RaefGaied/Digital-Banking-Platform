@@ -5,6 +5,8 @@ import type {
   AdminTaskDetail,
   AdminTaskSummary,
   AdminSecurityEvent,
+  AdminSecurityEventResolutionRequest,
+  AdminSecurityEventAnalysis,
   AdminTicketSummary,
   AdminUserSummary,
   FlowableAdminTask,
@@ -72,6 +74,13 @@ export const adminApi = {
     return response.data;
   },
 
+  downloadTicketAttachment: async (ticketId: number): Promise<Blob> => {
+    const response = await api.get<Blob>(`/support-tickets/${ticketId}/attachment`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
   getFlowableTaskDetails: async (taskId: string): Promise<{
     taskId: string;
     name: string;
@@ -124,8 +133,11 @@ export const adminApi = {
     return response.data;
   },
 
-  completeFlowableTask: async (taskId: string, approved: boolean) => {
-    const response = await api.post(`/admin/flowable/tasks/${taskId}/complete`, { approved });
+  completeFlowableTask: async (
+    taskId: string,
+    decision: 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE' | 'CONTINUE',
+  ) => {
+    const response = await api.post(`/admin/flowable/tasks/${taskId}/complete`, { decision });
     return response.data;
   },
 
@@ -156,8 +168,16 @@ export const adminApi = {
     return response.data;
   },
 
-  resolveSecurityEvent: async (eventId: string): Promise<AdminSecurityEvent> => {
-    const response = await api.post<AdminSecurityEvent>(`/admin/security-events/${eventId}/resolve`);
+  resolveSecurityEvent: async (
+    eventId: string,
+    payload: AdminSecurityEventResolutionRequest,
+  ): Promise<AdminSecurityEvent> => {
+    const response = await api.post<AdminSecurityEvent>(`/admin/security-events/${eventId}/resolve`, payload);
+    return response.data;
+  },
+
+  analyzeSecurityEvent: async (eventId: string): Promise<AdminSecurityEventAnalysis> => {
+    const response = await api.post<AdminSecurityEventAnalysis>(`/admin/security-events/${eventId}/ai-analysis`);
     return response.data;
   },
 };

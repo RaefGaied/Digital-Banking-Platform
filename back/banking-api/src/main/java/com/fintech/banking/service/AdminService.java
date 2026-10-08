@@ -20,6 +20,8 @@ import com.fintech.banking.repository.SecurityEventRepository;
 import com.fintech.banking.repository.SupportTicketRepository;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.repository.WorkflowTaskRepository;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -250,28 +252,72 @@ public class AdminService {
         return securityEventRepository.findAll(pageable).map(this::toSecurityEventResponse);
     }
 
-    public SecurityEventResponse resolveSecurityEvent(UUID eventId, String adminEmail) {
+    public SecurityEventResponse resolveSecurityEvent(
+            UUID eventId,
+            String adminEmail,
+            SecurityEventResolutionRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Security event resolution details are required");
+        }
         SecurityEvent event = securityEventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Security event not found"));
+        if (Boolean.TRUE.equals(event.getResolved())) {
+            throw new IllegalStateException("Security event is already resolved");
+        }
+
+        String incidentSummary = normalizeRequiredText(request.getIncidentSummary(), "Incident summary");
+        String investigationFindings = normalizeRequiredText(
+                request.getInvestigationFindings(),
+                "Investigation findings");
+        String correctiveActions = normalizeRequiredText(request.getCorrectiveActions(), "Corrective actions");
+        String preventiveMeasures = normalizeOptionalText(request.getPreventiveMeasures());
 
         event.resolve();
         SecurityEvent saved = securityEventRepository.save(event);
+
+        String customerMessage = "A security alert related to your account was reviewed by an administrator. "
+                + "Summary: " + incidentSummary + ". Action taken: " + correctiveActions + ".";
         notificationService.notifySecurityAlert(
                 saved.getUserId(),
-                "A security alert related to your account was reviewed by an administrator.");
+                customerMessage);
         notificationService.notifyAdminsSecurityAlert(
-                "Security event " + saved.getType() + " for user " + saved.getUserId() + " was resolved.",
+                "Security event " + saved.getType() + " for user " + saved.getUserId()
+                        + " was resolved after investigation.",
                 null);
 
+        String details = "Security event resolved after investigation"
+                + "\n" + auditField("Type", saved.getType() != null ? saved.getType().name() : "UNKNOWN")
+                + "\n" + auditField("Incident summary", incidentSummary)
+                + "\n" + auditField("Investigation findings", investigationFindings)
+                + "\n" + auditField("Corrective actions", correctiveActions)
+                + "\n" + auditField("Preventive measures", preventiveMeasures == null ? "n/a" : preventiveMeasures);
         auditLogService.log(
                 adminEmail,
                 "ADMIN_RESOLVE_SECURITY_EVENT",
                 "SecurityEvent",
                 saved.getId().toString(),
-                "Security event resolved",
+                details,
                 null);
 
         return toSecurityEventResponse(saved);
+    }
+
+    // Continuation lines are indented so the UI can render each field as its own block.
+    private String auditField(String label, String value) {
+        return label + ": " + value.replace("\r\n", "\n").replace("\n", "\n  ");
+    }
+
+    private String normalizeRequiredText(String value, String label) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException(label + " is required");
+        }
+        return normalized;
+    }
+
+    private String normalizeOptionalText(String value) {
+        String normalized = value == null ? "" : value.trim();
+        return normalized.isBlank() ? null : normalized;
     }
 
     private TaskSummaryResponse toTaskSummary(WorkflowTask task) {
@@ -320,6 +366,7 @@ public class AdminService {
                 .status(ticket.getStatus() != null ? ticket.getStatus().name() : null)
                 .priority(ticket.getPriority() != null ? ticket.getPriority().name() : null)
                 .ticketType(ticket.getTicketType() != null ? ticket.getTicketType().name() : null)
+                .attachmentName(ticket.getAttachmentName())
                 .assignedAdminId(ticket.getAssignedAdminId())
                 .ownerId(ticket.getOwnerId())
                 .flowableProcessId(ticket.getFlowableProcessId())
@@ -421,6 +468,7 @@ public class AdminService {
         private String status;
         private String priority;
         private String ticketType;
+        private String attachmentName;
         private UUID assignedAdminId;
         private UUID ownerId;
         private String flowableProcessId;
@@ -497,5 +545,23 @@ public class AdminService {
     public static class GeneralTicketActionRequest {
         private AdminTicketAction action;
         private String comment;
+    }
+
+    @Data
+    public static class SecurityEventResolutionRequest {
+        @NotBlank
+        @Size(max = 1000)
+        private String incidentSummary;
+
+        @NotBlank
+        @Size(max = 3000)
+        private String investigationFindings;
+
+        @NotBlank
+        @Size(max = 2000)
+        private String correctiveActions;
+
+        @Size(max = 2000)
+        private String preventiveMeasures;
     }
 }

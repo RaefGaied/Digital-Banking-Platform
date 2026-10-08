@@ -28,12 +28,12 @@
         <flowNodeRef>endRejectedAdmin</flowNodeRef>
         <flowNodeRef>endEscalade</flowNodeRef>
         <flowNodeRef>taskEscaladeTimeout</flowNodeRef>
-        <flowNodeRef>endRejectedBenef</flowNodeRef>
         <flowNodeRef>taskExecuteVirement</flowNodeRef>
         <flowNodeRef>taskNotifyBeneficiaireInvalide</flowNodeRef>
         <flowNodeRef>endRejectedSolde</flowNodeRef>
         <flowNodeRef>taskNotifyApprouve</flowNodeRef>
         <flowNodeRef>gwExecutionOk</flowNodeRef>
+        <flowNodeRef>endRejectedBenef</flowNodeRef>
       </lane>
       <lane id="laneAdmin" name="Administrateur">
         <flowNodeRef>taskValidationAdmin</flowNodeRef>
@@ -148,7 +148,7 @@
     <sequenceFlow id="sfErreurEnd" sourceRef="taskNotifyErreurTech" targetRef="endErreurTech" />
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="virementValidationProcess">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="transferValidationProcess">
       <bpmndi:BPMNShape id="laneAdmin_sh" bpmnElement="laneAdmin" isHorizontal="true">
         <dc:Bounds x="130" y="520" width="2480" height="210" />
       </bpmndi:BPMNShape>
@@ -180,12 +180,6 @@
         <dc:Bounds x="522" y="442" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="507" y="485" width="62" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="endRejectedBenef_sh" bpmnElement="endRejectedBenef">
-        <dc:Bounds x="1052" y="472" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1040" y="515" width="57" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="endRejectedAdmin_sh" bpmnElement="endRejectedAdmin">
@@ -239,6 +233,9 @@
       <bpmndi:BPMNShape id="taskExecuteVirement_sh" bpmnElement="taskExecuteVirement">
         <dc:Bounds x="1090" y="260" width="160" height="60" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="taskNotifyApprouve_sh" bpmnElement="taskNotifyApprouve">
+        <dc:Bounds x="1360" y="260" width="160" height="60" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="taskAuditLog_sh" bpmnElement="taskAuditLog">
         <dc:Bounds x="1540" y="260" width="160" height="60" />
       </bpmndi:BPMNShape>
@@ -272,6 +269,12 @@
           <dc:Bounds x="945" y="227.5" width="90" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gwExecutionOk_sh" bpmnElement="gwExecutionOk" isMarkerVisible="true">
+        <dc:Bounds x="1265" y="265" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1256" y="246" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gwRetryOk_sh" bpmnElement="gwRetryOk" isMarkerVisible="true">
         <dc:Bounds x="1545" y="385" width="50" height="50" />
         <bpmndi:BPMNLabel>
@@ -287,16 +290,13 @@
       <bpmndi:BPMNShape id="gwMaxInfosAtteint_sh" bpmnElement="gwMaxInfosAtteint" isMarkerVisible="true">
         <dc:Bounds x="1450" y="605" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1431" y="581" width="87" height="14" />
+          <dc:Bounds x="1446" y="593" width="87" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="taskNotifyApprouve_sh" bpmnElement="taskNotifyApprouve">
-        <dc:Bounds x="1360" y="260" width="160" height="60" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="gwExecutionOk_sh" bpmnElement="gwExecutionOk" isMarkerVisible="true">
-        <dc:Bounds x="1265" y="265" width="50" height="50" />
+      <bpmndi:BPMNShape id="endRejectedBenef_sh" bpmnElement="endRejectedBenef">
+        <dc:Bounds x="1023" y="472" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1256" y="246" width="87" height="27" />
+          <dc:Bounds x="1011" y="515" width="57" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="boundaryTimerAdmin_sh" bpmnElement="boundaryTimerAdmin">
@@ -375,18 +375,18 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="sfBenefEnd_e" bpmnElement="sfBenefEnd">
-        <di:waypoint x="1030" y="400" />
-        <di:waypoint x="1041" y="400" />
-        <di:waypoint x="1041" y="490" />
-        <di:waypoint x="1052" y="490" />
+        <di:waypoint x="950" y="430" />
+        <di:waypoint x="950" y="451" />
+        <di:waypoint x="1041" y="451" />
+        <di:waypoint x="1041" y="472" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="sfBenefOk_e" bpmnElement="sfBenefOk">
         <di:waypoint x="1015" y="290" />
         <di:waypoint x="1080" y="290" />
-        <di:waypoint x="1080" y="650" />
-        <di:waypoint x="1210" y="650" />
+        <di:waypoint x="1080" y="680" />
+        <di:waypoint x="1210" y="680" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1086" y="460" width="18" height="14" />
+          <dc:Bounds x="1086" y="475" width="18" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="sf05_e" bpmnElement="sf05">

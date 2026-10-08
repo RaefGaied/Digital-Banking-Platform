@@ -1,0 +1,43 @@
+flowchart LR
+    U["Utilisateur (USER)"]
+    S((FinBank))
+
+    UC1["Consulter son compte"]
+    UC2["Effectuer un dépôt"]
+    UC3["Effectuer un retrait"]
+    UC4["Effectuer un virement"]
+    UC5["Consulter l'historique"]
+    UC6["Télécharger un reçu"]
+    UC7["Gérer ses cartes"]
+    UC8["Gérer ses investissements"]
+    UC9["Gérer ses clés de paiement"]
+    UC10["Effectuer un paiement par clé"]
+
+    U --> UC1
+    U --> UC2
+    U --> UC3
+    U --> UC4
+    U --> UC5
+    U --> UC6
+    U --> UC7
+    U --> UC8
+    U --> UC9
+    U --> UC10
+
+    UC2 -.->|«include»| UC5
+    UC3 -.->|«include»| UC5
+    UC4 -.->|«include»| UC5
+    UC10 -.->|«include»| UC4
+
+    subgraph SYS["Système FinBank"]
+      UC1
+      UC2
+      UC3
+      UC4
+      UC5
+      UC6
+      UC7
+      UC8
+      UC9
+      UC10
+    end

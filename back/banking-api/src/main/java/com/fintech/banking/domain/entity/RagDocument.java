@@ -52,3 +52,4 @@ public class RagDocument {
         this.updatedAt = LocalDateTime.now();
     }
 }
+

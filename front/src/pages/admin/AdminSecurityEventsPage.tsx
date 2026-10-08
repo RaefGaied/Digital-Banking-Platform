@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle2, Clock3, Fingerprint, ShieldAlert } from 'lucide-react';
-import { Box, Button, Card, CardContent, Chip, TablePagination, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, Chip, TablePagination, TextField, Typography } from '@mui/material';
 import { adminApi } from '../../api/admin';
+import type { AdminSecurityEventAnalysis, AdminSecurityEventResolutionRequest } from '../../types';
 
 const typeConfig: Record<string, { label: string; color: 'warning' | 'error' | 'info' | 'success'; icon: typeof ShieldAlert }> = {
   REUSE_DETECTED: { label: 'Token reuse', color: 'error', icon: ShieldAlert },
@@ -15,7 +16,36 @@ export default function AdminSecurityEventsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [resolutionForms, setResolutionForms] = useState<Record<string, AdminSecurityEventResolutionRequest>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [analyses, setAnalyses] = useState<Record<string, AdminSecurityEventAnalysis>>({});
   const queryClient = useQueryClient();
+
+  const analyzeMutation = useMutation({
+    mutationFn: (eventId: string) => adminApi.analyzeSecurityEvent(eventId),
+    onSuccess: (analysis, eventId) => setAnalyses((prev) => ({ ...prev, [eventId]: analysis })),
+  });
+
+  const applyAnalysis = (eventId: string) => {
+    const a = analyses[eventId];
+    if (!a) return;
+    setResolutionForms((prev) => ({
+      ...prev,
+      [eventId]: {
+        incidentSummary: a.incidentSummary,
+        investigationFindings: a.investigationFindings,
+        correctiveActions: a.correctiveActions,
+        preventiveMeasures: a.preventiveMeasures,
+      },
+    }));
+  };
+
+  const createEmptyForm = (): AdminSecurityEventResolutionRequest => ({
+    incidentSummary: '',
+    investigationFindings: '',
+    correctiveActions: '',
+    preventiveMeasures: '',
+  });
 
   const eventsQuery = useQuery({
     queryKey: ['admin-security-events', page, rowsPerPage],
@@ -23,7 +53,8 @@ export default function AdminSecurityEventsPage() {
   });
 
   const resolveMutation = useMutation({
-    mutationFn: adminApi.resolveSecurityEvent,
+    mutationFn: ({ eventId, payload }: { eventId: string; payload: AdminSecurityEventResolutionRequest }) =>
+      adminApi.resolveSecurityEvent(eventId, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-security-events'] }),
   });
 
@@ -34,6 +65,58 @@ export default function AdminSecurityEventsPage() {
       case 'ACCOUNT_LOCKED': return 'rgba(59, 130, 246, 0.14)';
       default: return 'rgba(234, 179, 8, 0.14)';
     }
+  };
+
+  const openInvestigation = (eventId: string) => {
+    setExpandedEventId(eventId);
+    setResolutionForms((prev) => ({
+      ...prev,
+      [eventId]: prev[eventId] ?? createEmptyForm(),
+    }));
+    setFormErrors((prev) => ({ ...prev, [eventId]: '' }));
+  };
+
+  const updateField = (eventId: string, field: keyof AdminSecurityEventResolutionRequest, value: string) => {
+    setResolutionForms((prev) => ({
+      ...prev,
+      [eventId]: {
+        ...(prev[eventId] ?? createEmptyForm()),
+        [field]: value,
+      },
+    }));
+  };
+
+  const resolveEvent = (eventId: string) => {
+    const form = resolutionForms[eventId] ?? createEmptyForm();
+    const payload: AdminSecurityEventResolutionRequest = {
+      incidentSummary: form.incidentSummary.trim(),
+      investigationFindings: form.investigationFindings.trim(),
+      correctiveActions: form.correctiveActions.trim(),
+      preventiveMeasures: form.preventiveMeasures?.trim() || undefined,
+    };
+
+    if (!payload.incidentSummary || !payload.investigationFindings || !payload.correctiveActions) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [eventId]: 'Incident summary, investigation findings, and corrective actions are required.',
+      }));
+      return;
+    }
+
+    setFormErrors((prev) => ({ ...prev, [eventId]: '' }));
+    resolveMutation.mutate(
+      { eventId, payload },
+      {
+        onSuccess: () => {
+          setExpandedEventId(null);
+          setResolutionForms((prev) => {
+            const next = { ...prev };
+            delete next[eventId];
+            return next;
+          });
+        },
+      },
+    );
   };
 
   return (
@@ -52,6 +135,9 @@ export default function AdminSecurityEventsPage() {
           const cfg = typeConfig[event.type] || typeConfig.SUSPICIOUS_ACTIVITY;
           const Icon = cfg.icon;
           const isExpanded = expandedEventId === event.id;
+          const form = resolutionForms[event.id] ?? createEmptyForm();
+          const eventError = formErrors[event.id];
+          const isResolvingThisEvent = resolveMutation.isPending && resolveMutation.variables?.eventId === event.id;
 
           return (
             <Card key={event.id} sx={{ borderRadius: 4 }}>
@@ -86,17 +172,17 @@ export default function AdminSecurityEventsPage() {
                       <Button
                         variant='outlined'
                         size='small'
-                        onClick={() => resolveMutation.mutate(event.id)}
+                        onClick={() => openInvestigation(event.id)}
                         disabled={resolveMutation.isPending}
                       >
-                        Resolve
+                        Investigate & Resolve
                       </Button>
                     )}
                   </Box>
                 </Box>
 
                 {isExpanded && (
-                  <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider', display: 'grid', gap: 0.75 }}>
+                  <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider', display: 'grid', gap: 1.25 }}>
                     <Typography variant='body2' color='text.secondary'>
                       Event ID: {event.id}
                     </Typography>
@@ -104,8 +190,106 @@ export default function AdminSecurityEventsPage() {
                       State: {event.resolved ? 'Resolved' : 'Open'}
                     </Typography>
                     <Typography variant='body2' color='text.secondary'>
-                      This record is created by the backend when a security action happens. Click Resolve to mark it reviewed.
+                      Complete the investigation details before resolving this security event.
                     </Typography>
+                    {!event.resolved && (
+                      <>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          <Button
+                            variant='outlined'
+                            size='small'
+                            onClick={() => analyzeMutation.mutate(event.id)}
+                            disabled={analyzeMutation.isPending && analyzeMutation.variables === event.id}
+                          >
+                            {analyzeMutation.isPending && analyzeMutation.variables === event.id
+                              ? 'Analyzing…'
+                              : 'Get AI analysis & suggested solution'}
+                          </Button>
+                          {analyses[event.id] && (
+                            <Button variant='contained' size='small' onClick={() => applyAnalysis(event.id)}>
+                              Use suggestion in form
+                            </Button>
+                          )}
+                        </Box>
+                        {analyzeMutation.isError && analyzeMutation.variables === event.id && (
+                          <Alert severity='error'>AI analysis failed. You can still investigate manually.</Alert>
+                        )}
+                        {analyses[event.id] && (
+                          <Alert severity='info' sx={{ whiteSpace: 'pre-line' }}>
+                            <strong>How it happens:</strong> {analyses[event.id].explanation}
+                            {analyses[event.id].aiAssessment && (
+                              <>
+                                {'\n\n'}
+                                <strong>AI assessment (review before use):</strong>
+                                {'\n'}
+                                {analyses[event.id].aiAssessment}
+                              </>
+                            )}
+                            {'\n\n'}
+                            <strong>Suggested solution:</strong>
+                            {'\n'}
+                            {analyses[event.id].correctiveActions}
+                          </Alert>
+                        )}
+                        <TextField
+                          label='Incident summary'
+                          value={form.incidentSummary}
+                          onChange={(e) => updateField(event.id, 'incidentSummary', e.target.value)}
+                          size='small'
+                          fullWidth
+                          required
+                        />
+                        <TextField
+                          label='Investigation findings'
+                          value={form.investigationFindings}
+                          onChange={(e) => updateField(event.id, 'investigationFindings', e.target.value)}
+                          size='small'
+                          fullWidth
+                          multiline
+                          minRows={3}
+                          required
+                        />
+                        <TextField
+                          label='Corrective actions'
+                          value={form.correctiveActions}
+                          onChange={(e) => updateField(event.id, 'correctiveActions', e.target.value)}
+                          size='small'
+                          fullWidth
+                          multiline
+                          minRows={2}
+                          required
+                        />
+                        <TextField
+                          label='Preventive measures (optional)'
+                          value={form.preventiveMeasures ?? ''}
+                          onChange={(e) => updateField(event.id, 'preventiveMeasures', e.target.value)}
+                          size='small'
+                          fullWidth
+                          multiline
+                          minRows={2}
+                        />
+                        {eventError && <Alert severity='warning'>{eventError}</Alert>}
+                        {resolveMutation.isError && isResolvingThisEvent && (
+                          <Alert severity='error'>Failed to resolve event. Please try again.</Alert>
+                        )}
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                          <Button
+                            variant='text'
+                            onClick={() => setExpandedEventId(null)}
+                            disabled={isResolvingThisEvent}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant='contained'
+                            onClick={() => resolveEvent(event.id)}
+                            disabled={isResolvingThisEvent}
+                          >
+                            {isResolvingThisEvent ? 'Resolving...' : 'Confirm resolution'}
+                          </Button>
+                        </Box>
+                      </>
+                    )}
                   </Box>
                 )}
               </CardContent>

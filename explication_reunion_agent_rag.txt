@@ -1,0 +1,647 @@
+EXPLICATION POUR LA RÉUNION AVEC L'ENCADRANT
+Projet : FinBank — Agent bancaire, RAG et fonctionnalités administrateur
+
+======================================================================
+1. PRÉSENTATION GÉNÉRALE DE L'AGENT BANCAIRE
+======================================================================
+
+L'agent bancaire est un assistant conversationnel intégré à FinBank. Il
+permet à l'utilisateur de communiquer avec la plateforme en langage
+naturel au lieu d'utiliser uniquement les menus classiques.
+
+L'agent analyse le message de l'utilisateur, détecte son intention,
+vérifie le niveau de confiance et décide de l'action à effectuer. Selon
+la demande, il peut :
+
+- répondre directement ;
+- demander des informations complémentaires ;
+- utiliser un outil métier ;
+- rechercher une information dans la base de connaissances RAG ;
+- déclencher un workflow BPMN nécessitant une validation humaine.
+
+Architecture générale :
+
+Utilisateur
+    |
+    v
+Interface de chat React
+    |
+    v
+MessageController
+    |
+    v
+ChatService
+    |
+    +-- Détection d'intention
+    +-- BankingAgentService
+    +-- AgentToolService
+    +-- Recherche RAG
+    +-- Workflow BPMN / Flowable
+    +-- Enregistrement de la conversation
+
+L'agent possède une session et conserve :
+
+- le contexte de la conversation ;
+- les messages précédents ;
+- l'intention détectée ;
+- les paramètres extraits ;
+- la décision prise ;
+- les actions effectuées ;
+- les informations concernant l'utilisation du RAG.
+
+Chaque session possède un BankingAgent associé. Les actions de l'agent
+sont enregistrées dans une trace d'activité afin que l'administrateur
+puisse comprendre pourquoi une décision a été prise.
+
+======================================================================
+2. FONCTIONNEMENT DE L'AGENT
+======================================================================
+
+Lorsqu'un utilisateur envoie un message, le traitement suit plusieurs
+étapes.
+
+2.1. Réception du message
+
+Exemple :
+
+« Je veux changer mon adresse e-mail. »
+
+Le frontend React envoie le message au backend avec l'endpoint :
+
+POST /sessions/{sessionId}/messages
+
+2.2. Vérification de la session
+
+Le système vérifie que :
+
+- la session existe ;
+- elle appartient bien à l'utilisateur connecté ;
+- elle n'est pas fermée ou expirée ;
+- un fournisseur d'intelligence artificielle est disponible.
+
+2.3. Détection de l'intention
+
+Le système analyse le texte et identifie une intention, par exemple :
+
+UPDATE_SENSITIVE_DATA
+
+Le résultat contient généralement :
+
+Intent       : UPDATE_SENSITIVE_DATA
+Confidence   : 1.0
+Sensitive    : true
+Parameters   : données extraites
+
+Les intentions peuvent concerner :
+
+- le solde ;
+- l'historique ;
+- un virement ;
+- un retrait ;
+- une carte ;
+- un investissement ;
+- une clé PIX ;
+- le profil ;
+- une fraude ;
+- une réclamation ;
+- une demande de support.
+
+2.4. Prise de décision
+
+L'agent choisit une décision parmi trois possibilités principales :
+
+AUTO_EXECUTE
+    L'action peut être exécutée automatiquement.
+
+REQUEST_INFO
+    L'agent demande une précision ou répond à partir de la base de
+    connaissances.
+
+TRIGGER_BPMN
+    La demande est sensible et nécessite un workflow ou une validation
+    humaine.
+
+Les règles principales sont :
+
+- si la confiance est inférieure à 0.7, l'agent demande une précision ;
+- si la demande est sensible, il déclenche un workflow BPMN ;
+- sinon, il peut exécuter automatiquement une action autorisée.
+
+======================================================================
+3. SCÉNARIO ACTIF : CHANGEMENT D'ADRESSE E-MAIL
+======================================================================
+
+Le scénario de changement d'adresse e-mail est intéressant à présenter,
+car il montre l'agent, la détection d'intention, le workflow BPMN et
+l'intervention de l'administrateur.
+
+3.1. Message de l'utilisateur
+
+« Je veux changer mon adresse e-mail en
+nouvelle.adresse@example.com. »
+
+3.2. Détection
+
+L'agent détecte :
+
+Intent       : UPDATE_SENSITIVE_DATA
+Confidence   : 1.0
+Sensitive    : true
+Decision     : TRIGGER_BPMN
+
+Le changement d'adresse e-mail est considéré comme une opération
+sensible. L'agent ne modifie donc pas directement la base de données.
+
+3.3. Création d'une demande
+
+L'agent explique à l'utilisateur que sa demande doit être examinée par
+le support ou l'administrateur.
+
+La demande peut contenir :
+
+- l'utilisateur concerné ;
+- l'ancienne adresse ;
+- la nouvelle adresse ;
+- la description de la demande ;
+- la date de création ;
+- le statut de la demande ;
+- la trace de l'action de l'agent.
+
+3.4. Lancement du workflow
+
+Le système déclenche un processus BPMN Flowable :
+
+Demande de changement
+        |
+        v
+Vérification des informations
+        |
+        v
+Tâche de validation administrateur
+        |
+        +------------------+
+        |                  |
+        v                  v
+    Approuver           Rejeter
+        |                  |
+        v                  v
+Mise à jour et       Notification de refus
+déconnexion
+
+3.5. Intervention de l'administrateur
+
+L'administrateur ouvre l'écran des tâches Flowable et consulte :
+
+- l'identité de l'utilisateur ;
+- le type de demande ;
+- les données fournies ;
+- le contexte de la conversation ;
+- la date de création ;
+- l'historique du workflow.
+
+Il choisit ensuite :
+
+APPROVE
+
+ou :
+
+REJECT
+
+3.6. Résultat
+
+Si la demande est approuvée :
+
+- le workflow continue ;
+- la demande est marquée comme approuvée ;
+- l'utilisateur est informé ;
+- il termine la modification depuis son profil ;
+- il doit se reconnecter avec la nouvelle adresse.
+
+Si la demande est refusée :
+
+- la modification n'est pas appliquée ;
+- le statut devient REJECTED ;
+- l'utilisateur reçoit une notification.
+
+Phrase importante :
+
+« L'agent ne prend pas seul les décisions sensibles. Il analyse la
+demande et déclenche un processus contrôlé. La décision finale est prise
+dans le workflow BPMN par un administrateur autorisé. »
+
+======================================================================
+4. EXEMPLE D'ACTION AUTOMATIQUE
+======================================================================
+
+Exemple :
+
+« Quel est le solde de mon compte ? »
+
+L'agent détecte :
+
+Intent       : BALANCE
+Confidence   : 0.9
+Decision     : AUTO_EXECUTE
+
+Ensuite :
+
+1. l'agent identifie l'utilisateur connecté ;
+2. il appelle l'outil métier correspondant ;
+3. il récupère uniquement le compte de cet utilisateur ;
+4. il retourne le solde ;
+5. l'action est enregistrée dans la trace de l'agent.
+
+L'agent ne doit jamais retourner le compte ou le solde d'un autre
+utilisateur.
+
+======================================================================
+5. EXEMPLE DE DEMANDE UTILISANT LE RAG
+======================================================================
+
+Exemple :
+
+« Quels sont les frais liés à un virement ? »
+
+Le système procède ainsi :
+
+1. il analyse la question ;
+2. il détecte qu'il s'agit d'une demande d'information ;
+3. il cherche une réponse dans la base locale de connaissances ;
+4. si aucune réponse suffisante n'est trouvée, il utilise la recherche
+   vectorielle RAG ;
+5. il récupère les documents les plus proches sémantiquement ;
+6. il construit un contexte ;
+7. il génère une réponse basée sur ce contexte.
+
+La réponse peut être accompagnée de la source utilisée.
+
+======================================================================
+6. QU'EST-CE QUE LE RAG ?
+======================================================================
+
+RAG signifie Retrieval-Augmented Generation.
+
+En français :
+
+Génération augmentée par récupération d'informations.
+
+Le RAG fonctionne en deux parties.
+
+6.1. Retrieval — récupération
+
+Le système recherche les documents qui correspondent le mieux à la
+question de l'utilisateur.
+
+Pour la question :
+
+« Comment bloquer ma carte ? »
+
+Le système peut retrouver :
+
+- la procédure de blocage d'une carte ;
+- les règles de sécurité ;
+- les conditions de remplacement ;
+- les informations du support bancaire.
+
+6.2. Generation — génération
+
+Les documents trouvés sont transmis comme contexte à l'assistant.
+L'assistant produit ensuite une réponse en se basant sur ces
+informations.
+
+Question utilisateur
+        |
+        v
+Transformation en vecteur
+        |
+        v
+Recherche des documents similaires
+        |
+        v
+Construction du contexte
+        |
+        v
+Réponse de l'assistant
+
+Le RAG évite que l'assistant réponde uniquement à partir de
+connaissances générales ou invente une réponse.
+
+Phrase simple :
+
+« Le RAG permet à l'assistant de répondre à partir des documents
+internes de FinBank. Il ne remplace pas l'assistant ; il lui fournit un
+contexte fiable avant la génération de la réponse. »
+
+======================================================================
+7. QU'EST-CE QU'UN DOCUMENT RAG ?
+======================================================================
+
+Un document RAG est une information enregistrée dans la base de
+connaissances de FinBank et utilisée pour répondre aux questions des
+utilisateurs.
+
+Un document contient principalement :
+
+- un titre ;
+- un contenu ;
+- une source ;
+- un statut actif ou inactif ;
+- une date de création ;
+- une date de modification ;
+- une représentation vectorielle.
+
+Dans l'entité RagDocument :
+
+- title : titre du document ;
+- content : contenu de connaissance ;
+- source : origine du document ;
+- active : indique si le document peut être utilisé ;
+- createdAt : date de création ;
+- updatedAt : date de modification.
+
+Exemple de document RAG :
+
+Titre :
+Procédure de blocage d'une carte
+
+Source :
+Guide sécurité FinBank
+
+Contenu :
+En cas de perte ou de vol, l'utilisateur doit ouvrir la rubrique
+Cartes, sélectionner la carte concernée et demander son blocage. Pour
+une carte volée, une déclaration doit également être envoyée au support
+client.
+
+Ce document est utilisé lorsque l'utilisateur demande :
+
+« Ma carte est perdue, que dois-je faire ? »
+
+======================================================================
+8. AJOUT D'UN DOCUMENT RAG PAR L'ADMINISTRATEUR
+======================================================================
+
+Dans l'interface administrateur, la page s'appelle :
+
+RAG Knowledge Base
+
+L'administrateur peut :
+
+- ajouter un document ;
+- modifier un document ;
+- supprimer un document ;
+- activer ou désactiver un document ;
+- réindexer un document ;
+- consulter le nombre de documents actifs ;
+- uploader un fichier ;
+- extraire automatiquement ses informations.
+
+Le formulaire contient :
+
+- Document title ;
+- Source / origin ;
+- Knowledge content ;
+- un interrupteur Active ;
+- un bouton Upload & extract.
+
+======================================================================
+9. QUE SE PASSE-T-IL LORSQU'ON UPLOAD UN FICHIER ?
+======================================================================
+
+Le fichier uploadé n'est pas directement enregistré comme fichier RAG.
+Il est d'abord envoyé au service d'extraction. Les informations
+extraites sont ensuite transformées en titre, source et contenu
+textuel. L'administrateur vérifie le résultat et valide ensuite
+l'enregistrement du document dans la base RAG.
+
+Processus :
+
+Fichier uploadé
+        |
+        v
+POST /ai/extract-document
+        |
+        v
+Extraction des champs
+        |
+        v
+Pré-remplissage du formulaire
+        |
+        v
+Validation de l'administrateur
+        |
+        v
+POST /admin/rag-documents
+        |
+        v
+Enregistrement du document
+        |
+        v
+Création de l'embedding
+        |
+        v
+Stockage vectoriel pgvector
+
+L'extraction peut récupérer :
+
+- le nom du client ;
+- l'e-mail ;
+- le téléphone ;
+- l'adresse ;
+- le montant ;
+- le numéro de compte ;
+- le produit ;
+- le type de document.
+
+Exemple de contenu d'un fichier :
+
+Name: Lucas Martin
+Email: lucas.martin@example.com
+Document type: Card blocked
+Product: Credit card
+Issue: Card blocked after suspicious activity
+
+Après extraction, le formulaire peut être rempli ainsi :
+
+Titre :
+Card blocked document
+
+Source :
+nom_du_fichier.pdf
+
+Contenu :
+Customer name: Lucas Martin
+Email: lucas.martin@example.com
+Product: Credit card
+
+L'administrateur peut modifier le contenu avant de cliquer sur
+« Add document ».
+
+======================================================================
+10. CRÉATION DE L'EMBEDDING
+======================================================================
+
+Après l'enregistrement du document, le backend combine :
+
+Titre + contenu
+
+Ce texte est envoyé au modèle local d'embedding :
+
+nomic-embed-text
+
+Le modèle transforme le texte en vecteur numérique de 768 dimensions.
+
+Texte du document
+        |
+        v
+nomic-embed-text
+        |
+        v
+Vecteur numérique
+        |
+        v
+Colonne embedding dans PostgreSQL avec pgvector
+
+Lorsqu'un utilisateur pose une question :
+
+Question utilisateur
+        |
+        v
+Vecteur de la question
+        |
+        v
+Comparaison avec les vecteurs des documents
+        |
+        v
+Documents les plus similaires
+
+Le système applique un seuil de similarité. Dans le code, le seuil par
+défaut est :
+
+0.72
+
+Si aucun document n'est suffisamment proche, le système utilise une
+recherche de secours basée sur la base de connaissances locale.
+
+Phrase importante :
+
+« L'embedding ne contient pas directement une réponse lisible. C'est
+une représentation numérique du sens du document qui permet de comparer
+sémantiquement une question avec les documents existants. »
+
+======================================================================
+11. FONCTIONNALITÉS ADMINISTRATEUR
+======================================================================
+
+L'espace administrateur constitue un tableau de contrôle de la
+plateforme.
+
+11.1. Gestion des workflows
+
+- consulter les tâches Flowable ;
+- consulter les instances de processus ;
+- consulter le détail d'un processus ;
+- consulter la trace d'exécution ;
+- approuver ou rejeter une tâche ;
+- suivre le résultat d'un workflow.
+
+11.2. Gestion des utilisateurs
+
+- consulter les utilisateurs ;
+- bloquer un utilisateur ;
+- débloquer un utilisateur ;
+- consulter les informations de sécurité.
+
+11.3. Gestion des tickets
+
+- consulter les tickets de support ;
+- traiter une demande ;
+- générer une réponse assistée par l'IA ;
+- clôturer ou rouvrir un ticket.
+
+11.4. Gestion de la sécurité
+
+- consulter les journaux d'audit ;
+- consulter les événements de sécurité ;
+- analyser un événement avec l'assistant ;
+- résoudre un événement de sécurité.
+
+11.5. Gestion de la base RAG
+
+- afficher les documents ;
+- ajouter un document ;
+- modifier un document ;
+- supprimer un document ;
+- activer ou désactiver un document ;
+- réindexer un document ;
+- uploader un fichier et extraire ses informations.
+
+11.6. Gestion des agents
+
+- consulter les agents liés aux sessions ;
+- consulter leur activité ;
+- voir les intentions détectées ;
+- voir les décisions prises ;
+- consulter les traces d'exécution.
+
+======================================================================
+12. DIFFÉRENCE ENTRE AGENT, RAG ET FLOWABLE
+======================================================================
+
+Agent bancaire
+    Analyse la demande et décide du traitement.
+
+Détection d'intention
+    Identifie ce que l'utilisateur veut faire.
+
+Outil métier
+    Exécute une action autorisée, par exemple consulter le solde.
+
+RAG
+    Fournit des informations issues des documents internes.
+
+Flowable/BPMN
+    Orchestre les opérations sensibles nécessitant une validation.
+
+Administrateur
+    Prend la décision humaine lorsque cela est nécessaire.
+
+Résumé :
+
+« L'agent est le décideur technique de premier niveau. Le RAG lui
+fournit des connaissances. Les outils lui permettent d'exécuter
+certaines opérations. Flowable prend le relais pour les opérations
+sensibles et l'administrateur intervient pour la validation humaine. »
+
+======================================================================
+13. PRÉSENTATION ORALE COURTE
+======================================================================
+
+« Dans notre plateforme FinBank, l'agent bancaire est un assistant
+conversationnel qui reçoit les demandes de l'utilisateur et les
+analyse. Le message est d'abord envoyé au backend, puis le système
+détecte l'intention, par exemple consulter le solde, effectuer un
+virement, signaler une fraude ou modifier une donnée sensible.
+
+Selon le niveau de confiance et le type de demande, l'agent peut
+répondre avec une information, exécuter automatiquement une action ou
+déclencher un workflow BPMN. Les opérations sensibles ne sont jamais
+exécutées directement. Elles sont envoyées vers Flowable et doivent
+être validées par un administrateur.
+
+Pour les questions générales, l'agent utilise le RAG. Le RAG recherche
+les documents les plus pertinents dans la base de connaissances et
+transmet leur contenu comme contexte à l'assistant. Un document RAG
+contient un titre, une source, un contenu et un statut actif.
+
+Lorsqu'un document est ajouté, son titre et son contenu sont transformés
+en vecteur grâce au modèle d'embedding, puis stockés dans PostgreSQL
+avec pgvector. L'administrateur peut ajouter un document manuellement
+ou uploader un fichier. Le fichier est d'abord analysé par le service
+d'extraction, les champs extraits remplissent le formulaire, puis
+l'administrateur vérifie et valide le document avant son indexation.
+
+L'objectif est donc d'avoir un assistant utile pour les demandes
+simples, contrôlé pour les demandes sensibles et capable de répondre à
+partir des connaissances internes de la banque. »
+

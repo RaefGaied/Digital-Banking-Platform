@@ -85,6 +85,13 @@ public class SecurityEventService {
             return;
         }
 
+        // Admins are never locked out so the back office stays reachable; failures are still audited.
+        if (user.getRole() == com.fintech.banking.domain.enums.UserRole.ADMIN) {
+            createAuditLog(user.getId(), "LOGIN_FAILURE", "Failed admin login attempt (no lockout applied)",
+                    "User", user.getId().toString(), null);
+            return;
+        }
+
         user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
 
         if (user.getFailedLoginAttempts() >= MAX_FAILED_LOGIN_ATTEMPTS) {

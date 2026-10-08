@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
-  Sparkles,
   TrendingUp,
   Activity,
   Globe2,
@@ -28,9 +27,10 @@ import {
   Zap,
   CheckCircle2,
   Wifi,
+  Landmark,
   Bot,
-  Cpu,
-  Layers,
+  MessageSquare,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import TwoFactorModal from '../components/auth/TwoFactorModal';
@@ -67,13 +67,66 @@ export default function LoginPage() {
 
   // Interactive Live Data States
   const [fxList, setFxList] = useState(initialFx);
-  const [activeTab, setActiveTab] = useState<'ai' | 'live' | 'fx' | 'security'>('ai');
+  const [activeTab, setActiveTab] = useState<'agent' | 'security' | 'live' | 'fx'>('agent');
   const [feedIndex, setFeedIndex] = useState(0);
+  const [agentScenarioIndex, setAgentScenarioIndex] = useState(0);
   const [cardFlipped, setCardFlipped] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Periodic simulated live ticks for real-time market authenticity
+  const agentScenarios = locale === 'fr' ? [
+    {
+      category: 'Virement Intelligent',
+      clientQuery: '« Exécute un virement de 350 € vers mon compte épargne »',
+      agentReply: 'Virement SEPA instantané exécuté sans frais. Nouveau solde disponible : 14 820,50 €.',
+      latency: '14ms',
+      icon: Zap,
+      accent: '#e8611a',
+    },
+    {
+      category: 'Gestion de Carte & Sécurité',
+      clientQuery: '« Augmente temporairement le plafond de ma carte FinBank Black »',
+      agentReply: 'Plafond rehaussé à 5 000 € pour 48h après validation de votre empreinte biométrique.',
+      latency: '9ms',
+      icon: ShieldCheck,
+      accent: '#10b981',
+    },
+    {
+      category: 'Analyse Budgétaire Prédictive',
+      clientQuery: '« Quelle est ma projection de dépenses d’ici la fin du mois ? »',
+      agentReply: 'Synthèse générée : vous restez dans vos objectifs (+14% d’épargne prévisionnelle).',
+      latency: '18ms',
+      icon: TrendingUp,
+      accent: '#6366f1',
+    },
+  ] : [
+    {
+      category: 'Instant Transfer',
+      clientQuery: '“Transfer $350 to my high-yield savings account”',
+      agentReply: 'SEPA Instant completed with zero fees. Updated account balance: $14,820.50.',
+      latency: '14ms',
+      icon: Zap,
+      accent: '#e8611a',
+    },
+    {
+      category: 'Card Control & Security',
+      clientQuery: '“Temporarily increase my FinBank Black spending limit”',
+      agentReply: 'Card limit elevated to $5,000 for 48 hours after biometric authentication.',
+      latency: '9ms',
+      icon: ShieldCheck,
+      accent: '#10b981',
+    },
+    {
+      category: 'Predictive Financial Insights',
+      clientQuery: '“What is my projected expenditure for the rest of this month?”',
+      agentReply: 'Insights ready: your budget remains well on target (+14% projected savings).',
+      latency: '18ms',
+      icon: TrendingUp,
+      accent: '#6366f1',
+    },
+  ];
+
+  // Periodic simulated live ticks & dynamic cycling
   useEffect(() => {
     const fxInterval = window.setInterval(() => {
       setFxList((prev) =>
@@ -97,11 +150,16 @@ export default function LoginPage() {
       setFeedIndex((prev) => (prev + 1) % liveSettlements.length);
     }, 3200);
 
+    const agentInterval = window.setInterval(() => {
+      setAgentScenarioIndex((prev) => (prev + 1) % agentScenarios.length);
+    }, 4200);
+
     return () => {
       window.clearInterval(fxInterval);
       window.clearInterval(feedInterval);
+      window.clearInterval(agentInterval);
     };
-  }, []);
+  }, [agentScenarios.length]);
 
   // Account Lock Countdown Timer
   useEffect(() => {
@@ -137,72 +195,62 @@ export default function LoginPage() {
     setMousePos({ x: 0, y: 0 });
   };
 
-  const fillDemo = (role: 'user' | 'admin') => {
-    if (role === 'admin') {
-      setEmail('admin@banking.com');
-      setPassword('Admin123!');
-    } else {
-      setEmail('user@banking.com');
-      setPassword('User123!');
-    }
-  };
-
   const text =
     locale === 'fr'
       ? {
-          projectTitle: 'Banking Customer Support Agent',
-          projectSubtitle: 'Assistant Client Bancaire avec IA Hybride',
-          platformTag: 'FinBank Digital • Plateforme Bancaire Sécurisée',
-          privateBanking: 'IA Hybride & Banque Digitale',
-          heroTitle1: 'Assistant Bancaire',
-          heroTitle2: 'avec IA Hybride.',
+          brandName: 'FinBank',
+          brandSubtitle: 'Banque Digitale & Agent Intelligent',
+          platformTag: 'Portail Client Privé • Sécurité Institutionnelle',
+          privateBanking: 'Banque Privée & Agent Dédié',
+          heroTitle1: 'Votre Banque Digitale,',
+          heroTitle2: 'propulsée par un Agent 24/7.',
           heroDesc:
-            'Plateforme bancaire intelligente propulsée par Spring AI, Ollama (Qwen2.5:7b), RAG pgvector et orchestration sécurisée Flowable BPMN.',
+            'Gérez vos comptes en temps réel, exécutez vos opérations financières en langage naturel et bénéficiez d’un accompagnement bancaire permanent.',
+          agentConcierge: 'Agent Bancaire 24/7',
           liveStream: 'Flux Réseau',
           fxMarkets: 'Marchés FX',
-          aiArchitecture: 'Architecture IA Hybride',
-          securityAudit: 'Sécurité & Audits',
-          instantClearing: 'Règlement Réseau',
-          secureAccess: 'Portail Bancaire & Support IA',
-          welcomeBack: 'Accès Client & Support',
-          signInPrompt: 'Identifiez-vous pour accéder à vos comptes et interagir avec votre assistant IA',
+          securityAudit: 'Sécurité & Garanties',
+          systemOnline: 'AGENT EN LIGNE • ACTIF 24/7',
+          agentActivePrompt: 'Agent Bancaire Intelligent Actif',
+          agentActiveDesc: 'Votre assistant dédié est prêt pour vos virements et analyses dès votre connexion.',
+          welcomeBack: 'Espace Client Sécurisé',
+          welcomeSubtitle: 'Authentification Forte',
+          signInPrompt: 'Identifiez-vous pour accéder à vos comptes et interagir avec votre agent.',
           emailAddress: 'Adresse e-mail',
           password: 'Mot de passe',
           forgotPassword: 'Mot de passe oublié ?',
-          signIn: 'Connexion Sécurisée',
-          securityNote: 'Sensitive Line Java autoritaire · Chiffrement AES-256 · Audit Trail Flowable',
+          signIn: 'Accéder à mon espace',
+          securityNote: 'Connexion chiffrée SSL/TLS · Chiffrement AES-256 · Conforme DSP2',
           noAccount: 'Pas encore de compte ?',
-          createOne: 'Ouvrir un compte',
-          demoClient: 'Démo Client',
-          demoAdmin: 'Démo Admin Back-Office',
+          createOne: 'Ouvrir un compte bancaire',
           flipCard: 'Retourner la carte (CVV)',
         }
       : {
-          projectTitle: 'Banking Customer Support Agent',
-          projectSubtitle: 'Hybrid AI Banking Customer Assistant',
-          platformTag: 'FinBank Digital • Enterprise Intelligent Banking',
-          privateBanking: 'Hybrid AI & Digital Banking',
-          heroTitle1: 'Banking Customer',
-          heroTitle2: 'Support Agent.',
+          brandName: 'FinBank',
+          brandSubtitle: 'Digital Banking & Smart Agent',
+          platformTag: 'Private Client Portal • Enterprise Security',
+          privateBanking: 'Private Banking & Dedicated Agent',
+          heroTitle1: 'Next-Gen Banking,',
+          heroTitle2: 'guided by 24/7 Smart Agent.',
           heroDesc:
-            'Intelligent banking platform powered by Spring AI, Ollama (Qwen2.5:7b), pgvector RAG, and authoritative Flowable BPMN Sensitive Line.',
+            'Effortlessly manage multi-currency accounts, execute transactions through conversation, and enjoy continuous private banking assistance.',
+          agentConcierge: '24/7 Smart Agent',
           liveStream: 'Network Feed',
-          fxMarkets: 'FX Treasury',
-          aiArchitecture: 'Hybrid AI Architecture',
-          securityAudit: 'Security & Audit',
-          instantClearing: 'Global Settlement',
-          secureAccess: 'Banking & AI Agent Portal',
-          welcomeBack: 'Client & Agent Login',
-          signInPrompt: 'Authenticate to access multi-currency accounts and interact with your AI assistant',
+          fxMarkets: 'FX Markets',
+          securityAudit: 'Security & Compliance',
+          systemOnline: 'AGENT ONLINE • ACTIVE 24/7',
+          agentActivePrompt: 'Intelligent Banking Agent Active',
+          agentActiveDesc: 'Your dedicated financial assistant is ready for your transfers and insights.',
+          welcomeBack: 'Secure Client Portal',
+          welcomeSubtitle: 'Multi-Factor Access',
+          signInPrompt: 'Authenticate to access your funds and interact with your financial agent.',
           emailAddress: 'Email Address',
           password: 'Password',
           forgotPassword: 'Forgot password?',
-          signIn: 'Authenticate & Access',
-          securityNote: 'Authoritative Java Sensitive Line · AES-256 GCM · Flowable BPMN Audit Trail',
+          signIn: 'Access My Account',
+          securityNote: 'SSL/TLS Encrypted · AES-256 Bit Security · PSD2 Banking Standard Compliant',
           noAccount: "Don't have an account yet?",
-          createOne: 'Open an account',
-          demoClient: 'Demo Client',
-          demoAdmin: 'Demo Admin Back-Office',
+          createOne: 'Open a bank account',
           flipCard: 'Flip Card (CVV)',
         };
 
@@ -229,6 +277,8 @@ export default function LoginPage() {
     return ok;
   };
 
+  const currentScenario = agentScenarios[agentScenarioIndex];
+
   return (
     <Box
       sx={{
@@ -246,11 +296,11 @@ export default function LoginPage() {
           inset: 0,
           pointerEvents: 'none',
           background:
-            'radial-gradient(circle at 12% 18%, rgba(232,97,26,0.14), transparent 45%), radial-gradient(circle at 88% 82%, rgba(59,130,246,0.1), transparent 45%)',
+            'radial-gradient(circle at 12% 18%, rgba(232,97,26,0.18), transparent 45%), radial-gradient(circle at 88% 82%, rgba(99,102,241,0.14), transparent 45%)',
         }}
       />
 
-      {/* ── LEFT SHOWCASE PANEL (Desktop only, Interactive Real-time Banking Hub) ── */}
+      {/* ── LEFT SHOWCASE PANEL (Desktop only, Banking Portal Brand Hub) ── */}
       <Box
         sx={{
           display: { xs: 'none', lg: 'flex' },
@@ -271,8 +321,8 @@ export default function LoginPage() {
           <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <Box
               sx={{
-                width: 46,
-                height: 46,
+                width: 48,
+                height: 48,
                 borderRadius: 3,
                 background: 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)',
                 display: 'grid',
@@ -281,18 +331,18 @@ export default function LoginPage() {
                 boxShadow: '0 8px 24px -2px rgba(232, 97, 26, 0.4)',
               }}
             >
-              <Sparkles className='w-5 h-5 text-white' />
+              <Landmark className='w-6 h-6 text-white' />
             </Box>
             <Box>
               <Typography variant='h6' sx={{ fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-                {text.projectTitle}
+                {text.brandName}
               </Typography>
               <Typography
                 variant='caption'
                 color='primary.main'
                 sx={{ letterSpacing: 0.5, fontWeight: 800, display: 'block' }}
               >
-                {text.projectSubtitle}
+                {text.brandSubtitle}
               </Typography>
               <Typography
                 variant='caption'
@@ -304,7 +354,7 @@ export default function LoginPage() {
             </Box>
           </Stack>
 
-          {/* Live Ping & Node Status Badge */}
+          {/* Dynamic Live Agent Pulse Status Badge */}
           <Box
             sx={{
               display: 'flex',
@@ -315,50 +365,52 @@ export default function LoginPage() {
               borderRadius: 999,
               bgcolor: 'action.hover',
               border: 1,
-              borderColor: 'divider',
-              boxShadow: '0 2px 8px -1px rgba(0,0,0,0.06)',
+              borderColor: 'rgba(232,97,26,0.3)',
+              boxShadow: '0 4px 16px -2px rgba(232, 97, 26, 0.15)',
             }}
           >
             <Box
               className='ai-halo-orbit'
               sx={{
-                width: 22,
-                height: 22,
+                width: 24,
+                height: 24,
                 borderRadius: '50%',
                 display: 'grid',
                 placeItems: 'center',
                 bgcolor: '#0f172a',
               }}
             >
-              <Bot className='w-3 h-3 text-orange-400' />
+              <Bot className='w-3.5 h-3.5 text-orange-400' />
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Box className='ai-wave-bar' sx={{ height: '10px !important' }} />
-              <Box className='ai-wave-bar' sx={{ height: '14px !important' }} />
-              <Box className='ai-wave-bar' sx={{ height: '8px !important' }} />
+              <Box className='ai-wave-bar' sx={{ height: '9px !important' }} />
+              <Box className='ai-wave-bar' sx={{ height: '15px !important' }} />
+              <Box className='ai-wave-bar' sx={{ height: '11px !important' }} />
+              <Box className='ai-wave-bar' sx={{ height: '16px !important' }} />
             </Box>
-            <Typography variant='caption' sx={{ fontWeight: 800, color: 'text.primary', fontSize: 11 }}>
-              AGENT IA EN LIGNE • Qwen2.5:7b
+            <Typography variant='caption' sx={{ fontWeight: 900, color: 'text.primary', fontSize: 11, letterSpacing: 0.5 }}>
+              {text.systemOnline}
             </Typography>
           </Box>
         </Box>
 
         {/* Hero Copy */}
         <Box sx={{ my: 3 }}>
-          <Typography
-            variant='caption'
-            sx={{
-              color: 'primary.main',
-              letterSpacing: 2.5,
-              textTransform: 'uppercase',
-              fontWeight: 800,
-              fontSize: 11,
-              display: 'block',
-              mb: 1,
-            }}
-          >
-            {text.privateBanking}
-          </Typography>
+          <Stack direction='row' spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
+            <Sparkles className='w-3.5 h-3.5 text-orange-500' />
+            <Typography
+              variant='caption'
+              sx={{
+                color: 'primary.main',
+                letterSpacing: 2.5,
+                textTransform: 'uppercase',
+                fontWeight: 900,
+                fontSize: 11,
+              }}
+            >
+              {text.privateBanking}
+            </Typography>
+          </Stack>
           <Typography
             variant='h2'
             sx={{
@@ -517,15 +569,15 @@ export default function LoginPage() {
           </Button>
         </Box>
 
-        {/* ── REALISTIC LIVE STATISTICS INTERACTIVE TABS ── */}
+        {/* ── REALISTIC DYNAMIC BANKING & AGENT TABS ── */}
         <Box sx={{ mt: 1 }}>
           {/* Tab Navigation */}
           <Stack direction='row' spacing={1} sx={{ mb: 2, overflowX: 'auto', pb: 0.5 }}>
             {[
-              { key: 'ai', label: text.aiArchitecture, icon: Bot },
+              { key: 'agent', label: text.agentConcierge, icon: Bot },
+              { key: 'security', label: text.securityAudit, icon: Lock },
               { key: 'live', label: text.liveStream, icon: Activity },
               { key: 'fx', label: text.fxMarkets, icon: TrendingUp },
-              { key: 'security', label: text.securityAudit, icon: Lock },
             ].map(({ key, label, icon: Icon }) => {
               const isSelected = activeTab === key;
               return (
@@ -555,55 +607,208 @@ export default function LoginPage() {
             })}
           </Stack>
 
-          {/* TAB 0: Hybrid AI Agent Architecture */}
-          {activeTab === 'ai' && (
-            <Box sx={{ display: 'grid', gap: 1.5 }}>
+          {/* TAB 0: Dynamic 24/7 Agent Concierge Preview */}
+          {activeTab === 'agent' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {/* Dynamic Interactive Agent Simulation Box */}
+              <Card
+                variant='outlined'
+                className='cyber-shimmer'
+                sx={{
+                  p: 2.2,
+                  borderRadius: 3.5,
+                  bgcolor: 'action.hover',
+                  border: 1,
+                  borderColor: 'rgba(232, 97, 26, 0.35)',
+                  boxShadow: '0 10px 25px -5px rgba(232, 97, 26, 0.1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Header with Live Status & Audio/Equalizer Animation */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.8 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                    <Box
+                      className='ai-halo-orbit'
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        bgcolor: '#0f172a',
+                        display: 'grid',
+                        placeItems: 'center',
+                      }}
+                    >
+                      <Bot className='w-3.5 h-3.5 text-orange-400' />
+                    </Box>
+                    <Box>
+                      <Typography variant='subtitle2' sx={{ fontWeight: 800, fontSize: 13, color: 'text.primary' }}>
+                        {currentScenario.category}
+                      </Typography>
+                      <Typography variant='caption' sx={{ color: 'text.secondary', fontSize: 10 }}>
+                        {locale === 'fr' ? 'Interaction en direct · Réponse en temps réel' : 'Live interaction · Real-time processing'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Chip
+                    label={`Latence: ${currentScenario.latency}`}
+                    size='small'
+                    color='success'
+                    variant='outlined'
+                    sx={{ height: 20, fontSize: 10, fontWeight: 800 }}
+                  />
+                </Box>
+
+                {/* Client Voice / Message Bubble */}
+                <Box
+                  sx={{
+                    p: 1.4,
+                    borderRadius: 2.5,
+                    bgcolor: 'background.paper',
+                    border: 1,
+                    borderColor: 'divider',
+                    mb: 1.2,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1.2,
+                  }}
+                >
+                  <MessageSquare className='w-4 h-4 text-slate-400 mt-0.5 shrink-0' />
+                  <Typography variant='body2' sx={{ fontWeight: 700, color: 'text.primary', fontSize: 12.5, fontStyle: 'italic' }}>
+                    {currentScenario.clientQuery}
+                  </Typography>
+                </Box>
+
+                {/* Agent Instant Resolution Bubble */}
+                <Box
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2.5,
+                    bgcolor: 'rgba(232, 97, 26, 0.08)',
+                    border: 1,
+                    borderColor: 'rgba(232, 97, 26, 0.25)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1.2,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: '50%',
+                      bgcolor: 'primary.main',
+                      display: 'grid',
+                      placeItems: 'center',
+                      shrink: 0,
+                      color: '#ffffff',
+                    }}
+                  >
+                    <Zap className='w-3 h-3' />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant='caption' sx={{ color: 'primary.main', fontWeight: 900, textTransform: 'uppercase', fontSize: 10, display: 'block', mb: 0.2 }}>
+                      Agent FinBank
+                    </Typography>
+                    <Typography variant='body2' sx={{ fontWeight: 600, color: 'text.primary', fontSize: 12, lineHeight: 1.5 }}>
+                      {currentScenario.agentReply}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Pagination / scenario selector chips */}
+                <Stack direction='row' spacing={1} sx={{ mt: 1.6, justifyContent: 'center' }}>
+                  {agentScenarios.map((sc, idx) => (
+                    <Box
+                      key={sc.category}
+                      onClick={() => setAgentScenarioIndex(idx)}
+                      sx={{
+                        width: idx === agentScenarioIndex ? 26 : 8,
+                        height: 6,
+                        borderRadius: 3,
+                        bgcolor: idx === agentScenarioIndex ? 'primary.main' : 'divider',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        '&:hover': { bgcolor: 'primary.light' },
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </Card>
+
+              {/* 3 Quick Capability Pillars */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+                {[
+                  { title: locale === 'fr' ? 'Exécution Rapide' : 'Instant Action', desc: locale === 'fr' ? 'SEPA Instant & Ordres' : 'Instant transfers & ops', icon: Zap },
+                  { title: locale === 'fr' ? 'Contrôle Biométrique' : 'Biometric Auth', desc: locale === 'fr' ? 'Plafonds & Sécurité' : 'Limits & Card safety', icon: ShieldCheck },
+                  { title: locale === 'fr' ? 'Analyse Budgétaire' : 'Smart Insights', desc: locale === 'fr' ? 'Vision patrimoniale' : 'Wealth projections', icon: TrendingUp },
+                ].map(({ title, desc, icon: Icon }) => (
+                  <Box
+                    key={title}
+                    sx={{
+                      p: 1.2,
+                      borderRadius: 2.5,
+                      bgcolor: 'action.hover',
+                      border: 1,
+                      borderColor: 'divider',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Icon className='w-3.5 h-3.5 text-orange-500 mx-auto mb-0.5' />
+                    <Typography variant='caption' sx={{ fontWeight: 800, color: 'text.primary', fontSize: 11, display: 'block' }}>
+                      {title}
+                    </Typography>
+                    <Typography variant='caption' sx={{ color: 'text.secondary', fontSize: 9.5 }}>
+                      {desc}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* TAB 1: Security & Reserves Audit */}
+          {activeTab === 'security' && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
               {[
                 {
-                  title: 'Layer 1 · Local LLM (Spring AI + Ollama)',
-                  desc: 'Qwen2.5:7b on-premise inference for bilingual understanding (FR/EN) and intent extraction with confidence evaluation.',
-                  badge: 'Qwen2.5:7b Local',
-                  badgeColor: 'primary' as const,
-                  icon: Cpu,
-                },
-                {
-                  title: 'Layer 2 · Knowledge Base RAG (pgvector)',
-                  desc: 'Retrieval-Augmented Generation across banking tariffs, policies, and FAQs in PostgreSQL vector store without hallucinations.',
-                  badge: 'pgvector 768-dim',
-                  badgeColor: 'info' as const,
-                  icon: Layers,
-                },
-                {
-                  title: 'Layer 3 · Authoritative Sensitive Line (Flowable BPMN)',
-                  desc: 'Java-enforced governance: AUTO_EXECUTE for routine transfers (<= 5 000 €), and TRIGGER_BPMN for fraud and high-risk workflows.',
-                  badge: 'Flowable BPMN 6.8',
-                  badgeColor: 'success' as const,
+                  title: locale === 'fr' ? '100% Fonds Sécurisés' : '100% Full Reserve',
+                  desc: locale === 'fr' ? 'Comptes ségrégués et réserves garanties' : 'Real-time segregated vaults & proof',
                   icon: ShieldCheck,
                 },
-              ].map(({ title, desc, badge, badgeColor, icon: Icon }) => (
+                {
+                  title: locale === 'fr' ? 'Ratio Tier 1 : 18.4%' : 'Tier 1 Capital: 18.4%',
+                  desc: locale === 'fr' ? 'Dépasse les exigences Bâle III' : 'Exceeds Basel III Requirements',
+                  icon: CheckCircle2,
+                },
+                {
+                  title: 'Certification SOC-2',
+                  desc: locale === 'fr' ? 'Architecture Zero-Trust & Chiffrement E2E' : 'Zero-Trust Architecture Certified',
+                  icon: Lock,
+                },
+                {
+                  title: locale === 'fr' ? 'Garantie des Dépôts' : 'Deposit Guarantee',
+                  desc: locale === 'fr' ? 'Protection européenne jusqu’à 100 000 €' : 'Protected by European Directives',
+                  icon: Globe2,
+                },
+              ].map(({ title, desc, icon: Icon }) => (
                 <Card
                   key={title}
                   variant='outlined'
                   sx={{
-                    p: 1.8,
+                    p: 2,
                     borderRadius: 3,
                     bgcolor: 'action.hover',
                     border: 1,
                     borderColor: 'divider',
-                    transition: 'all 0.2s',
-                    '&:hover': { borderColor: 'primary.main', bgcolor: 'action.selected' },
                   }}
                 >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Icon className='w-4 h-4 text-orange-500' />
-                      <Typography variant='subtitle2' sx={{ fontWeight: 800, color: 'text.primary', fontSize: 12.5 }}>
-                        {title}
-                      </Typography>
-                    </Box>
-                    <Chip label={badge} size='small' color={badgeColor} sx={{ height: 20, fontSize: 10, fontWeight: 700 }} />
-                  </Box>
-                  <Typography variant='caption' color='text.secondary' sx={{ lineHeight: 1.5, display: 'block' }}>
+                  <Icon className='w-5 h-5 text-emerald-500 mb-1' />
+                  <Typography variant='subtitle2' sx={{ fontWeight: 800, color: 'text.primary' }}>
+                    {title}
+                  </Typography>
+                  <Typography variant='caption' color='text.secondary'>
                     {desc}
                   </Typography>
                 </Card>
@@ -611,7 +816,7 @@ export default function LoginPage() {
             </Box>
           )}
 
-          {/* TAB 1: Live Settlements Feed */}
+          {/* TAB 2: Live Settlements Feed */}
           {activeTab === 'live' && (
             <Box sx={{ display: 'grid', gap: 1.5 }}>
               {liveSettlements.map((item, index) => {
@@ -667,7 +872,7 @@ export default function LoginPage() {
             </Box>
           )}
 
-          {/* TAB 2: Live FX Markets Ticker */}
+          {/* TAB 3: Live FX Markets Ticker */}
           {activeTab === 'fx' && (
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
               {fxList.map((item) => (
@@ -702,38 +907,6 @@ export default function LoginPage() {
                     {typeof item.rate === 'number' && item.rate > 1000
                       ? `$${item.rate.toLocaleString()}`
                       : item.rate.toFixed(4)}
-                  </Typography>
-                </Card>
-              ))}
-            </Box>
-          )}
-
-          {/* TAB 3: Security & Reserves Audit */}
-          {activeTab === 'security' && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
-              {[
-                { title: '100% Full Reserve', desc: 'Real-time On-Chain & Bank Proof', icon: ShieldCheck },
-                { title: 'Tier 1 Capital: 18.4%', desc: 'Exceeds Basel III Requirements', icon: CheckCircle2 },
-                { title: 'SOC-2 Type II', desc: 'Zero-Trust Architecture Certified', icon: Lock },
-                { title: '$250k Insurance', desc: 'Protected by European Directives', icon: Globe2 },
-              ].map(({ title, desc, icon: Icon }) => (
-                <Card
-                  key={title}
-                  variant='outlined'
-                  sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    bgcolor: 'action.hover',
-                    border: 1,
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Icon className='w-5 h-5 text-emerald-500 mb-1' />
-                  <Typography variant='subtitle2' sx={{ fontWeight: 800, color: 'text.primary' }}>
-                    {title}
-                  </Typography>
-                  <Typography variant='caption' color='text.secondary'>
-                    {desc}
                   </Typography>
                 </Card>
               ))}
@@ -780,10 +953,10 @@ export default function LoginPage() {
                     color: '#ffffff',
                   }}
                 >
-                  <Sparkles className='w-4 h-4 text-white' />
+                  <Landmark className='w-4 h-4 text-white' />
                 </Box>
                 <Typography variant='subtitle1' sx={{ fontWeight: 900, lineHeight: 1.1 }}>
-                  Banking Agent
+                  {text.brandName}
                 </Typography>
               </Box>
 
@@ -793,25 +966,25 @@ export default function LoginPage() {
               </Stack>
             </Box>
 
-            {/* Autonomous AI Agent Banner Pill */}
+            {/* Dynamic Agent Vibe Presence Pill */}
             <Box
               sx={{
-                mb: 2.5,
-                p: 1.5,
+                mb: 3,
+                p: 1.6,
                 borderRadius: 3.5,
                 background: 'linear-gradient(135deg, rgba(232, 97, 26, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%)',
                 border: 1,
                 borderColor: 'rgba(232, 97, 26, 0.25)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1.5,
+                gap: 1.6,
               }}
             >
               <Box
                 className='ai-halo-orbit'
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   borderRadius: '50%',
                   bgcolor: '#0f172a',
                   display: 'grid',
@@ -822,80 +995,31 @@ export default function LoginPage() {
                 <Bot className='w-4 h-4 text-orange-400' />
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant='subtitle2' sx={{ fontWeight: 800, fontSize: 12, color: 'text.primary', lineHeight: 1.2 }}>
-                  Assistant Client Bancaire avec IA Hybride
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant='subtitle2' sx={{ fontWeight: 800, fontSize: 12.5, color: 'text.primary', lineHeight: 1.2 }}>
+                    {text.agentActivePrompt}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                    <Box className='ai-wave-bar' sx={{ height: '8px !important' }} />
+                    <Box className='ai-wave-bar' sx={{ height: '13px !important' }} />
+                    <Box className='ai-wave-bar' sx={{ height: '9px !important' }} />
+                  </Box>
+                </Box>
                 <Typography variant='caption' sx={{ color: 'text.secondary', fontSize: 10.5, display: 'block', mt: 0.2 }}>
-                  Prise en charge autonome · Supervision Sensitive Line & RAG
+                  {text.agentActiveDesc}
                 </Typography>
               </Box>
-            </Box>
-
-            {/* Quick Demo Fill Buttons for Easy Evaluation */}
-            <Box
-              sx={{
-                mb: 3,
-                p: 1.5,
-                borderRadius: 3,
-                bgcolor: 'action.hover',
-                border: 1,
-                borderColor: 'divider',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 1,
-              }}
-            >
-              <Typography variant='caption' sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1 }}>
-                1-Click Testing:
-              </Typography>
-              <Stack direction='row' spacing={1}>
-                <Button
-                  size='small'
-                  variant='outlined'
-                  onClick={() => fillDemo('user')}
-                  startIcon={<Zap className='w-3 h-3 text-orange-500' />}
-                  sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700, py: 0.4 }}
-                >
-                  {text.demoClient}
-                </Button>
-                <Button
-                  size='small'
-                  variant='outlined'
-                  onClick={() => fillDemo('admin')}
-                  startIcon={<ShieldCheck className='w-3 h-3 text-emerald-500' />}
-                  sx={{ borderRadius: 2, fontSize: 11, fontWeight: 700, py: 0.4 }}
-                >
-                  {text.demoAdmin}
-                </Button>
-              </Stack>
             </Box>
 
             {/* Title & Prompt */}
             <Stack spacing={0.75} sx={{ mb: 3.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Chip
-                  icon={<Bot className='w-3.5 h-3.5' />}
-                  label='Hybrid AI'
-                  size='small'
-                  color='primary'
-                  sx={{ fontWeight: 800, fontSize: 10.5 }}
-                />
-                <Chip
-                  label='Qwen2.5:7b · pgvector RAG'
-                  size='small'
-                  variant='outlined'
-                  sx={{ fontWeight: 700, fontSize: 10.5 }}
-                />
-              </Box>
-              <Typography variant='h5' sx={{ fontWeight: 900, lineHeight: 1.2, letterSpacing: '-0.02em', mt: 0.5 }}>
-                {text.projectTitle}
+              <Typography variant='h4' sx={{ fontWeight: 900, lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+                {text.welcomeBack}
               </Typography>
-              <Typography variant='caption' sx={{ color: 'primary.main', fontWeight: 800, display: 'block', mb: 0.5 }}>
-                {text.projectSubtitle}
+              <Typography variant='caption' color='primary.main' sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
+                {text.welcomeSubtitle}
               </Typography>
-              <Typography variant='body2' color='text.secondary'>
+              <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5 }}>
                 {text.signInPrompt}
               </Typography>
             </Stack>

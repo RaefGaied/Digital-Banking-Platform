@@ -38,4 +38,21 @@ export const supportTicketsApi = {
     const response = await api.get<SupportTicketWrapper>(`/support-tickets/${id}`);
     return response.data.data;
   },
+
+  uploadIdentityDocument: async (ticketId: number, file: File): Promise<SupportTicket> => {
+    const formData = new FormData();
+    formData.append('attachment', file);
+    const response = await api.post<SupportTicketWrapper>(
+      `/support-tickets/${ticketId}/identity-document`,
+      formData
+    );
+    return response.data.data;
+  },
+
+  downloadAttachment: async (ticketId: number): Promise<Blob> => {
+    const response = await api.get<Blob>(`/support-tickets/${ticketId}/attachment`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };

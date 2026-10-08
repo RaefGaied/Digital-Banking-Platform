@@ -253,6 +253,13 @@ export default function TransactionsPage() {
       };
       if (tab === 'deposit') return accountApi.deposit(data);
       if (tab === 'withdraw') return accountApi.withdraw(data);
+      if (tab === 'payment') {
+        return accountApi.payByKey({
+          paymentKey: paymentKey.trim(),
+          amount: data.amount,
+          description,
+        });
+      }
       return accountApi.transfer(data);
     },
     onSuccess: (transaction) => {
@@ -271,6 +278,22 @@ export default function TransactionsPage() {
       setTargetAccount('');
       setPaymentKey('');
       setTimeout(() => setSuccess(false), 4500);
+    },
+  });
+
+  const [newKeyType, setNewKeyType] = useState<'EMAIL' | 'PHONE' | 'RANDOM'>('PHONE');
+  const [newKeyValue, setNewKeyValue] = useState('');
+  const myKeysQuery = useQuery({
+    queryKey: ['my-payment-keys'],
+    queryFn: accountApi.getMyPaymentKeys,
+    enabled: canLoadTransactions && tab === 'payment',
+  });
+  const registerKeyMutation = useMutation({
+    mutationFn: () =>
+      accountApi.registerPaymentKey({ keyType: newKeyType, keyValue: newKeyValue.trim() }),
+    onSuccess: () => {
+      setNewKeyValue('');
+      queryClient.invalidateQueries({ queryKey: ['my-payment-keys'] });
     },
   });
 
@@ -560,6 +583,52 @@ export default function TransactionsPage() {
                     className='w-full bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl px-4 py-3 text-slate-900 dark:text-zinc-100 text-sm font-medium placeholder-slate-300 dark:placeholder-zinc-600 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all'
                     placeholder={text.paymentKeyPlaceholder}
                   />
+                  <div className='mt-4 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3'>
+                    <p className='text-xs font-bold text-slate-500 uppercase tracking-wider'>
+                      {locale === 'fr' ? 'Enregistrer ma clé de paiement' : 'Register my payment key'}
+                    </p>
+                    <div className='flex gap-2'>
+                      <select
+                        value={newKeyType}
+                        onChange={(e) => setNewKeyType(e.target.value as 'EMAIL' | 'PHONE' | 'RANDOM')}
+                        className='bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-2 py-2 text-sm'
+                      >
+                        <option value='PHONE'>PHONE</option>
+                        <option value='EMAIL'>EMAIL</option>
+                        <option value='RANDOM'>RANDOM</option>
+                      </select>
+                      <input
+                        type='text'
+                        value={newKeyValue}
+                        onChange={(e) => setNewKeyValue(e.target.value)}
+                        className='flex-1 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-sm'
+                        placeholder={locale === 'fr' ? 'Ex : 56660279' : 'e.g. 56660279'}
+                      />
+                      <button
+                        type='button'
+                        onClick={() => registerKeyMutation.mutate()}
+                        disabled={registerKeyMutation.isPending || !newKeyValue.trim()}
+                        className='px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold disabled:opacity-50'
+                      >
+                        {locale === 'fr' ? 'Enregistrer' : 'Register'}
+                      </button>
+                    </div>
+                    {registerKeyMutation.isError && (
+                      <p className='text-xs text-red-500'>
+                        {(registerKeyMutation.error as { response?: { data?: { message?: string } } })
+                          ?.response?.data?.message ?? 'Error'}
+                      </p>
+                    )}
+                    {(myKeysQuery.data ?? []).length > 0 && (
+                      <ul className='text-xs font-mono text-slate-600 dark:text-zinc-300'>
+                        {(myKeysQuery.data ?? []).map((k) => (
+                          <li key={k.id}>
+                            {k.keyType}: {k.keyValue}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               )}
 

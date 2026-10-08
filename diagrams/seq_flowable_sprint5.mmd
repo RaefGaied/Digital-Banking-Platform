@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor A as Administrateur
+    participant UI as Interface d'administration
+    participant FC as FlowableAdminController
+    participant FS as FlowableService
+    participant TC as FlowableTaskCompletionService
+    participant F as Moteur Flowable
+    participant N as NotificationService
+
+    A->>UI: Ouvrir la liste des tâches
+    UI->>FC: GET /admin/flowable/tasks
+    FC->>FS: listAdminTasks()
+    FS->>F: rechercher les tâches
+    F-->>FS: tâches disponibles
+    FS-->>FC: liste des tâches
+    FC-->>UI: 200 OK
+    UI-->>A: Afficher les tâches
+    A->>UI: Choisir une décision
+    UI->>FC: POST /admin/flowable/tasks/{id}/complete
+    FC->>TC: completeTask(taskId, variables)
+    TC->>F: vérifier et compléter la tâche
+    F-->>TC: nouvel état du processus
+    TC->>N: notifier le résultat
+    TC-->>FC: résultat du traitement
+    FC-->>UI: 200 OK
+    UI-->>A: Afficher l'état mis à jour
