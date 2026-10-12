@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { isAxiosError } from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountApi } from '../api/account';
 import { userApi } from '../api/user';
@@ -25,7 +26,7 @@ import {
 import { formatCurrency } from '../utils/formatters';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSearchParams } from 'react-router-dom';
-import { useI18n } from '../i18n/I18nContext';
+import { useI18n } from '../i18n/context';
 import { useAuth } from '../hooks/useAuth';
 
 type TabType = 'deposit' | 'withdraw' | 'transfer' | 'payment' | 'qrcode';
@@ -225,17 +226,6 @@ export default function TransactionsPage() {
     refetchOnWindowFocus: false,
   });
 
-  if (!canLoadTransactions) {
-    return (
-      <div className='card p-6'>
-        <h1 className='text-2xl font-bold text-slate-900 dark:text-zinc-100'>Transfers & Payments</h1>
-        <p className='text-slate-500 dark:text-zinc-400 text-sm mt-1'>
-          Transfer tools are available for authenticated user sessions only.
-        </p>
-      </div>
-    );
-  }
-
   const paymentPayload = account
     ? `00020126330014BR.GOV.BCB.PIX0111${account.number}5204000053039865802BR5913${(
         user?.name || 'User'
@@ -296,6 +286,17 @@ export default function TransactionsPage() {
       queryClient.invalidateQueries({ queryKey: ['my-payment-keys'] });
     },
   });
+
+  if (!canLoadTransactions) {
+    return (
+      <div className='card p-6'>
+        <h1 className='text-2xl font-bold text-slate-900 dark:text-zinc-100'>Transfers & Payments</h1>
+        <p className='text-slate-500 dark:text-zinc-400 text-sm mt-1'>
+          Transfer tools are available for authenticated user sessions only.
+        </p>
+      </div>
+    );
+  }
 
   const handleCopyAccount = async () => {
     if (!account) return;
@@ -488,7 +489,9 @@ export default function TransactionsPage() {
               {mutation.isError && (
                 <div className='bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl p-4'>
                   <p className='text-rose-600 dark:text-rose-300 text-sm font-medium'>
-                    {(mutation.error as any)?.response?.data?.error || text.transactionFailed}
+                    {(isAxiosError<{ error?: string }>(mutation.error)
+                      ? mutation.error.response?.data?.error
+                      : undefined) || text.transactionFailed}
                   </p>
                 </div>
               )}

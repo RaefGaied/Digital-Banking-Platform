@@ -118,6 +118,8 @@ export default function ChatPage() {
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => messagesApi.create(sessionId, { content }),
+    onMutate: () => setThinkingSeconds(0),
+    onSettled: () => setThinkingSeconds(0),
     onSuccess: (_, content) => {
       void queryClient.invalidateQueries({ queryKey: ['conversation', sessionId] });
       void queryClient.invalidateQueries({ queryKey: ['agent-session', sessionId] });
@@ -128,12 +130,7 @@ export default function ChatPage() {
   });
 
   useEffect(() => {
-    if (!sendMutation.isPending) {
-      setThinkingSeconds(0);
-      return;
-    }
-
-    setThinkingSeconds(0);
+    if (!sendMutation.isPending) return;
     const timer = window.setInterval(() => {
       setThinkingSeconds((seconds) => seconds + 1);
     }, 1000);

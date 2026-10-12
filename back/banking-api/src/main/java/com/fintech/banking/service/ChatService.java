@@ -587,7 +587,13 @@ public class ChatService {
     }
 
     private boolean isNewSupportTicketDescription(String content, String conversationContext) {
-        if (content == null || content.isBlank() || conversationContext == null || conversationContext.isBlank()) {
+        if (content == null || content.isBlank()) {
+            return false;
+        }
+        if (isNewSupportTicketRequest(content) && content.trim().length() > 80) {
+            return true;
+        }
+        if (conversationContext == null || conversationContext.isBlank()) {
             return false;
         }
 

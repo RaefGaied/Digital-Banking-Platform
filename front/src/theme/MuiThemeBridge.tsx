@@ -1,6 +1,6 @@
 import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { useMemo } from 'react';
-import { useTheme } from './ThemeContext';
+import { useTheme } from './context';
 import { createAppTheme } from './muiTheme';
 
 export default function MuiThemeBridge({ children }: { children: React.ReactNode }) {

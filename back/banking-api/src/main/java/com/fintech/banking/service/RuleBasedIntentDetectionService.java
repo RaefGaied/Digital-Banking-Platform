@@ -52,6 +52,9 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
             || lower.contains("stolen card") || lower.contains("stolen_card") || lower.contains("card stolen")) {
             intent = IntentType.STOLEN_CARD;
             confidence = 0.95;
+        } else if (lower.matches(".*\\b(fraud|fraude|stolen|volé|roubo|suspicious)\\b.*")) {
+            intent = IntentType.FRAUD;
+            confidence = 0.95;
         } else if (lower.matches(".*\\b(carte|card)\\b.*\\b(bloquer|bloquée|bloquee|activer|activation|limite|expire|perdue|lost|stolen|problème|probleme)\\b.*")) {
             intent = IntentType.CARD_SUPPORT;
             confidence = 0.9;
@@ -79,9 +82,6 @@ public class RuleBasedIntentDetectionService implements IntentDetectionService {
         } else if (lower.matches(".*\\b(aide|help|support|service client|question|assistance|ticket|dossier)\\b.*")) {
             intent = IntentType.SUPPORT;
             confidence = 0.75;
-        } else if (lower.matches(".*\\b(fraud|fraude|stolen|volé|roubo|suspicious)\\b.*")) {
-            intent = IntentType.FRAUD;
-            confidence = 0.95;
         } else if (lower.matches(".*\\b(claim|reclamation|réclamation|plainte)\\b.*")) {
             intent = IntentType.CLAIM;
             confidence = 0.85;

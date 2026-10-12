@@ -66,6 +66,15 @@ class RuleBasedIntentDetectionServiceTest {
     }
 
     @Test
+    void prioritizesFraudReportOverPaymentMention() {
+        IntentResult result = service.detectIntent(
+                "Je souhaite signaler une fraude : je ne reconnais pas un paiement de 120 euros effectué aujourd'hui");
+
+        assertEquals(IntentType.FRAUD, result.getIntent());
+        assertEquals(true, result.getIsSensitive());
+    }
+
+    @Test
     void detectsFrenchAndEnglishMessageLanguage() {
         assertEquals("FR", service.detectIntent("Quel est mon solde ?").getDetectedLanguage());
         assertEquals("EN", service.detectIntent("What is my account balance?").getDetectedLanguage());

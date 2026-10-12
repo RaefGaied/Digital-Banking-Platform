@@ -41,13 +41,13 @@ test.describe('Admin routes smoke', () => {
 
   test('loads admin dashboard and tabs', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    await expect(page.getByText('Administration', { exact: true })).toBeVisible();
-    await expect(page.getByText(/Operational overview for tasks/i)).toBeVisible();
+    await expect(page.getByText('Administration & Back-Office', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Supervision opérationnelle des flux d’assistance/i)).toBeVisible();
   });
 
   test('navigates to tasks/users/audit pages', async ({ page }) => {
     await page.goto('/admin/tasks');
-    await expect(page.getByRole('heading', { name: /Admin inbox/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Opérations & Workflows/i })).toBeVisible();
 
     await page.goto('/admin/users');
     await expect(page.getByRole('heading', { name: /User management/i })).toBeVisible();

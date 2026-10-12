@@ -25,8 +25,8 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { useI18n } from '../i18n/I18nContext';
-import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/context';
+import { useTheme } from '../theme/context';
 
 const PIE_COLORS = ['#10b981', '#ef4444', '#3b82f6'];
 
@@ -416,7 +416,7 @@ export default function AnalyticsPage() {
                     boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
                     color: isDark ? '#f8fafc' : '#0f172a',
                   }}
-                  formatter={(v: any) => [formatCurrency(Number(v)), text.balance]}
+                  formatter={(v) => [formatCurrency(Number(v)), text.balance]}
                 />
                 <Area
                   type='monotone'
@@ -469,7 +469,7 @@ export default function AnalyticsPage() {
                       borderRadius: 12,
                       color: isDark ? '#f8fafc' : '#0f172a',
                     }}
-                    formatter={(v: any) => formatCurrency(Number(v))}
+                    formatter={(v) => formatCurrency(Number(v))}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -544,7 +544,7 @@ export default function AnalyticsPage() {
                   boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
                   color: isDark ? '#f8fafc' : '#0f172a',
                 }}
-                formatter={(v: any, _n: any, props: any) => [
+                formatter={(v, _n, props) => [
                   formatCurrency(Number(v)),
                   `${props.payload.count} operations`,
                 ]}

@@ -31,7 +31,7 @@ import {
   Bot,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useI18n } from '../i18n/I18nContext';
+import { useI18n } from '../i18n/context';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageToggle from '../components/ui/LanguageToggle';
 

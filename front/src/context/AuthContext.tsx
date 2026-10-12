@@ -1,24 +1,17 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { isAxiosError } from 'axios';
 import type { ReactNode } from 'react';
 import { authApi } from '../api/auth';
-import type { LoginRequest, RegisterRequest } from '../types';
+import { AuthContext } from './AuthContextValue';
+import type { AuthContextValue } from './AuthContextValue';
+import type { LoginRequest, LoginResponse, RegisterRequest } from '../types';
 
-type AuthContextValue = {
-	isAuthenticated: boolean;
-	token: string | null;
-	userName: string;
-	userRole: string;
-	lockedUntil: string | null;
-	attemptsRemaining: number | null;
-	loading: boolean;
-	error: string | null;
-	login: (data: LoginRequest) => Promise<any | null>;
-	register: (data: RegisterRequest) => Promise<boolean>;
-	verify2fa: (tempToken: string, code: number) => Promise<boolean>;
-	logout: () => void;
+type AuthErrorResponse = {
+	error?: string;
+	message?: string;
+	lockedUntil?: string;
+	attemptsRemaining?: number;
 };
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 function readAuthState() {
 	return {
@@ -54,17 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		const expiry = new Date(lockedUntil).getTime();
 		const now = Date.now();
 		const ms = expiry - now;
-		if (ms <= 0) {
-			setLockedUntil(null);
-			localStorage.removeItem('lockedUntil');
-			setError(null);
-			return;
-		}
 		const timer = window.setTimeout(() => {
 			setLockedUntil(null);
 			localStorage.removeItem('lockedUntil');
 			setError(null);
-		}, ms);
+		}, Math.max(ms, 0));
 		return () => window.clearTimeout(timer);
 	}, [lockedUntil]);
 
@@ -74,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		return () => window.removeEventListener('storage', handleStorage);
 	}, []);
 
-	const persistAuth = (response: Awaited<ReturnType<typeof authApi.login>>) => {
+	const persistAuth = useCallback((response: Exclude<LoginResponse, { twoFactorRequired: true }>) => {
 		localStorage.setItem('token', response.accessToken);
 		localStorage.setItem('userId', response.uuid);
 		localStorage.setItem('userName', response.name);
@@ -89,10 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			userRole: response.role,
 			lockedUntil: null,
 		});
-	};
+	}, []);
 
 
-	const login = async (data: LoginRequest) => {
+	const login = useCallback(async (data: LoginRequest): Promise<LoginResponse | null> => {
 		setLoading(true);
 		setError(null);
 		try {
@@ -104,11 +91,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			// otherwise persist tokens
 			persistAuth(response);
 			return response;
-		} catch (err: any) {
-			const status = err?.response?.status;
-			const serverError = err?.response?.data?.error || err?.response?.data?.message;
-			const serverLockedUntil = err?.response?.data?.lockedUntil;
-			const attemptsRemaining = err?.response?.data?.attemptsRemaining;
+		} catch (err: unknown) {
+			const apiError = isAxiosError<AuthErrorResponse>(err) ? err : undefined;
+			const status = apiError?.response?.status;
+			const serverError = apiError?.response?.data?.error || apiError?.response?.data?.message;
+			const serverLockedUntil = apiError?.response?.data?.lockedUntil;
+			const attemptsRemaining = apiError?.response?.data?.attemptsRemaining;
 			const shouldLock = status === 423 || attemptsRemaining === 0;
 			if (status === 401) {
 				if (shouldLock) {
@@ -149,18 +137,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [persistAuth]);
 
-	const verify2fa = async (tempToken: string, code: number) => {
+	const verify2fa = useCallback(async (tempToken: string, code: number) => {
 		setLoading(true);
 		setError(null);
 		try {
 			const response = await authApi.verify2fa(tempToken, code);
 			persistAuth(response);
 			return true;
-		} catch (err: any) {
-			const status = err?.response?.status;
-			const serverError = err?.response?.data?.error || err?.response?.data?.message;
+		} catch (err: unknown) {
+			const apiError = isAxiosError<AuthErrorResponse>(err) ? err : undefined;
+			const status = apiError?.response?.status;
+			const serverError = apiError?.response?.data?.error || apiError?.response?.data?.message;
 			if (status === 401) {
 				setError('Invalid two-factor authentication code');
 			} else if (serverError) {
@@ -172,18 +161,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [persistAuth]);
 
-	const register = async (data: RegisterRequest) => {
+	const register = useCallback(async (data: RegisterRequest) => {
 		setLoading(true);
 		setError(null);
 		try {
 			const response = await authApi.register(data);
 			persistAuth(response);
 			return true;
-		} catch (err: any) {
-			const status = err?.response?.status;
-			const serverError = err?.response?.data?.error || err?.response?.data?.message;
+		} catch (err: unknown) {
+			const apiError = isAxiosError<AuthErrorResponse>(err) ? err : undefined;
+			const status = apiError?.response?.status;
+			const serverError = apiError?.response?.data?.error || apiError?.response?.data?.message;
 			if (status === 409) {
 				setError('An account with this email already exists');
 			} else if (serverError) {
@@ -195,11 +185,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [persistAuth]);
 
-	const logout = () => {
+	const logout = useCallback(() => {
 		console.warn('AuthContext.logout() called — clearing local auth state', { time: new Date().toISOString() });
-		try { (window as any).__copilot_lastLogoutStack = new Error().stack; } catch (e) {}
+		(window as Window & { __copilot_lastLogoutStack?: string }).__copilot_lastLogoutStack = new Error().stack;
 		console.trace();
 		localStorage.removeItem('token');
 		localStorage.removeItem('userId');
@@ -209,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		setLockedUntil(null);
 		setError(null);
 		setAuthState({ token: null, userName: '', userRole: '', lockedUntil: null });
-	};
+	}, []);
 
 	const value = useMemo<AuthContextValue>(() => ({
 		isAuthenticated: !!token,
@@ -224,15 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		verify2fa,
 		register,
 		logout,
-	}), [token, userName, userRole, lockedUntil, attemptsRemaining, loading, error]);
+	}), [token, userName, userRole, lockedUntil, attemptsRemaining, loading, error, login, register, verify2fa, logout]);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuthContext() {
-	const context = useContext(AuthContext);
-	if (!context) {
-		throw new Error('useAuth must be used within an AuthProvider');
-	}
-	return context;
 }

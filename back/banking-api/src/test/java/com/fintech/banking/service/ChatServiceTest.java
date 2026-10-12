@@ -287,6 +287,84 @@ class ChatServiceTest {
     }
 
     @Test
+    void shouldCreateGeneralTicketWhenCreationRequestAlreadyIncludesIssueDetails() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID systemUserId = UUID.randomUUID();
+        UUID agentId = UUID.randomUUID();
+        String request = "Je veux ouvrir un ticket de support. Depuis hier, je n’arrive pas à télécharger "
+                + "mon relevé bancaire PDF depuis la rubrique Documents. J’ai essayé plusieurs fois, "
+                + "mais le téléchargement échoue. Merci de transmettre ce problème à l’équipe support.";
+
+        Session session = new Session();
+        session.setId(sessionId);
+        session.setUserId(userId);
+        session.setStatus(SessionStatus.OPENED);
+        User systemUser = new User();
+        systemUser.setId(systemUserId);
+        systemUser.setEmail("system@finbank.local");
+        BankingAgent agent = new BankingAgent();
+        agent.setId(agentId);
+        agent.setSessionId(sessionId);
+        agent.setUserId(userId);
+        SupportTicket createdTicket = SupportTicket.builder()
+                .id(43L)
+                .userId(userId)
+                .subject("Nouvelle demande de support")
+                .description("Demande de support créée depuis le chat : " + request)
+                .ticketType(TicketType.GENERAL)
+                .status(com.fintech.banking.domain.enums.TicketStatus.OPEN)
+                .build();
+
+        IntentResult intentResult = new IntentResult();
+        intentResult.setIntent(IntentType.SUPPORT);
+        intentResult.setConfidence(0.95);
+        intentResult.setDetectedLanguage("FR");
+        intentResult.setParameters(objectMapper.createObjectNode());
+        when(sessionService.getSessionById(sessionId)).thenReturn(Optional.of(session));
+        when(userRepository.findByEmail("system@finbank.local")).thenReturn(Optional.of(systemUser));
+        when(intentDetectionService.detectIntent(eq(request), any(String.class))).thenReturn(intentResult);
+        when(bankingAgentService.getAgentBySessionId(sessionId)).thenReturn(Optional.of(agent));
+        when(bankingAgentService.determineDecision(agent, intentResult)).thenReturn(AgentDecision.REQUEST_INFO);
+        when(supportTicketService.createTicketWithWorkflow(
+                eq(userId),
+                eq("Nouvelle demande de support"),
+                eq("Demande de support créée depuis le chat : " + request),
+                eq(TicketType.GENERAL),
+                eq(userId),
+                ArgumentMatchers.isNull(),
+                any()))
+                .thenReturn(createdTicket);
+        when(messageService.createMessage(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new Message());
+
+        chatService.handleUserMessage(sessionId, userId, request);
+
+        verify(supportTicketService).createTicketWithWorkflow(
+                eq(userId),
+                eq("Nouvelle demande de support"),
+                eq("Demande de support créée depuis le chat : " + request),
+                eq(TicketType.GENERAL),
+                eq(userId),
+                ArgumentMatchers.isNull(),
+                any());
+        ArgumentCaptor<String> replyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(messageService).createMessage(
+                eq(sessionId),
+                eq(systemUserId),
+                eq(SenderType.BOT),
+                replyCaptor.capture(),
+                eq(false),
+                ArgumentMatchers.isNull(),
+                ArgumentMatchers.isNull(),
+                eq("FR"),
+                eq(false),
+                ArgumentMatchers.isNull());
+        assertTrue(replyCaptor.getValue().contains("ticket de support #43"));
+        assertTrue(replyCaptor.getValue().contains("créé"));
+    }
+
+    @Test
     void shouldCreateGeneralTicketAfterUserDescribesIssueForNewTicket() {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();

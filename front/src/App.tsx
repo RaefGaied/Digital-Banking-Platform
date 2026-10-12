@@ -30,7 +30,6 @@ const HelpPage = lazy(() => import('./pages/HelpPage.tsx'));
 const SessionsPage = lazy(() => import('./pages/SessionsPage.tsx'));
 const AgentsPage = lazy(() => import('./pages/AgentsPage.tsx'));
 const ChatPage = lazy(() => import('./pages/ChatPage.tsx'));
-const RagTestPage = lazy(() => import('./pages/RagTestPage.tsx'));
 
 
 const queryClient = new QueryClient({
@@ -83,7 +82,6 @@ export default function App() {
                       <Route path='analytics' element={<RequireRole allowedRoles={["USER"]}><AnalyticsPage /></RequireRole>} />
                       <Route path='profile' element={<RequireRole allowedRoles={["USER"]}><ProfilePage /></RequireRole>} />
                       <Route path='help' element={<HelpPage />} />
-                      <Route path='rag' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><RagTestPage /></RequireRole>} />
                       <Route path='sessions' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><SessionsPage /></RequireRole>} />
                       <Route path='sessions/:id/chat' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><ChatPage /></RequireRole>} />
                       <Route path='chat' element={<RequireRole allowedRoles={["USER", "ADMIN"]}><ChatPage /></RequireRole>} />

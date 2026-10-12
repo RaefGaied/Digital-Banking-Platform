@@ -1,7 +1,7 @@
 import { DarkMode, LightMode } from '@mui/icons-material';
 import { Button, Tooltip } from '@mui/material';
-import { useI18n } from '../../i18n/I18nContext';
-import { useTheme } from '../../theme/ThemeContext';
+import { useI18n } from '../../i18n/context';
+import { useTheme } from '../../theme/context';
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();

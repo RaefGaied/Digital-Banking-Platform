@@ -1,9 +1,9 @@
 import api from './client';
-import type { LoginRequest, RegisterRequest, TokenResponse } from '../types';
+import type { LoginRequest, LoginResponse, RegisterRequest, TokenResponse } from '../types';
 
 export const authApi = {
-  login: async (data: LoginRequest): Promise<any> => {
-    const response = await api.post('/auth/login', data);
+  login: async (data: LoginRequest): Promise<LoginResponse> => {
+    const response = await api.post<LoginResponse>('/auth/login', data);
     return response.data;
   },
 
@@ -13,7 +13,7 @@ export const authApi = {
   },
 
   verify2fa: async (tempToken: string, code: number): Promise<TokenResponse> => {
-    const response = await api.post('/auth/verify-2fa', { tempToken, code });
+    const response = await api.post<TokenResponse>('/auth/verify-2fa', { tempToken, code });
     return response.data;
   },
 

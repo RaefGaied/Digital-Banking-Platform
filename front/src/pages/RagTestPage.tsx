@@ -111,7 +111,7 @@ export default function RagTestPage() {
                   <p className='mt-1 font-bold text-slate-900 dark:text-white'>{result.intent || 'Not detected'}</p>
                 </div>
                 <div className='rounded-xl border border-slate-100 bg-slate-50/80 p-3 dark:border-white/5 dark:bg-white/5'>
-                  <p className='text-xs text-slate-500 dark:text-slate-400'>Confidence</p>
+                  <p className='text-xs text-slate-500 dark:text-slate-400'>Intent confidence</p>
                   <p className='mt-1 font-bold text-slate-900 dark:text-white'>{result.confidence == null ? 'N/A' : `${Math.round(result.confidence * 100)}%`}</p>
                 </div>
               </div>

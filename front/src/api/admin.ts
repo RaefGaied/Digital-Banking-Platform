@@ -135,7 +135,8 @@ export const adminApi = {
 
   completeFlowableTask: async (
     taskId: string,
-    decision: 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE' | 'CONTINUE',
+    decision: 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE' | 'CONTINUE'
+      | 'BLOQUER' | 'CONTACTER' | 'FAUX_POSITIF',
   ) => {
     const response = await api.post(`/admin/flowable/tasks/${taskId}/complete`, { decision });
     return response.data;

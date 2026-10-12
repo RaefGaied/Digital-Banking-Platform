@@ -49,6 +49,15 @@ function notificationDate(value: string) {
   return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleString();
 }
 
+type SimOperation = 'TRANSFER' | 'IBAN_CHANGE' | 'BALANCE_CHECK' | 'DISPUTE';
+type SimulationResult = {
+  decision: string;
+  level: string;
+  gate: string;
+  flow: string;
+  badgeColor: 'success' | 'warning' | 'error';
+};
+
 function StatCard({
   label,
   value,
@@ -156,10 +165,10 @@ export default function AdminDashboardPage() {
   });
 
   // ── SENSITIVE LINE LIVE SIMULATOR STATE ──
-  const [simOperation, setSimOperation] = useState<'TRANSFER' | 'IBAN_CHANGE' | 'BALANCE_CHECK' | 'DISPUTE'>('TRANSFER');
+  const [simOperation, setSimOperation] = useState<SimOperation>('TRANSFER');
   const [simAmount, setSimAmount] = useState<number>(3500);
 
-  const simResult = useMemo(() => {
+  const simResult = useMemo<SimulationResult>(() => {
     if (simOperation === 'BALANCE_CHECK') {
       return {
         decision: 'AUTO_EXECUTE',
@@ -472,7 +481,7 @@ export default function AdminDashboardPage() {
                 size='small'
                 label="Type d'Opération Client"
                 value={simOperation}
-                onChange={(e) => setSimOperation(e.target.value as any)}
+                onChange={(e) => setSimOperation(e.target.value as SimOperation)}
               >
                 <MenuItem value='TRANSFER'>Virement Bancaire (Interbancaire SEPA)</MenuItem>
                 <MenuItem value='BALANCE_CHECK'>Consultation de Solde & Plafonds RAG</MenuItem>
@@ -552,7 +561,7 @@ export default function AdminDashboardPage() {
                     )
                   }
                   label={simResult.decision}
-                  color={simResult.badgeColor as any}
+                  color={simResult.badgeColor}
                   sx={{ fontWeight: 900 }}
                 />
               </Box>

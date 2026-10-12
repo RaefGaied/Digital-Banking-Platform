@@ -8,6 +8,10 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
+  }
+
   const token = localStorage.getItem('token');
   const publicPrefixes = ['/auth', '/public', '/actuator', '/v3/api-docs', '/swagger-ui.html'];
   const urlPath = config.url || '';
@@ -32,7 +36,7 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const requestUrl = error?.config?.url || '';
     const isAuthRequest = requestUrl.startsWith('/auth');
-    if ((status === 401 || status === 403) && !isAuthRequest) {
+    if (status === 401 && !isAuthRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
       localStorage.removeItem('userName');

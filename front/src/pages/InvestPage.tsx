@@ -32,8 +32,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
-import { useI18n } from '../i18n/I18nContext';
-import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/context';
+import { useTheme } from '../theme/context';
 
 interface InvestmentOption {
   type: InvestmentType;
@@ -538,7 +538,7 @@ export default function InvestPage() {
                       borderRadius: 14,
                       boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
                     }}
-                    formatter={(v: any, name: any) => [
+                    formatter={(v, name) => [
                       formatCurrency(Number(v)),
                       name === 'balance' ? 'Projected Total' : 'Contributed Principal',
                     ]}

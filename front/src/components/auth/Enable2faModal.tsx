@@ -21,8 +21,8 @@ export default function Enable2faModal({ open, otpauthUri, secret, onClose, onEn
     try {
       const ok = await onEnable(parseInt(code, 10));
       if (!ok) setError('Invalid code');
-    } catch (e: any) {
-      setError(e?.message || 'Enable failed');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Enable failed');
     } finally {
       setLoading(false);
     }

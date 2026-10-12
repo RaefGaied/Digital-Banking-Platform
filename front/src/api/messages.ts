@@ -1,7 +1,13 @@
 import api from './client';
 import type { PageResponse } from '../types';
 
-type MessageResponse = any; // kept loose for now
+type MessageResponse = {
+  id: string;
+  senderType: string;
+  content: string;
+  createdAt: string;
+  detectedLang?: string;
+};
 
 export const messagesApi = {
   getConversation: async (sessionId: string): Promise<MessageResponse[]> => {
@@ -14,8 +20,8 @@ export const messagesApi = {
     return response.data.data;
   },
 
-  create: async (sessionId: string, payload: { content: string; senderType?: string; isInternal?: boolean; intent?: string; parameters?: any }) => {
-    const response = await api.post(`/sessions/${sessionId}/messages`, payload);
+  create: async (sessionId: string, payload: { content: string; senderType?: string; isInternal?: boolean; intent?: string; parameters?: Record<string, unknown> }) => {
+    const response = await api.post<MessageResponse>(`/sessions/${sessionId}/messages`, payload);
     return response.data;
   },
 };

@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import {
   Alert,
   Box,
@@ -20,6 +21,8 @@ import {
 import { Upload } from 'lucide-react';
 import { adminApi } from '../../api/admin';
 import { aiApi } from '../../api/ai';
+import RagTestPage from '../RagTestPage';
+import type { RagDocument } from '../../types';
 
 const emptyForm = {
   title: '',
@@ -79,8 +82,8 @@ export default function AdminRagPage() {
     },
   });
 
-  const docs = documentsQuery.data ?? [] as any[];
-  const totalActive = useMemo(() => docs.filter((doc: any) => doc.active).length, [docs]);
+  const docs = documentsQuery.data ?? [];
+  const totalActive = docs.filter((doc) => doc.active).length;
 
   const handleChange = (field: keyof typeof emptyForm, value: string | boolean) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -111,10 +114,11 @@ export default function AdminRagPage() {
         content: nextContent || current.content,
       }));
       setExtractionStatus(`Auto-filled from ${sourceLabel}`);
-    } catch (error: any) {
-      const message = error?.response?.data?.message
-        || error?.response?.data?.error
-        || error?.message
+    } catch (error: unknown) {
+      const apiError = isAxiosError<{ message?: string; error?: string }>(error) ? error : undefined;
+      const message = apiError?.response?.data?.message
+        || apiError?.response?.data?.error
+        || (error instanceof Error ? error.message : undefined)
         || 'Could not extract fields from the uploaded document.';
       setExtractionStatus(message);
     }
@@ -160,7 +164,7 @@ export default function AdminRagPage() {
     createMutation.mutate(payload);
   };
 
-  const handleEdit = (document: any) => {
+  const handleEdit = (document: RagDocument) => {
     setEditingId(document.id);
     setForm({
       title: document.title,
@@ -293,7 +297,7 @@ export default function AdminRagPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {docs.map((document: any) => (
+              {docs.map((document) => (
                 <TableRow key={document.id} hover>
                   <TableCell>
                     <Typography variant='body2' sx={{ fontWeight: 700 }}>{document.title}</Typography>
@@ -332,6 +336,16 @@ export default function AdminRagPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <Box sx={{ display: 'grid', gap: 1 }}>
+        <Typography variant='h6' sx={{ fontWeight: 800 }}>
+          RAG test
+        </Typography>
+        <Typography variant='body2' color='text.secondary'>
+          Test how the assistant retrieves answers from the active knowledge base.
+        </Typography>
+      </Box>
+      <RagTestPage />
     </Box>
   );
 }

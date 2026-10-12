@@ -19,7 +19,7 @@ import {
   Loader2,
   Upload,
 } from 'lucide-react';
-import { useI18n } from '../i18n/I18nContext';
+import { useI18n } from '../i18n/context';
 import { supportTicketsApi } from '../api/supportTickets';
 import type { CreateSupportTicketRequest, SupportTicket } from '../types';
 

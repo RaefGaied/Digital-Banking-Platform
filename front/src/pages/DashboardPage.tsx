@@ -53,8 +53,9 @@ import { accountApi } from '../api/account';
 import { cardsApi } from '../api/cards';
 import { investmentsApi } from '../api/investments';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { useI18n } from '../i18n/I18nContext';
-import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/context';
+import { useTheme } from '../theme/context';
+import type { Transaction } from '../types';
 
 type SpendingFilter = 'week' | 'month' | 'all';
 type SpendingType = 'all' | 'WITHDRAWAL' | 'TRANSFER' | 'DEPOSIT';
@@ -158,7 +159,7 @@ export default function DashboardPage() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<'USD' | 'EUR' | 'GBP'>('USD');
-  const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<Transaction | null>(null);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [copiedCardNum, setCopiedCardNum] = useState(false);
   const [frozenCard, setFrozenCard] = useState(false);

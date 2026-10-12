@@ -93,6 +93,9 @@ public class OllamaIntentDetectionService implements IntentDetectionService {
         }
 
         IntentResult ruleResult = fallback.detectIntent(text);
+        if (ruleResult != null && Boolean.TRUE.equals(ruleResult.getIsSensitive())) {
+            return ruleResult;
+        }
 
         try {
             String userMessage = text;

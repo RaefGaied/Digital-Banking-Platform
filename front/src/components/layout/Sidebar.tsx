@@ -27,12 +27,11 @@ import {
   History,
   Bot,
   Database,
-  SearchCode,
   X,
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { useI18n } from '../../i18n/I18nContext';
+import { useI18n } from '../../i18n/context';
 
 const userNavItems = [
   { to: '/dashboard', icon: Home, key: 'sidebar.home' },
@@ -42,7 +41,6 @@ const userNavItems = [
   { to: '/analytics', icon: PieChart, key: 'sidebar.analytics' },
   { to: '/sessions', icon: History, key: 'sidebar.sessions' },
   { to: '/agents', icon: Bot, key: 'sidebar.agents' },
-  { to: '/rag', icon: SearchCode, key: 'sidebar.ragTest' },
   { to: '/profile', icon: User, key: 'sidebar.profile' },
   { to: '/help', icon: MessageCircle, key: 'sidebar.helpSupport' },
 ] as const;
@@ -54,8 +52,34 @@ const adminNavItems = [
   { to: '/admin/security', icon: ShieldAlert, key: 'sidebar.security' },
   { to: '/admin/audit', icon: FileText, key: 'sidebar.audit' },
   { to: '/admin/rag', icon: Database, key: 'sidebar.rag' },
-  { to: '/rag', icon: SearchCode, key: 'sidebar.ragTest' },
 ] as const;
+
+function BrandLogo() {
+  return (
+    <Box
+      sx={{
+        width: 44,
+        height: 44,
+        borderRadius: 3,
+        background: 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)',
+        display: 'grid',
+        placeItems: 'center',
+        color: '#ffffff',
+        boxShadow: '0 8px 18px -2px rgba(232, 97, 26, 0.35)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 60%)',
+        },
+      }}
+    >
+      <Sparkles className='w-5 h-5 text-white' />
+    </Box>
+  );
+}
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -82,32 +106,6 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
       .slice(0, 2);
 
   const items = userRole === 'ADMIN' ? adminNavItems : userNavItems;
-
-  // Modern Brand Logo Mark
-  const BrandLogo = () => (
-    <Box
-      sx={{
-        width: 44,
-        height: 44,
-        borderRadius: 3,
-        background: 'linear-gradient(135deg, #e8611a 0%, #ff843c 100%)',
-        display: 'grid',
-        placeItems: 'center',
-        color: '#ffffff',
-        boxShadow: '0 8px 18px -2px rgba(232, 97, 26, 0.35)',
-        position: 'relative',
-        overflow: 'hidden',
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 60%)',
-        },
-      }}
-    >
-      <Sparkles className='w-5 h-5 text-white' />
-    </Box>
-  );
 
   return (
     <>
@@ -168,7 +166,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
           }}
         >
           {items.map(({ to, icon: Icon, key }) => (
-            <Tooltip key={to} title={t(key as any)} placement='right' arrow>
+            <Tooltip key={to} title={t(key)} placement='right' arrow>
               <NavLink
                 to={to}
                 style={({ isActive }) => ({
@@ -371,7 +369,7 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
                 })}
               >
                 <Icon className='w-5 h-5 shrink-0' />
-                <span>{t(key as any)}</span>
+                <span>{t(key)}</span>
               </NavLink>
             ))}
           </Box>

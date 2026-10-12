@@ -20,8 +20,8 @@ export default function TwoFactorModal({ open, tempToken, onClose, onVerify }: P
     try {
       const ok = await onVerify(tempToken, parseInt(code, 10));
       if (!ok) setError('Invalid code');
-    } catch (e: any) {
-      setError(e?.message || 'Verification failed');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Verification failed');
     } finally {
       setLoading(false);
     }

@@ -7,8 +7,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * RAG knowledge search backed by pgvector. Embeddings are generated locally through
@@ -21,6 +27,11 @@ import java.util.Objects;
 @Service
 @Slf4j
 public class RagKnowledgeService {
+
+    private static final Set<String> RETRIEVAL_STOP_WORDS = Set.of(
+            "a", "au", "aux", "avec", "ce", "ces", "comment", "dans", "de", "des", "du",
+            "en", "est", "et", "how", "is", "la", "le", "les", "my", "of", "pour",
+            "quel", "quelle", "quels", "quelles", "que", "qui", "the", "un", "une", "what");
 
     private final JdbcTemplate jdbcTemplate;
     private final KnowledgeBaseService knowledgeBaseService;
@@ -56,7 +67,7 @@ public class RagKnowledgeService {
         try {
             String embedding = embedText(query);
             if (embedding == null || embedding.isBlank()) {
-                return fallbackSearch(query, limit);
+                return searchDocumentsOrFallback(query, limit);
             }
 
             List<String> rows = jdbcTemplate.query(
@@ -94,12 +105,12 @@ public class RagKnowledgeService {
             ).stream().filter(Objects::nonNull).toList();
 
             if (rows.isEmpty()) {
-                return fallbackSearch(query, limit);
+                return searchDocumentsOrFallback(query, limit);
             }
             return rows;
         } catch (Exception e) {
-            log.warn("Falling back to file-based knowledge search for query '{}': {}", query, e.getMessage());
-            return fallbackSearch(query, limit);
+            log.warn("Vector search failed for query '{}'; trying document text search: {}", query, e.getMessage());
+            return searchDocumentsOrFallback(query, limit);
         }
     }
 
@@ -122,14 +133,82 @@ public class RagKnowledgeService {
         try {
             String embedding = embedText(content);
             if (embedding == null || embedding.isBlank()) {
-                log.debug("No embedding provider available; RAG document {} stored without a vector.", documentId);
+                log.warn("No embedding provider available; RAG document {} remains searchable by text only.", documentId);
                 return;
             }
-            jdbcTemplate.update(
+            int updatedRows = jdbcTemplate.update(
                     "UPDATE rag_documents SET embedding = CAST(? AS vector) WHERE id = ?",
                     embedding, documentId);
+            if (updatedRows != 1) {
+                log.warn("Embedding generated for RAG document {}, but {} database rows were updated.",
+                        documentId, updatedRows);
+            }
         } catch (Exception e) {
             log.warn("Unable to embed RAG document {}: {}", documentId, e.getMessage());
+        }
+    }
+
+    private List<String> searchDocumentsOrFallback(String query, int limit) {
+        List<String> documents = searchActiveDocumentsByText(query, limit);
+        return documents.isEmpty() ? fallbackSearch(query, limit) : documents;
+    }
+
+    private List<String> searchActiveDocumentsByText(String query, int limit) {
+        String normalizedQuery = Normalizer.normalize(query, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT);
+        List<String> keywords = Arrays.stream(normalizedQuery.split("[^a-z0-9]+"))
+                .filter(word -> word.length() >= 3 && !RETRIEVAL_STOP_WORDS.contains(word))
+                .distinct()
+                .limit(8)
+                .toList();
+        if (keywords.isEmpty()) {
+            return List.of();
+        }
+
+        String normalizedDocument = """
+                translate(lower(concat_ws(' ', title, content)),
+                    'àáâãäåèéêëìíîïòóôõöùúûüýç',
+                    'aaaaaaeeeeiiiiooooouuuuyc')
+                """;
+        String score = keywords.stream()
+                .map(ignored -> "CASE WHEN " + normalizedDocument + " LIKE ? THEN 1 ELSE 0 END")
+                .collect(Collectors.joining(" + "));
+        String matchesAnyKeyword = keywords.stream()
+                .map(ignored -> normalizedDocument + " LIKE ?")
+                .collect(Collectors.joining(" OR ", "(", ")"));
+        List<Object> parameters = new ArrayList<>();
+        keywords.forEach(word -> parameters.add("%" + word + "%"));
+        keywords.forEach(word -> parameters.add("%" + word + "%"));
+        parameters.add(Math.max(1, limit));
+
+        String sql = """
+                SELECT title, content, source, (%s) AS match_count
+                FROM rag_documents
+                WHERE active = TRUE AND %s
+                ORDER BY match_count DESC, updated_at DESC
+                LIMIT ?
+                """.formatted(score, matchesAnyKeyword);
+        try {
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                StringBuilder result = new StringBuilder();
+                String title = rs.getString("title");
+                String source = rs.getString("source");
+                String content = rs.getString("content");
+                if (title != null && !title.isBlank()) {
+                    result.append("Q: ").append(title).append('\n');
+                }
+                if (source != null && !source.isBlank()) {
+                    result.append("Source: ").append(source).append('\n');
+                }
+                if (content != null && !content.isBlank()) {
+                    result.append("A: ").append(content);
+                }
+                return result.toString().trim();
+            }, parameters.toArray());
+        } catch (Exception e) {
+            log.warn("Text search in active RAG documents failed for query '{}': {}", query, e.getMessage());
+            return List.of();
         }
     }
 

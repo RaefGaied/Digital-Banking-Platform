@@ -71,6 +71,22 @@ class OllamaIntentDetectionServiceTest {
     }
 
     @Test
+    void keepsExplicitSensitiveFraudIntentWhenMessageAlsoMentionsPayment() {
+        ChatClient.Builder builder = mock(ChatClient.Builder.class);
+        ChatClient client = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        when(builder.build()).thenReturn(client);
+
+        String message = "Je souhaite signaler une fraude : je ne reconnais pas un paiement de 120 euros effectué aujourd'hui";
+        IntentResult result = new OllamaIntentDetectionService(
+                builder, new RuleBasedIntentDetectionService())
+                .detectIntent(message);
+
+        assertEquals(IntentType.FRAUD, result.getIntent());
+        assertEquals(true, result.getIsSensitive());
+        org.mockito.Mockito.verifyNoInteractions(client);
+    }
+
+    @Test
     void fallsBackToRulesWhenOllamaFails() {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         ChatClient client = mock(ChatClient.class, RETURNS_DEEP_STUBS);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Menu, MenuItem, Tooltip } from '@mui/material';
-import { useI18n } from '../../i18n/I18nContext';
+import { useI18n } from '../../i18n/context';
 
 export default function LanguageToggle() {
   const { locale, setLocale, t } = useI18n();

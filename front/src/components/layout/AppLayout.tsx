@@ -13,7 +13,7 @@ import { Settings, Menu as MenuIcon } from 'lucide-react';
 import Sidebar from './Sidebar.tsx';
 import { useAuth } from '../../hooks/useAuth';
 import Notifications from '../ui/Notifications';
-import { useI18n } from '../../i18n/I18nContext';
+import { useI18n } from '../../i18n/context';
 import LanguageToggle from '../ui/LanguageToggle';
 import ThemeToggle from '../ui/ThemeToggle';
 import FloatingAgentWidget from '../ui/FloatingAgentWidget';

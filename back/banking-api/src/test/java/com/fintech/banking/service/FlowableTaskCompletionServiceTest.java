@@ -87,6 +87,7 @@ class FlowableTaskCompletionServiceTest {
                 .status(TicketStatus.OPEN)
                 .build();
         when(task.getProcessInstanceId()).thenReturn("fraud-process-31");
+        when(task.getTaskDefinitionKey()).thenReturn("Task_AnalyseFraude");
         when(flowableService.getTaskById("fraud-task-31")).thenReturn(task);
         when(flowableService.getProcessVariables("fraud-process-31"))
                 .thenReturn(Map.of("supportTicketId", "31", "intent", "STOLEN_CARD"));
@@ -112,6 +113,7 @@ class FlowableTaskCompletionServiceTest {
                 .status(TicketStatus.OPEN)
                 .build();
         when(task.getProcessInstanceId()).thenReturn("fraud-process-32");
+        when(task.getTaskDefinitionKey()).thenReturn("Task_AnalyseFraude");
         when(flowableService.getTaskById("fraud-task-32")).thenReturn(task);
         when(flowableService.getProcessVariables("fraud-process-32"))
                 .thenReturn(Map.of("supportTicketId", "32", "intent", "FRAUD"));
@@ -125,6 +127,46 @@ class FlowableTaskCompletionServiceTest {
         verify(supportTicketService).updateTicketStatus(32L, TicketStatus.RESOLVED);
         verify(notificationService).notifyAdminsWorkflowResolved("fraud-task-32", "FAUX_POSITIF");
         org.junit.jupiter.api.Assertions.assertEquals("FAUX_POSITIF", result.get("decision"));
+    }
+
+    @Test
+    void fraudContactDecisionKeepsTicketInProgress() {
+        SupportTicket ticket = SupportTicket.builder()
+                .id(33L)
+                .userId(UUID.randomUUID())
+                .subject("Unrecognized card payment")
+                .ticketType(TicketType.FRAUD)
+                .status(TicketStatus.OPEN)
+                .build();
+        when(task.getProcessInstanceId()).thenReturn("fraud-process-33");
+        when(task.getTaskDefinitionKey()).thenReturn("Task_AnalyseFraude");
+        when(flowableService.getTaskById("fraud-task-33")).thenReturn(task);
+        when(flowableService.getProcessVariables("fraud-process-33"))
+                .thenReturn(Map.of("supportTicketId", "33", "intent", "FRAUD"));
+        when(supportTicketRepository.findById(33L)).thenReturn(Optional.of(ticket));
+
+        Map<String, Object> result = completionService.completeTask(
+                "fraud-task-33",
+                Map.of("decision", "CONTACTER"));
+
+        verify(flowableService).completeTask(eq("fraud-task-33"), any(Map.class));
+        verify(supportTicketService).updateTicketStatus(33L, TicketStatus.IN_PROGRESS);
+        verify(notificationService, never()).notifyAdminsWorkflowResolved("fraud-task-33", "CONTACTER");
+        org.junit.jupiter.api.Assertions.assertEquals("CONTACTER", result.get("decision"));
+    }
+
+    @Test
+    void fraudTaskRejectsGenericApproveDecisionBeforeCompleting() {
+        when(task.getTaskDefinitionKey()).thenReturn("Task_AnalyseFraude");
+        when(flowableService.getTaskById("fraud-task-invalid")).thenReturn(task);
+        when(task.getProcessInstanceId()).thenReturn("fraud-process-invalid");
+        when(flowableService.getProcessVariables("fraud-process-invalid")).thenReturn(Map.of());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> completionService.completeTask("fraud-task-invalid", Map.of("decision", "APPROVE")));
+
+        verify(flowableService, never()).completeTask(eq("fraud-task-invalid"), any(Map.class));
     }
 
     @Test

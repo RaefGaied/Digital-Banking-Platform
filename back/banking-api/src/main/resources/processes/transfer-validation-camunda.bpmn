@@ -182,6 +182,12 @@
           <dc:Bounds x="507" y="485" width="62" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endRejectedBenef_sh" bpmnElement="endRejectedBenef">
+        <dc:Bounds x="1023" y="472" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1011" y="515" width="57" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="endRejectedAdmin_sh" bpmnElement="endRejectedAdmin">
         <dc:Bounds x="2032" y="272" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -291,12 +297,6 @@
         <dc:Bounds x="1450" y="605" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1446" y="593" width="87" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="endRejectedBenef_sh" bpmnElement="endRejectedBenef">
-        <dc:Bounds x="1023" y="472" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1011" y="515" width="57" height="40" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="boundaryTimerAdmin_sh" bpmnElement="boundaryTimerAdmin">

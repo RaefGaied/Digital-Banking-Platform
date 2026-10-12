@@ -73,6 +73,8 @@ public class FlowableAdminController {
     public ResponseEntity<?> completeTask(@PathVariable String taskId, @RequestBody Map<String, Object> body) {
         try {
             return ResponseEntity.ok(flowableTaskCompletionService.completeTask(taskId, body));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
         } catch (Exception e) {
             // log but don't expose
             org.slf4j.LoggerFactory.getLogger(FlowableAdminController.class).error("Error handling task completion actions", e);

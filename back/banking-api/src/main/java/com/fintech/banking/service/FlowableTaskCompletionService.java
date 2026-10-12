@@ -43,7 +43,10 @@ public class FlowableTaskCompletionService {
 
     public Map<String, Object> completeTask(String taskId, Map<String, Object> body) {
         Task task = flowableService.getTaskById(taskId);
-        String processInstanceId = task != null ? task.getProcessInstanceId() : null;
+        if (task == null) {
+            throw new IllegalArgumentException("Active workflow task not found: " + taskId);
+        }
+        String processInstanceId = task.getProcessInstanceId();
         Map<String, Object> processVars = flowableService.getProcessVariables(processInstanceId);
 
         Map<String, Object> vars = body == null ? new HashMap<>() : new HashMap<>(body);
@@ -56,9 +59,8 @@ public class FlowableTaskCompletionService {
                 decisionFallback,
                 processVars.get("intent"),
                 approved);
-        validateDataUpdateDecision(task, decision);
-        if (task != null
-                && "taskValidationAdmin".equals(task.getTaskDefinitionKey())
+        validateTaskDecision(task, decision);
+        if ("taskValidationAdmin".equals(task.getTaskDefinitionKey())
                 && "REQUEST_INFO".equals(decision)) {
             vars.put("infoCount", readInteger(processVars.get("infoCount")) + 1);
         }
@@ -154,12 +156,15 @@ public class FlowableTaskCompletionService {
         return normalized;
     }
 
-    private void validateDataUpdateDecision(Task task, String decision) {
-        if (task == null || task.getTaskDefinitionKey() == null) {
+    private void validateTaskDecision(Task task, String decision) {
+        if (task.getTaskDefinitionKey() == null) {
             return;
         }
         String taskDefinitionKey = task.getTaskDefinitionKey();
         boolean valid = switch (taskDefinitionKey) {
+            case "Task_AnalyseFraude" -> "BLOQUER".equals(decision)
+                    || "CONTACTER".equals(decision)
+                    || "FAUX_POSITIF".equals(decision);
             case "dataUpdateTask", "taskValidationAdmin" -> "APPROVE".equals(decision)
                     || "REJECT".equals(decision)
                     || "REQUEST_INFO".equals(decision)

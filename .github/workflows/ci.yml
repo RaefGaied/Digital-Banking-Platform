@@ -3,77 +3,10 @@ name: CI
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, master ]
-
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: testdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Build backend (Maven)
-        working-directory: back/banking-api
-        run: |
-          chmod +x mvnw || true
-          ./mvnw -B -DskipTests=false clean package
-
-      - name: Start backend
-        run: |
-          ls back/banking-api/target || true
-          nohup java -jar back/banking-api/target/*.jar > backend.log 2>&1 &
-          sleep 10
-
-      - name: Set up Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Build frontend
-        working-directory: front
-        run: |
-          npm ci
-          npm run build
-
-      - name: Serve frontend (static)
-        working-directory: front
-        run: |
-          npx serve -s dist -l 5173 &
-          sleep 3
-
-      - name: Run Playwright E2E
-        working-directory: front
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 'false'
-        run: |
-          npx playwright install --with-deps
-          npx playwright test --reporter=list
-name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -159,3 +92,152 @@ jobs:
         with:
           name: test-results
           path: back/banking-api/target/surefire-reports/
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install dependencies
+        working-directory: front
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: front
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: front
+        run: npm run build
+
+      - name: Install Playwright browser
+        working-directory: front
+        run: npx playwright install --with-deps chromium
+
+      - name: Run frontend end-to-end tests
+        working-directory: front
+        run: npm run test:e2e -- --reporter=list
+
+  publish-images:
+    name: Publish Docker Images
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [test, frontend-build]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: banking-api
+            context: ./back/banking-api
+          - image: ai-agent
+            context: ./ai-agent
+          - image: frontend
+            context: ./front
+          - image: postgres
+            context: ./docker/postgres
+          - image: pgadmin
+            context: ./docker/pgadmin
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set lowercase image namespace
+        id: image-namespace
+        run: |
+          repository="${GITHUB_REPOSITORY,,}"
+          owner="${repository%%/*}"
+          name="${repository#*/}"
+          echo "value=ghcr.io/${owner}/${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image-namespace.outputs.value }}-${{ matrix.image }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=tag
+
+      - name: Build and push images
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  deploy:
+    name: Deploy RAG Stack
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: publish-images
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+      DEPLOY_GHCR_TOKEN: ${{ secrets.DEPLOY_GHCR_TOKEN }}
+      DEPLOY_GHCR_USERNAME: ${{ secrets.DEPLOY_GHCR_USERNAME }}
+    steps:
+      - name: Skip deployment when host secrets are not configured
+        if: ${{ env.DEPLOY_HOST == '' || env.DEPLOY_USER == '' || env.DEPLOY_PATH == '' || env.DEPLOY_SSH_KEY == '' || env.DEPLOY_SSH_KNOWN_HOSTS == '' || env.DEPLOY_GHCR_TOKEN == '' || env.DEPLOY_GHCR_USERNAME == '' }}
+        run: |
+          echo "Runtime deployment skipped: configure DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, DEPLOY_SSH_KEY, DEPLOY_SSH_KNOWN_HOSTS, DEPLOY_GHCR_TOKEN and DEPLOY_GHCR_USERNAME."
+
+      - name: Configure SSH
+        if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_PATH != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_SSH_KNOWN_HOSTS != '' && env.DEPLOY_GHCR_TOKEN != '' && env.DEPLOY_GHCR_USERNAME != '' }}
+        shell: bash
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Authenticate to GHCR on deployment host
+        if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_PATH != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_SSH_KNOWN_HOSTS != '' && env.DEPLOY_GHCR_TOKEN != '' && env.DEPLOY_GHCR_USERNAME != '' }}
+        shell: bash
+        run: |
+          printf '%s' "$DEPLOY_GHCR_TOKEN" | ssh \
+            -i "$HOME/.ssh/deploy_key" \
+            -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "docker login ghcr.io --username '$DEPLOY_GHCR_USERNAME' --password-stdin"
+
+      - name: Pull and start RAG stack
+        if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_PATH != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_SSH_KNOWN_HOSTS != '' && env.DEPLOY_GHCR_TOKEN != '' && env.DEPLOY_GHCR_USERNAME != '' }}
+        shell: bash
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
+        run: |
+          ssh \
+            -i "$HOME/.ssh/deploy_key" \
+            -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd '$DEPLOY_PATH' && git fetch origin '$DEPLOY_BRANCH' && git checkout '$DEPLOY_BRANCH' && git pull --ff-only origin '$DEPLOY_BRANCH' && test -f .env && grep -Eq '^JWT_SECRET=.{32,}$' .env && ! grep -q '^JWT_SECRET=dev-only-change-this-secret-in-production$' .env && grep -Eq '^POSTGRES_PASSWORD=.{16,}$' .env && grep -Eq '^PGADMIN_DEFAULT_PASSWORD=.{16,}$' .env && IMAGE_TAG='$IMAGE_TAG' docker compose pull backend ai-agent frontend postgres pgadmin && IMAGE_TAG='$IMAGE_TAG' docker compose up -d --no-build"

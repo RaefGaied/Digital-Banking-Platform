@@ -88,8 +88,9 @@ export default function ProfilePage() {
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setPasswordError('');
     },
-    onError: (error: any) => {
-      setPasswordError(error.response?.data?.error || 'Current password is incorrect');
+    onError: (error: unknown) => {
+      const serverError = isAxiosError<{ error?: string }>(error) ? error.response?.data?.error : undefined;
+      setPasswordError(serverError || 'Current password is incorrect');
     },
   });
 
@@ -154,10 +155,30 @@ export default function ProfilePage() {
       setSecretValue(null);
       queryClient.invalidateQueries({ queryKey: ['user'] });
       return true;
-    } catch (err: any) {
+    } catch {
       return false;
     }
   };
+
+  const passwordFields: {
+    label: string;
+    key: 'currentPassword' | 'newPassword';
+    show: boolean;
+    toggle: () => void;
+  }[] = [
+    {
+      label: 'Current Password',
+      key: 'currentPassword',
+      show: showCurrent,
+      toggle: () => setShowCurrent(!showCurrent),
+    },
+    {
+      label: 'New Password',
+      key: 'newPassword',
+      show: showNew,
+      toggle: () => setShowNew(!showNew),
+    },
+  ];
 
   return (
     <>
@@ -519,20 +540,7 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {[
-                {
-                  label: 'Current Password',
-                  key: 'currentPassword',
-                  show: showCurrent,
-                  toggle: () => setShowCurrent(!showCurrent),
-                },
-                {
-                  label: 'New Password',
-                  key: 'newPassword',
-                  show: showNew,
-                  toggle: () => setShowNew(!showNew),
-                },
-              ].map(({ label, key, show, toggle }) => (
+              {passwordFields.map(({ label, key, show, toggle }) => (
                 <div key={key}>
                   <label
                     htmlFor={`pwd-${key}`}
@@ -545,7 +553,7 @@ export default function ProfilePage() {
                       id={`pwd-${key}`}
                       name={key}
                       type={show ? 'text' : 'password'}
-                      value={(passwordForm as any)[key]}
+                      value={passwordForm[key]}
                       onChange={(e) => setPasswordForm({ ...passwordForm, [key]: e.target.value })}
                       className='w-full bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-2xl px-4 py-3 text-slate-900 dark:text-zinc-100 text-sm focus:outline-none focus:border-primary-500 pr-12'
                       placeholder='••••••••'

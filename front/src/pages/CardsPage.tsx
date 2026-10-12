@@ -38,7 +38,7 @@ import {
 import { cardsApi } from '../api/cards';
 import type { CreateCardRequest, Card as BankCard } from '../api/cards';
 import { formatCurrency } from '../utils/formatters';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../theme/context';
 
 const brandGradients: Record<string, string> = {
   VISA: 'linear-gradient(135deg, #0d0f14 0%, #1e2230 50%, #151821 100%)',

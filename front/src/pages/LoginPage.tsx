@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import TwoFactorModal from '../components/auth/TwoFactorModal';
-import { useI18n } from '../i18n/I18nContext';
+import { useI18n } from '../i18n/context';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageToggle from '../components/ui/LanguageToggle';
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
 
   // Interactive Live Data States
   const [fxList, setFxList] = useState(initialFx);
@@ -164,11 +164,14 @@ export default function LoginPage() {
   // Account Lock Countdown Timer
   useEffect(() => {
     if (!lockedUntil) {
-      setNow(Date.now());
       return;
     }
+    const initialTimer = window.setTimeout(() => setNow(Date.now()), 0);
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(timer);
+    };
   }, [lockedUntil]);
 
   const lockExpiry = lockedUntil ? new Date(lockedUntil).getTime() : null;
@@ -584,7 +587,7 @@ export default function LoginPage() {
                 <Button
                   key={key}
                   size='small'
-                  onClick={() => setActiveTab(key as any)}
+                  onClick={() => setActiveTab(key as typeof activeTab)}
                   startIcon={<Icon className='w-3.5 h-3.5' />}
                   sx={{
                     borderRadius: 3,

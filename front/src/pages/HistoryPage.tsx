@@ -5,8 +5,8 @@ import { Search, TrendingUp, TrendingDown, ArrowLeftRight, Sparkles, Download } 
 import { Button } from '@mui/material';
 import { accountApi } from '../api/account';
 import { formatCurrency, formatDate, getTransactionLabel } from '../utils/formatters';
-import { useI18n } from '../i18n/I18nContext';
-import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/context';
+import { useTheme } from '../theme/context';
 
 export default function HistoryPage() {
   const { locale } = useI18n();

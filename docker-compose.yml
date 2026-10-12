@@ -1,5 +1,6 @@
 services:
   postgres:
+    image: ghcr.io/raefgaied/digital-banking-platform-main-postgres:${IMAGE_TAG:-latest}
     build:
       context: ./docker/postgres
       dockerfile: Dockerfile
@@ -7,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: banking_db
       POSTGRES_USER: banking_user
-      POSTGRES_PASSWORD: banking_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-banking_pass}
     ports:
       - "5432:5432"
     volumes:
@@ -106,8 +107,10 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     command: >
@@ -122,6 +125,7 @@ services:
       retries: 5
 
   backend:
+    image: ghcr.io/raefgaied/digital-banking-platform-main-banking-api:${IMAGE_TAG:-latest}
     build:
       context: ./back/banking-api
       dockerfile: Dockerfile
@@ -142,7 +146,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/banking_db
       SPRING_DATASOURCE_USERNAME: banking_user
-      SPRING_DATASOURCE_PASSWORD: banking_pass
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-banking_pass}
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-in-production}
       AI_AGENT_ENABLED: 'true'
@@ -157,7 +161,7 @@ services:
       SPRING_FLYWAY_ENABLED: 'true'
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATA_REDIS_HOST: redis
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
@@ -173,6 +177,7 @@ services:
       start_period: 30s
 
   ai-agent:
+    image: ghcr.io/raefgaied/digital-banking-platform-main-ai-agent:${IMAGE_TAG:-latest}
     build:
       context: ./ai-agent
       dockerfile: Dockerfile
@@ -204,6 +209,7 @@ services:
       retries: 5
 
   frontend:
+    image: ghcr.io/raefgaied/digital-banking-platform-main-frontend:${IMAGE_TAG:-latest}
     build:
       context: ./front
       dockerfile: Dockerfile
@@ -217,13 +223,14 @@ services:
       - banking-network
 
   pgadmin:
+    image: ghcr.io/raefgaied/digital-banking-platform-main-pgadmin:${IMAGE_TAG:-latest}
     build:
       context: ./docker/pgadmin
       dockerfile: Dockerfile
     container_name: banking-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@banking.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
       PGADMIN_REPLACE_SERVERS_ON_STARTUP: 'True'
       PGPASS_FILE: /pgadmin4/pgpass

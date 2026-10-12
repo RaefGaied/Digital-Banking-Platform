@@ -68,7 +68,8 @@ export default function AdminTasksPage() {
   const [ticketActionError, setTicketActionError] = useState<string | null>(null);
   const [aiDraftError, setAiDraftError] = useState<string | null>(null);
   const [submittedDecision, setSubmittedDecision] = useState<
-    'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE' | 'CONTINUE' | null
+    'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE' | 'CONTINUE'
+      | 'BLOQUER' | 'CONTACTER' | 'FAUX_POSITIF' | null
   >(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
@@ -167,7 +168,8 @@ export default function AdminTasksPage() {
       decision,
     }: {
       taskId: string;
-      decision: 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE' | 'CONTINUE';
+      decision: 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE' | 'CONTINUE'
+        | 'BLOQUER' | 'CONTACTER' | 'FAUX_POSITIF';
     }) => adminApi.completeFlowableTask(taskId, decision),
     onMutate: ({ decision }) => {
       setSubmittedDecision(decision);
@@ -394,7 +396,7 @@ export default function AdminTasksPage() {
           return (
             <Button
               key={key}
-              onClick={() => setActiveTab(key as any)}
+              onClick={() => setActiveTab(key as typeof activeTab)}
               variant={isSelected ? 'contained' : 'outlined'}
               startIcon={<Icon size={16} />}
               sx={{
@@ -580,6 +582,7 @@ export default function AdminTasksPage() {
                     {(flowableProcessesQuery.data?.content ?? []).map((process) => {
                       const activeTask = (flowableTasksQuery.data ?? []).find((task) => task.processInstanceId === process.id);
                       const isDataUpdateProcess = process.processDefinitionKey === 'dataUpdateValidationProcess';
+                      const isFraudProcess = process.processDefinitionKey === 'fraudValidationProcess';
                       const isFollowupTask = activeTask?.taskDefinitionKey === 'followupTask';
                       const isEscalatedReview = activeTask?.taskDefinitionKey === 'escalatedReviewTask';
                       const isSelected = selectedProcessInstanceId === process.id;
@@ -644,7 +647,49 @@ export default function AdminTasksPage() {
                                   Reprendre
                                 </Button>
                               )}
-                              {activeTask && !isFollowupTask && (
+                              {activeTask && isFraudProcess && activeTask.taskDefinitionKey === 'Task_AnalyseFraude' && (
+                                <>
+                                  <Button
+                                    size='small'
+                                    variant='contained'
+                                    color='error'
+                                    startIcon={<ShieldCheck size={16} />}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      flowableMutation.mutate({ taskId: activeTask.id, decision: 'BLOQUER' });
+                                    }}
+                                    disabled={flowableMutation.isPending}
+                                  >
+                                    Bloquer la carte
+                                  </Button>
+                                  <Button
+                                    size='small'
+                                    variant='outlined'
+                                    startIcon={<MessageSquare size={16} />}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      flowableMutation.mutate({ taskId: activeTask.id, decision: 'CONTACTER' });
+                                    }}
+                                    disabled={flowableMutation.isPending}
+                                  >
+                                    Demander des justificatifs
+                                  </Button>
+                                  <Button
+                                    size='small'
+                                    variant='outlined'
+                                    color='success'
+                                    startIcon={<Check size={16} />}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      flowableMutation.mutate({ taskId: activeTask.id, decision: 'FAUX_POSITIF' });
+                                    }}
+                                    disabled={flowableMutation.isPending}
+                                  >
+                                    Classer comme faux positif
+                                  </Button>
+                                </>
+                              )}
+                              {activeTask && !isFollowupTask && !isFraudProcess && (
                                 <>
                                   <Button
                                     size='small'
@@ -701,6 +746,11 @@ export default function AdminTasksPage() {
                                     </Button>
                                   )}
                                 </>
+                              )}
+                              {activeTask && isFraudProcess && activeTask.taskDefinitionKey !== 'Task_AnalyseFraude' && (
+                                <Typography variant='caption' color='text.secondary'>
+                                  Aucune décision administrateur n’est définie pour cette étape de fraude.
+                                </Typography>
                               )}
                             </Box>
                           </TableCell>
