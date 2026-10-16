@@ -8,6 +8,7 @@ import com.fintech.banking.domain.enums.TransactionStatus;
 import com.fintech.banking.domain.enums.TransactionType;
 import com.fintech.banking.dto.request.TransactionRequest;
 import com.fintech.banking.dto.response.TransactionResponse;
+import com.fintech.banking.dto.response.WithdrawalInitiationResponse;
 import com.fintech.banking.kafka.TransactionEvent;
 import com.fintech.banking.kafka.TransactionEventProducer;
 import com.fintech.banking.repository.AccountRepository;
@@ -16,6 +17,7 @@ import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.TransactionValidationService;
 import com.fintech.banking.service.TransactionService;
 import com.fintech.banking.service.NotificationService;
+import com.fintech.banking.service.WithdrawalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -38,6 +40,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionEventProducer eventProducer;
     private final TransactionValidationService transactionValidationService;
     private final NotificationService notificationService;
+    private final WithdrawalService withdrawalService;
 
     @Value("${app.sensitive-line.threshold:5000}")
     private BigDecimal highValueTransferThreshold;
@@ -110,22 +113,8 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional
     @CacheEvict(value = "accounts", key = "#email")
-    public TransactionResponse withdraw(String email, TransactionRequest request) {
-        Account account = getAccountByEmail(email);
-        account.debit(request.getAmount());
-        accountRepository.save(account);
-        Transaction transaction = transactionRepository.save(Transaction.builder()
-                .sourceAccount(account)
-                .amount(request.getAmount())
-                .type(TransactionType.WITHDRAWAL)
-                .status(TransactionStatus.COMPLETED)
-                .description(request.getDescription())
-                .build());
-        publishEvent(transaction);
-        if (account.getUser() != null) {
-            notificationService.notifyWithdrawalCompleted(account.getUser().getId(), transaction.getAmount().toString());
-        }
-        return toResponse(transaction);
+    public WithdrawalInitiationResponse withdraw(String email, TransactionRequest request) {
+        return withdrawalService.initiateWithdrawal(email, request);
     }
 
     @Override

@@ -19,6 +19,7 @@ import org.flowable.task.api.Task;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -208,6 +209,7 @@ public class McpController {
         }
     }
 
+    //@PreAuthorize()
     @PostMapping("/flowable/tasks/{taskId}/complete")
     public ResponseEntity<?> completeTask(@PathVariable String taskId, @RequestBody Map<String, Object> request, Authentication authentication) {
         try {

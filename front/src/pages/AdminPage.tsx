@@ -7,6 +7,7 @@ import {
   FileText,
   ShieldAlert,
   Database,
+  Banknote,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -24,6 +25,7 @@ const tabs: AdminTabItem[] = [
   { to: 'security', label: 'Security Events', icon: ShieldAlert },
   { to: 'audit', label: 'Audit Trail', icon: FileText },
   { to: 'rag', label: 'RAG Knowledge', icon: Database, badge: 'pgvector' },
+  { to: 'atm', label: 'ATM Cash Desk', icon: Banknote, badge: 'SIM' },
 ];
 
 export default function AdminPage() {

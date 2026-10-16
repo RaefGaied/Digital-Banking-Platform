@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#081120" />
+    <meta
+      name="description"
+      content="Présentation interactive des mécanismes de sécurité du projet FinBank."
+    />
+    <title>FinBank — Sécurité du projet</title>
+    <link rel="stylesheet" href="./security-defense.css" />
+    <script src="./security-defense.js" defer></script>
+  </head>
+  <body>
+    <div class="reading-progress" aria-hidden="true">
+      <span id="progress-bar"></span>
+    </div>
+
+    <header class="topbar">
+      <a class="brand" href="#accueil" aria-label="FinBank, retour à l’accueil">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span>FinBank <span class="brand-divider">/</span> Sécurité</span>
+      </a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a href="#architecture">Architecture</a>
+        <a href="#mecanismes">Mécanismes</a>
+        <a href="#limites">Limites &amp; pistes</a>
+      </nav>
+      <a class="nav-cta" href="#synthese">Synthèse <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main>
+      <section class="hero section-shell" id="accueil">
+        <div class="hero-copy reveal">
+          <p class="eyebrow"><span class="status-dot"></span> SOUTENANCE PFE · FINBANK</p>
+          <h1>La sécurité,<br />à chaque <span>échange.</span></h1>
+          <p class="hero-intro">
+            Comment FinBank protège l’accès aux fonctionnalités et encadre les
+            requêtes — des mécanismes concrets, avec leurs limites clairement identifiées.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#architecture">
+              Explorer les protections <span aria-hidden="true">↓</span>
+            </a>
+            <a class="text-link" href="#limites">Voir les améliorations possibles</a>
+          </div>
+          <div class="hero-footnote">
+            <span class="mini-shield" aria-hidden="true">✓</span>
+            <span>Une défense en plusieurs couches, pas une promesse absolue.</span>
+          </div>
+        </div>
+
+        <div class="security-visual reveal" aria-label="Illustration du contrôle de sécurité">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="orbit orbit-three"></div>
+          <span class="orbit-label label-api">API</span>
+          <span class="orbit-label label-token">JWT</span>
+          <span class="orbit-label label-role">RÔLES</span>
+          <div class="shield-core">
+            <div class="shield-glow"></div>
+            <svg viewBox="0 0 100 112" role="img" aria-label="Bouclier avec coche">
+              <path d="M50 5 87 19v30c0 25-15 44-37 57C28 93 13 74 13 49V19L50 5Z" />
+              <path class="shield-check" d="m34 55 11 11 23-25" />
+            </svg>
+          </div>
+          <div class="visual-caption">
+            <span class="caption-line"></span>
+            <span>IDENTITÉ VÉRIFIÉE</span>
+            <span class="caption-check">✓</span>
+          </div>
+          <div class="visual-coordinate">FINBANK_SECURITY_LAYER / 01</div>
+        </div>
+
+        <div class="hero-bottom">
+          <span>01 — 06</span>
+          <span class="hero-bottom-line"></span>
+          <span>FAIRE DÉFILER POUR EXPLORER</span>
+        </div>
+      </section>
+
+      <section class="section-shell section-block" id="architecture">
+        <div class="section-heading reveal">
+          <p class="eyebrow">01 / ARCHITECTURE DE CONFIANCE</p>
+          <h2>Une requête. <span>Plusieurs contrôles.</span></h2>
+          <p>
+            Chaque appel protégé traverse une chaîne de vérifications avant d’atteindre
+            la ressource demandée.
+          </p>
+        </div>
+
+        <div class="flow-panel reveal">
+          <div class="flow-topline">
+            <span><span class="live-dot"></span> PARCOURS D’UNE REQUÊTE</span>
+            <span>API REST · SPRING SECURITY</span>
+          </div>
+          <div class="flow-track" id="auth-flow">
+            <article class="flow-step is-active" data-step="0">
+              <span class="step-index">01</span>
+              <span class="step-icon" aria-hidden="true">⇢</span>
+              <h3>Requête</h3>
+              <p>Le client appelle l’API.</p>
+              <span class="step-status">ENTRÉE</span>
+            </article>
+            <span class="flow-connector" aria-hidden="true"></span>
+            <article class="flow-step" data-step="1">
+              <span class="step-index">02</span>
+              <span class="step-icon" aria-hidden="true">◷</span>
+              <h3>Limitation</h3>
+              <p>Le filtre compte les appels par IP.</p>
+              <span class="step-status">BUCKET4J</span>
+            </article>
+            <span class="flow-connector" aria-hidden="true"></span>
+            <article class="flow-step" data-step="2">
+              <span class="step-index">03</span>
+              <span class="step-icon" aria-hidden="true">⌁</span>
+              <h3>Authentification</h3>
+              <p>Le JWT Bearer est vérifié.</p>
+              <span class="step-status">JWT</span>
+            </article>
+            <span class="flow-connector" aria-hidden="true"></span>
+            <article class="flow-step" data-step="3">
+              <span class="step-index">04</span>
+              <span class="step-icon" aria-hidden="true">◇</span>
+              <h3>Autorisation</h3>
+              <p>Rôle et accès à la route sont contrôlés.</p>
+              <span class="step-status">RBAC</span>
+            </article>
+            <span class="flow-connector" aria-hidden="true"></span>
+            <article class="flow-step" data-step="4">
+              <span class="step-index">05</span>
+              <span class="step-icon" aria-hidden="true">✓</span>
+              <h3>Ressource</h3>
+              <p>La requête autorisée poursuit son traitement.</p>
+              <span class="step-status">API</span>
+            </article>
+          </div>
+          <div class="flow-controls">
+            <p id="flow-description" aria-live="polite">
+              Le parcours s’anime pour illustrer les contrôles successifs.
+            </p>
+            <button class="button button-outline" id="replay-flow" type="button">
+              Rejouer le parcours <span aria-hidden="true">↻</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-shell section-block" id="mecanismes">
+        <div class="section-heading reveal">
+          <p class="eyebrow">02 / CONTRÔLES EN PLACE</p>
+          <h2>Des protections <span>complémentaires.</span></h2>
+          <p>Chaque mécanisme répond à un risque différent dans le périmètre actuel du projet.</p>
+        </div>
+
+        <div class="control-grid">
+          <article class="control-card reveal">
+            <div class="card-top">
+              <span class="card-icon icon-cyan" aria-hidden="true">01</span>
+              <span class="card-tag">IDENTITÉ</span>
+            </div>
+            <h3>Authentification JWT</h3>
+            <p>
+              Le filtre lit le jeton Bearer, vérifie sa signature et son expiration,
+              puis établit l’identité dans Spring Security.
+            </p>
+            <div class="card-detail">
+              <span class="detail-dot"></span>
+              <span>API sans session serveur · jetons configurables</span>
+            </div>
+          </article>
+
+          <article class="control-card reveal">
+            <div class="card-top">
+              <span class="card-icon icon-violet" aria-hidden="true">02</span>
+              <span class="card-tag">MOTS DE PASSE</span>
+            </div>
+            <h3>Hachage BCrypt</h3>
+            <p>
+              Les mots de passe sont traités avec BCrypt, configuré avec un facteur
+              de coût égal à 12.
+            </p>
+            <div class="card-detail">
+              <span class="detail-dot"></span>
+              <span>Comparaison par encodeur · pas de stockage en clair</span>
+            </div>
+          </article>
+
+          <article class="control-card reveal">
+            <div class="card-top">
+              <span class="card-icon icon-green" aria-hidden="true">03</span>
+              <span class="card-tag">AUTORISATION</span>
+            </div>
+            <h3>Accès par rôles</h3>
+            <p>
+              Les routes d’administration exigent le rôle ADMIN. Les API métier
+              déclarées dans la configuration nécessitent une authentification.
+            </p>
+            <div class="card-detail">
+              <span class="detail-dot"></span>
+              <span>Règles centralisées dans Spring Security</span>
+            </div>
+          </article>
+
+          <article class="control-card reveal">
+            <div class="card-top">
+              <span class="card-icon icon-amber" aria-hidden="true">04</span>
+              <span class="card-tag">ABUS DE REQUÊTES</span>
+            </div>
+            <h3>Limitation de débit</h3>
+            <p>
+              Un bucket par adresse IP autorise jusqu’à 1 000 requêtes par minute ;
+              au-delà, l’API répond avec le statut HTTP 429.
+            </p>
+            <div class="card-detail">
+              <span class="detail-dot"></span>
+              <span>Bucket4j · état en mémoire de l’instance</span>
+            </div>
+          </article>
+
+          <article class="control-card reveal">
+            <div class="card-top">
+              <span class="card-icon icon-blue" aria-hidden="true">05</span>
+              <span class="card-tag">ORIGINE WEB</span>
+            </div>
+            <h3>Politique CORS</h3>
+            <p>
+              Le backend autorise explicitement l’origine de développement
+              <code>http://localhost:5173</code> et les méthodes API déclarées.
+            </p>
+            <div class="card-detail">
+              <span class="detail-dot"></span>
+              <span>Configuration à adapter en déploiement</span>
+            </div>
+          </article>
+
+          <article class="control-card control-card-note reveal">
+            <div class="note-symbol" aria-hidden="true">+</div>
+            <div>
+              <span class="card-tag">PRINCIPE</span>
+              <h3>Défense en profondeur</h3>
+              <p>
+                Un jeton valide ne suffit pas à obtenir tous les droits : la route
+                applique aussi ses règles d’accès.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="limits-section" id="limites">
+        <div class="section-shell section-block">
+          <div class="section-heading reveal">
+            <p class="eyebrow">03 / REGARD CRITIQUE</p>
+            <h2>Un projet académique, <span>pas une banque en production.</span></h2>
+            <p>
+              Présenter les limites montre une compréhension réaliste de la sécurité
+              et ouvre sur des évolutions concrètes.
+            </p>
+          </div>
+
+          <div class="limits-layout">
+            <div class="limits-list reveal">
+              <article class="limit-row">
+                <span class="limit-number">01</span>
+                <div>
+                  <h3>Secrets et durée des jetons</h3>
+                  <p>La clé JWT et les durées sont configurées par propriétés : protéger les secrets et les faire tourner en environnement réel.</p>
+                </div>
+                <span class="priority">À RENFORCER</span>
+              </article>
+              <article class="limit-row">
+                <span class="limit-number">02</span>
+                <div>
+                  <h3>Limitation distribuée</h3>
+                  <p>Les compteurs sont en mémoire locale : avec plusieurs instances, prévoir un stockage partagé et une politique distribuée.</p>
+                </div>
+                <span class="priority">ÉVOLUTION</span>
+              </article>
+              <article class="limit-row">
+                <span class="limit-number">03</span>
+                <div>
+                  <h3>Confiance dans l’adresse IP</h3>
+                  <p>Le filtre lit <code>X-Forwarded-For</code> lorsqu’il est présent : en production, seul un proxy de confiance doit pouvoir le définir.</p>
+                </div>
+                <span class="priority priority-warn">À VÉRIFIER</span>
+              </article>
+              <article class="limit-row">
+                <span class="limit-number">04</span>
+                <div>
+                  <h3>Configuration de déploiement</h3>
+                  <p>Restreindre CORS aux domaines réels, imposer HTTPS et compléter les contrôles par des tests et de la surveillance.</p>
+                </div>
+                <span class="priority">AVANT PROD</span>
+              </article>
+            </div>
+
+            <aside class="jury-card reveal">
+              <div class="jury-card-top">
+                <span class="jury-badge" aria-hidden="true">i</span>
+                <span>RÉPONSE AU JURY</span>
+              </div>
+              <blockquote>
+                « Nous avons mis en place des contrôles d’authentification,
+                d’autorisation et de limitation des requêtes. Nous les présentons
+                comme une base de sécurité pour le projet, pas comme une certification
+                ni comme un niveau bancaire de production. »
+              </blockquote>
+              <div class="jury-card-footer">
+                <span class="footer-line"></span>
+                <span>PRÉCIS · HONNÊTE · DÉFENDABLE</span>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-shell section-block final-section" id="synthese">
+        <div class="final-panel reveal">
+          <div class="final-copy">
+            <p class="eyebrow">04 / À RETENIR</p>
+            <h2>Protéger l’accès.<br /><span>Contrôler l’usage.</span></h2>
+            <p>
+              FinBank combine identité JWT, hachage BCrypt, règles de rôles,
+              limitation de débit et configuration CORS. La prochaine étape est
+              de durcir les secrets, l’infrastructure et l’observabilité.
+            </p>
+          </div>
+          <div class="final-stamp" aria-hidden="true">
+            <span class="stamp-ring"></span>
+            <span class="stamp-check">✓</span>
+            <span class="stamp-label">SÉCURITÉ<br />EN COUCHES</span>
+          </div>
+          <a class="button button-primary final-button" href="#accueil">
+            Revenir au début <span aria-hidden="true">↑</span>
+          </a>
+        </div>
+        <footer class="page-footer">
+          <span>FINBANK · PRÉSENTATION DE SOUTENANCE</span>
+          <span>AUTHENTIFICATION <i></i> AUTORISATION <i></i> SURVEILLANCE</span>
+        </footer>
+      </section>
+    </main>
+  </body>
+</html>

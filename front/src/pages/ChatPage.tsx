@@ -5,7 +5,7 @@ import { messagesApi } from '../api/messages';
 import { sessionsApi } from '../api/sessions';
 import { agentsApi } from '../api/agents';
 import { aiApi } from '../api/ai';
-import axios from 'axios';
+import { isAxiosError } from 'axios';
 import {
   Activity,
   CheckCircle2,
@@ -54,6 +54,7 @@ export default function ChatPage() {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [thinkingSeconds, setThinkingSeconds] = useState(0);
+  const [sendError, setSendError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // If no session ID in route, fetch user's sessions to automatically connect
@@ -118,14 +119,56 @@ export default function ChatPage() {
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => messagesApi.create(sessionId, { content }),
-    onMutate: () => setThinkingSeconds(0),
+    onMutate: () => {
+      setThinkingSeconds(0);
+      setSendError(null);
+      return { startedAt: Date.now() };
+    },
     onSettled: () => setThinkingSeconds(0),
     onSuccess: (_, content) => {
+      setSendError(null);
       void queryClient.invalidateQueries({ queryKey: ['conversation', sessionId] });
       void queryClient.invalidateQueries({ queryKey: ['agent-session', sessionId] });
       void queryClient.invalidateQueries({ queryKey: ['agent-activity', sessionId] });
       void aiAskMutation.mutateAsync(content);
       setInput('');
+    },
+    onError: async (error, content, context) => {
+      try {
+        const conversation = await messagesApi.getConversation(sessionId);
+        const startedAt = context?.startedAt ?? Date.now();
+        const userMessageIndex = conversation.findLastIndex(
+          (message) =>
+            message.senderType === 'USER' &&
+            message.content === content &&
+            Date.parse(message.createdAt) >= startedAt - 5000,
+        );
+
+        if (userMessageIndex >= 0) {
+          const hasBotReply = conversation
+            .slice(userMessageIndex + 1)
+            .some((message) => message.senderType === 'BOT');
+          setInput((current) => (current === content ? '' : current));
+          setSendError(
+            hasBotReply
+              ? null
+              : 'Votre message a été enregistré, mais sa réponse n’a pas pu être confirmée. Actualisez la conversation avant de le renvoyer.',
+          );
+          void queryClient.invalidateQueries({ queryKey: ['conversation', sessionId] });
+          return;
+        }
+      } catch {
+        setSendError(
+          'Impossible de confirmer si votre message a été enregistré. Actualisez la conversation avant de le renvoyer.',
+        );
+        return;
+      }
+
+      setSendError(
+        isAxiosError(error) && error.response?.status === 503
+          ? 'Service momentanément indisponible : votre assistant bancaire ne répond pas pour le moment. Veuillez réessayer dans quelques instants.'
+          : 'Le message n’a pas reçu de confirmation du serveur. Actualisez la conversation avant de le renvoyer pour éviter un doublon.',
+      );
     },
   });
 
@@ -628,11 +671,9 @@ export default function ChatPage() {
           </div>
         )}
 
-        {sendMutation.isError && (
+        {sendError && (
           <div role='alert' className='max-w-xl mr-auto rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200'>
-            {axios.isAxiosError(sendMutation.error) && sendMutation.error.response?.status === 503
-              ? 'Service momentanément indisponible : votre assistant bancaire ne répond pas pour le moment. Veuillez réessayer dans quelques instants.'
-              : 'Impossible d’obtenir une réponse du serveur. Vérifiez votre conversation avant de renvoyer le message pour éviter un doublon.'}
+            {sendError}
           </div>
         )}
 

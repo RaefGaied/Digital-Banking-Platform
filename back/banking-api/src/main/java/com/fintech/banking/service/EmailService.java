@@ -101,6 +101,35 @@ public class EmailService {
                 """.formatted(escape(name)));
     }
 
+    public void sendWithdrawalCode(String recipient, String name, String code, String reference, int validityMinutes) {
+        if (!enabled) {
+            throw new IllegalStateException("Withdrawal email delivery is disabled");
+        }
+        JavaMailSender sender = mailSenderProvider.getIfAvailable();
+        if (sender == null) {
+            throw new IllegalStateException("Withdrawal email delivery is not configured");
+        }
+        try {
+            MimeMessage message = sender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(recipient);
+            helper.setSubject("Your FinBank cash withdrawal code");
+            helper.setText("""
+                    <h2>Cash withdrawal code</h2>
+                    <p>Hello %s,</p>
+                    <p>Give this code and its reference to a FinBank counter agent:</p>
+                    <p><strong>Code: %s</strong></p>
+                    <p>Reference: <code>%s</code></p>
+                    <p>This code expires in %d minutes and can only be used once. Never share it by phone or chat.</p>
+                    <p>If you did not request this withdrawal, contact FinBank support immediately.</p>
+                    """.formatted(escape(name), escape(code), escape(reference), validityMinutes), true);
+            sender.send(message);
+        } catch (MessagingException | RuntimeException ex) {
+            throw new IllegalStateException("Unable to deliver the withdrawal code by email", ex);
+        }
+    }
+
     @Async
     public void sendTransactionReceipt(String recipient, TransactionEvent event) {
         sendMessage(recipient, "Banking Customer Support Agent - Reçu de transaction", """

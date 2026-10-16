@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { isAxiosError } from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountApi } from '../api/account';
+import type { WithdrawalInitiationResponse } from '../types';
 import { userApi } from '../api/user';
 import { sessionsApi } from '../api/sessions';
 import {
@@ -59,7 +60,7 @@ const TAB_META: Record<
     icon: TrendingDown,
     color: '#ef4444',
     bg: 'rgba(239, 68, 68, 0.1)',
-    tip: 'Direct wire withdrawals to external IBAN/ACH accounts during global clearing hours.',
+    tip: 'Request cash with a one-time code sent to your registered email. Redeem it at a FinBank counter.',
     limits: 'Min: $1.00 — Max: Available balance.',
     time: 'Under 15 minutes',
     fee: '$0.00 (Tier Free)',
@@ -126,6 +127,7 @@ export default function TransactionsPage() {
   const [validationMessage, setValidationMessage] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyLinkSuccess, setCopyLinkSuccess] = useState(false);
+  const [withdrawalDetails, setWithdrawalDetails] = useState<WithdrawalInitiationResponse | null>(null);
 
   const text =
     locale === 'fr'
@@ -164,6 +166,10 @@ export default function TransactionsPage() {
           feeEstimate: 'Estimation des frais :',
           freeTier: 'Gratuit (Inclus dans l’offre Pro)',
           routeVerified: 'Routage bancaire vérifié et garanti',
+          withdrawalCodeSent: 'Demande créée. Consultez votre e-mail pour le code à usage unique.',
+          withdrawalReference: 'Référence à présenter au guichet',
+          withdrawalExpiry: 'Le code expire le',
+          withdrawalPrototypeNotice: 'Le retrait au guichet est simulé dans cette version de démonstration.',
         }
       : {
           pageTitle: 'Transfers & Settlements',
@@ -200,6 +206,10 @@ export default function TransactionsPage() {
           feeEstimate: 'Estimated clearing fee:',
           freeTier: '$0.00 (Free on FinBank Elite Tier)',
           routeVerified: 'Direct clearing channel validated & active',
+          withdrawalCodeSent: 'Request created. Check your email for the one-time code.',
+          withdrawalReference: 'Reference to present at the counter',
+          withdrawalExpiry: 'Code expires at',
+          withdrawalPrototypeNotice: 'Counter cash withdrawal is simulated in this demo.',
         };
 
   const { data: account } = useQuery({
@@ -258,16 +268,22 @@ export default function TransactionsPage() {
       queryClient.invalidateQueries({ queryKey: ['my-agents'] });
       queryClient.invalidateQueries({ queryKey: ['my-sessions'] });
       setSuccess(true);
-      setValidationMessage(
-        transaction.agentDecision === 'TRIGGER_BPMN'
-          ? `Operation routed to Compliance BPMN pipeline (Process ID: ${transaction.flowableProcessId ?? 'pending'})`
-          : ''
-      );
+      if ('reference' in transaction) {
+        setWithdrawalDetails(transaction);
+        setValidationMessage(text.withdrawalCodeSent);
+      } else {
+        setWithdrawalDetails(null);
+        setValidationMessage(
+          transaction.agentDecision === 'TRIGGER_BPMN'
+            ? `Operation routed to Compliance BPMN pipeline (Process ID: ${transaction.flowableProcessId ?? 'pending'})`
+            : ''
+        );
+      }
       setAmount('');
       setDescription('');
       setTargetAccount('');
       setPaymentKey('');
-      setTimeout(() => setSuccess(false), 4500);
+      if (!('reference' in transaction)) setTimeout(() => setSuccess(false), 4500);
     },
   });
 
@@ -483,6 +499,18 @@ export default function TransactionsPage() {
                   <p className='text-emerald-700 dark:text-emerald-300 text-sm font-semibold'>
                     {validationMessage || text.transactionSuccess}
                   </p>
+                </div>
+              )}
+
+              {withdrawalDetails && (
+                <div className='space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30'>
+                  <p className='text-sm font-bold text-amber-900 dark:text-amber-200'>
+                    {text.withdrawalReference}: <span className='font-mono'>{withdrawalDetails.reference}</span>
+                  </p>
+                  <p className='text-xs text-amber-800 dark:text-amber-300'>
+                    {text.withdrawalExpiry}: {new Date(withdrawalDetails.expiresAt).toLocaleString()}
+                  </p>
+                  <p className='text-xs text-amber-800 dark:text-amber-300'>{text.withdrawalPrototypeNotice}</p>
                 </div>
               )}
 

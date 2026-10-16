@@ -47,6 +47,19 @@ public class Transaction {
     @Column(name = "flowable_process_id", length = 255)
     private String flowableProcessId;
 
+    @Column(name = "withdrawal_code_hash", length = 100)
+    private String withdrawalCodeHash;
+
+    @Column(name = "withdrawal_code_expires_at")
+    private LocalDateTime withdrawalCodeExpiresAt;
+
+    @Column(name = "withdrawal_redeemed_at")
+    private LocalDateTime withdrawalRedeemedAt;
+
+    @Column(name = "withdrawal_failed_attempts", nullable = false)
+    @Builder.Default
+    private int withdrawalFailedAttempts = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

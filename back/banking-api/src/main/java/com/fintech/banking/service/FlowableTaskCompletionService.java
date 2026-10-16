@@ -5,7 +5,6 @@ import com.fintech.banking.domain.entity.SupportTicket;
 import com.fintech.banking.domain.entity.Transaction;
 import com.fintech.banking.domain.enums.TicketStatus;
 import com.fintech.banking.domain.enums.TransactionStatus;
-import com.fintech.banking.repository.AccountRepository;
 import com.fintech.banking.repository.SupportTicketRepository;
 import com.fintech.banking.repository.TransactionRepository;
 import org.flowable.task.api.Task;
@@ -22,7 +21,6 @@ public class FlowableTaskCompletionService {
     private final FlowableService flowableService;
     private final TransactionRepository transactionRepository;
     private final SupportTicketRepository supportTicketRepository;
-    private final AccountRepository accountRepository;
     private final NotificationService notificationService;
     private final SupportTicketService supportTicketService;
 
@@ -30,13 +28,11 @@ public class FlowableTaskCompletionService {
             FlowableService flowableService,
             TransactionRepository transactionRepository,
             SupportTicketRepository supportTicketRepository,
-            AccountRepository accountRepository,
             NotificationService notificationService,
             SupportTicketService supportTicketService) {
         this.flowableService = flowableService;
         this.transactionRepository = transactionRepository;
         this.supportTicketRepository = supportTicketRepository;
-        this.accountRepository = accountRepository;
         this.notificationService = notificationService;
         this.supportTicketService = supportTicketService;
     }
@@ -184,16 +180,6 @@ public class FlowableTaskCompletionService {
     private void handleTransactionOutcome(Transaction transaction, boolean approved) {
         if (approved) {
             Account source = transaction.getSourceAccount();
-            Account target = transaction.getTargetAccount();
-            if (source != null && target != null) {
-                source.debit(transaction.getAmount());
-                target.credit(transaction.getAmount());
-                accountRepository.save(source);
-                accountRepository.save(target);
-            }
-            transaction.setStatus(TransactionStatus.COMPLETED);
-            transactionRepository.save(transaction);
-
             UUID userId = source != null && source.getUser() != null ? source.getUser().getId() : null;
             if (userId != null) {
                 notificationService.notifyTransferExecuted(userId, transaction.getAmount().toString());

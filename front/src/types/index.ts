@@ -28,6 +28,32 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface WithdrawalInitiationResponse {
+  id: string;
+  reference: string;
+  transactionId: string;
+  type: 'WITHDRAWAL';
+  amount: number;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  expiresAt: string;
+  message: string;
+}
+
+export interface AtmNetworkStatus {
+  simulated: boolean;
+  available: boolean;
+  message: string;
+}
+
+export interface AtmWithdrawalReceipt {
+  reference: string;
+  transactionId: string;
+  amount: number;
+  redeemedAt: string;
+  status: string;
+  message: string;
+}
+
 export interface TokenResponse {
   uuid: string;
   name: string;

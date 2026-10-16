@@ -119,6 +119,40 @@ class AgentToolServiceTest {
     }
 
     @Test
+    void includesTransactionStatusInRecentHistory() {
+        UUID userId = UUID.randomUUID();
+        User user = new User();
+        user.setEmail("client@example.com");
+
+        BankingAgent agent = new BankingAgent();
+        agent.setUserId(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(transactionService.getHistory("client@example.com")).thenReturn(List.of(
+                TransactionResponse.builder()
+                        .type(com.fintech.banking.domain.enums.TransactionType.WITHDRAWAL)
+                        .amount(new BigDecimal("100.00"))
+                        .status(TransactionStatus.PENDING)
+                        .sourceAccountNumber("36803890")
+                        .build(),
+                TransactionResponse.builder()
+                        .type(com.fintech.banking.domain.enums.TransactionType.TRANSFER)
+                        .amount(new BigDecimal("50.00"))
+                        .status(TransactionStatus.COMPLETED)
+                        .sourceAccountNumber("36803890")
+                        .targetAccountNumber("56800913")
+                        .build()));
+        IntentResult intent = new IntentResult();
+        intent.setIntent(IntentType.HISTORY);
+        intent.setParameters(objectMapper.createObjectNode());
+
+        AgentToolService.AgentToolResult result = agentToolService.executeToolAction(
+                agent, new Session(), intent, "Affiche mes dernières transactions avec statut");
+
+        assertTrue(result.getBotMessage().contains("statut: PENDING"));
+        assertTrue(result.getBotMessage().contains("statut: COMPLETED"));
+    }
+
+    @Test
     void givesEmailChangeRequestATicketReferenceAndSafeNextSteps() {
         UUID userId = UUID.randomUUID();
         User user = new User();

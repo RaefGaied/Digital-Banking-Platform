@@ -48,12 +48,16 @@ public class ExecuteTransferDelegate implements JavaDelegate {
 
     private boolean applyTransfer(Transaction transaction) {
         try {
-            if (transaction.getSourceAccount() != null) {
-                transaction.getSourceAccount().debit(transaction.getAmount());
+            if (transaction.getSourceAccount() == null || transaction.getTargetAccount() == null) {
+                log.error("executeDelegate: transfer {} is missing a source or target account",
+                        transaction.getId());
+                transaction.setStatus(TransactionStatus.FAILED);
+                transactionRepository.save(transaction);
+                return false;
             }
-            if (transaction.getTargetAccount() != null) {
-                transaction.getTargetAccount().credit(transaction.getAmount());
-            }
+
+            transaction.getSourceAccount().debit(transaction.getAmount());
+            transaction.getTargetAccount().credit(transaction.getAmount());
             transaction.setStatus(TransactionStatus.COMPLETED);
             transactionRepository.save(transaction);
             return true;

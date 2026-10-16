@@ -2,12 +2,14 @@ package com.fintech.banking.controller;
 
 import com.fintech.banking.dto.request.TransactionRequest;
 import com.fintech.banking.dto.response.TransactionResponse;
+import com.fintech.banking.dto.response.WithdrawalInitiationResponse;
 import com.fintech.banking.service.TransactionService;
 import com.fintech.banking.domain.entity.Transaction;
 import com.fintech.banking.repository.AccountRepository;
 import com.fintech.banking.repository.TransactionRepository;
 import com.fintech.banking.repository.UserRepository;
 import com.fintech.banking.service.EmailService;
+import com.fintech.banking.service.WithdrawalService;
 import com.fintech.banking.kafka.TransactionEvent;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class TransactionController {
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final WithdrawalService withdrawalService;
 
     @PostMapping("/deposit")
     public ResponseEntity<TransactionResponse> deposit(
@@ -42,11 +45,25 @@ public class TransactionController {
     }
 
     @PostMapping("/withdraw")
-    public ResponseEntity<TransactionResponse> withdraw(
+    public ResponseEntity<WithdrawalInitiationResponse> withdraw(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody TransactionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(transactionService.withdraw(userDetails.getUsername(), request));
+    }
+
+    @GetMapping("/withdrawals/{reference}")
+    public ResponseEntity<WithdrawalInitiationResponse> getWithdrawalStatus(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID reference) {
+        return ResponseEntity.ok(withdrawalService.getWithdrawalStatus(userDetails.getUsername(), reference));
+    }
+
+    @PostMapping("/withdrawals/{reference}/cancel")
+    public ResponseEntity<WithdrawalInitiationResponse> cancelWithdrawal(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID reference) {
+        return ResponseEntity.ok(withdrawalService.cancelWithdrawal(userDetails.getUsername(), reference));
     }
 
     @PostMapping("/transfer")

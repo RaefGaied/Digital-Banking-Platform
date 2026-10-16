@@ -20,6 +20,7 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.tsx'));
 const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage.tsx'));
 const AdminSecurityEventsPage = lazy(() => import('./pages/admin/AdminSecurityEventsPage.tsx'));
 const AdminRagPage = lazy(() => import('./pages/admin/AdminRagPage.tsx'));
+const AtmSimulatorPage = lazy(() => import('./pages/AtmSimulatorPage.tsx'));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage.tsx'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage.tsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.tsx'));
@@ -74,6 +75,7 @@ export default function App() {
                         <Route path='security' element={<AdminSecurityEventsPage />} />
                         <Route path='audit' element={<AdminAuditPage />} />
                         <Route path='rag' element={<AdminRagPage />} />
+                        <Route path='atm' element={<AtmSimulatorPage />} />
                       </Route>
                       <Route path='transactions' element={<RequireRole allowedRoles={["USER"]}><TransactionsPage /></RequireRole>} />
                       <Route path='history' element={<RequireRole allowedRoles={["USER"]}><HistoryPage /></RequireRole>} />

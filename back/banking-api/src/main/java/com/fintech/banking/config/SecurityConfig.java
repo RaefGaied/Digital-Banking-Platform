@@ -56,7 +56,9 @@ public class SecurityConfig {
                     .permitAll()
                     // Admin-only endpoints
                     .requestMatchers("/admin/**").hasRole("ADMIN")
-                    .requestMatchers("/agents/**").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers("/atm/**").hasRole("ADMIN")
+                        .requestMatchers("/mcp/flowable/**").hasRole("ADMIN")
+                        .requestMatchers("/agents/**").hasAnyRole("USER", "ADMIN")
                     .requestMatchers(
                         "/accounts/**",
                         "/transactions/**",
@@ -64,8 +66,6 @@ public class SecurityConfig {
                         "/investments/**",
                         "/support-tickets/**",
                         "/sessions/**",
-                        "/mcp",
-                        "/mcp/**",
                         "/users/**",
                         "/profile/**",
                         "/notifications/**",

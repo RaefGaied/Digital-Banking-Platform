@@ -191,6 +191,7 @@ file is not required for a local run.
 | `OPENAI_API_KEY` | empty | Optional OpenAI provider key |
 | `GROQ_API_KEY` | empty | Optional Groq provider key |
 | `EMAIL_ENABLED` | `true` | Enable email delivery to Mailpit |
+| `WITHDRAWAL_CODE_VALIDITY_MINUTES` | `30` | One-time cash withdrawal code validity |
 | `MAIL_FROM` | `no-reply@finbank.local` | Sender address for local email |
 | `FRONTEND_URL` | `http://localhost:5173` | Frontend URL used by the backend |
 | `MEMORY_MAX_HISTORY` | `0` | AI agent conversation-history setting |
@@ -216,6 +217,26 @@ Content-Type: application/json
 
 Use the Swagger UI for the current request schemas and complete endpoint list:
 <http://localhost:8080/api/v1/swagger-ui.html>.
+
+### Secure cash withdrawal prototype
+
+`POST /api/v1/transactions/withdraw` now reserves the amount, creates a pending
+withdrawal and sends an 8-digit one-time code to the customer's registered
+email. The response contains a reference, not the code. The reference and code
+are entered at **Admin → ATM Cash Desk** (or sent to
+`POST /api/v1/atm/withdrawals/redeem` by an authenticated administrator acting
+as a counter agent). A successful redemption completes the withdrawal once.
+Unredeemed withdrawals are refunded after 30 minutes; customers may also cancel
+them using `POST /api/v1/transactions/withdrawals/{reference}/cancel`.
+The code is stored only as a BCrypt hash, expires after a configurable period,
+and is locked after five invalid attempts. Withdrawal code metadata is stored
+on the existing `Transaction` entity; no additional JPA entity or table is
+introduced.
+
+Docker Compose runs Mailpit for local testing. Start the Compose stack with
+`EMAIL_ENABLED=true` (the Compose default), then view captured messages at
+<http://localhost:8025>. This is a prototype simulation: the cash desk is not
+connected to a real ATM, cash distributor, or banking network.
 
 The backend exposes its health check at
 `GET /api/v1/actuator/health`. Administrative and Flowable endpoints require
@@ -248,6 +269,24 @@ services. Playwright may require browser installation on a new machine:
 npx playwright install chromium
 ```
 
+## Project presentation
+
+The presentation is a separate React application in `presentation/`; it does
+not use the banking frontend's port (`5173`). From that directory, install its
+dependencies once and start its dedicated server:
+
+```powershell
+cd presentation
+npm install
+npm run dev
+```
+
+Open <http://localhost:5000> for the French, 34-slide presentation. Use the
+arrow keys, swipe on touchscreens, or the on-screen controls to navigate; press
+`F` for fullscreen and `O` for the slide overview. Click a project screenshot
+to enlarge it. Replace the student and supervisor placeholders on the cover
+before presenting.
+
 ## Project structure
 
 ```text
@@ -257,6 +296,7 @@ npx playwright install chromium
 ├── docker/                   # PostgreSQL and pgAdmin container configuration
 ├── front/                    # React and TypeScript web client
 ├── images/                   # Project screenshots and diagrams
+├── presentation/             # Independent React presentation (port 5000)
 ├── .github/workflows/        # CI and quality workflows
 └── docker-compose.yml        # Local multi-service environment
 ```

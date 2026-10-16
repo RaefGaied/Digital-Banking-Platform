@@ -27,6 +27,7 @@ import {
   History,
   Bot,
   Database,
+  Banknote,
   X,
   Sparkles,
 } from 'lucide-react';
@@ -52,6 +53,7 @@ const adminNavItems = [
   { to: '/admin/security', icon: ShieldAlert, key: 'sidebar.security' },
   { to: '/admin/audit', icon: FileText, key: 'sidebar.audit' },
   { to: '/admin/rag', icon: Database, key: 'sidebar.rag' },
+  { to: '/admin/atm', icon: Banknote, key: 'sidebar.atmCashDesk' },
 ] as const;
 
 function BrandLogo() {

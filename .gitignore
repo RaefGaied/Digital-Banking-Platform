@@ -1,6 +1,7 @@
 # ── Frontend ──────────────────────────────
 front/node_modules/
 front/dist/
+presentation/node_modules/
 front/.env
 front/.env.local
 front/.env*.local

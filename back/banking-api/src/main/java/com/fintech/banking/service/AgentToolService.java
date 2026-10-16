@@ -213,10 +213,12 @@ public class AgentToolService {
             StringBuilder summary = new StringBuilder(localized(userMessage, "Here are your latest transactions:\n", "Voici vos dernières transactions :\n"));
             for (int i = 0; i < Math.min(limit, transactions.size()); i++) {
                 TransactionResponse tx = transactions.get(i);
-                summary.append(String.format("%d. %s %s %s %s\n",
+                summary.append(String.format("%d. %s %s — %s: %s %s %s\n",
                         i + 1,
                         tx.getType(),
                         tx.getAmount(),
+                        isEnglish(userMessage) ? "status" : "statut",
+                        tx.getStatus(),
                         tx.getSourceAccountNumber() != null ? (isEnglish(userMessage) ? "from " : "de ") + tx.getSourceAccountNumber() : "",
                         tx.getTargetAccountNumber() != null ? (isEnglish(userMessage) ? "to " : "vers ") + tx.getTargetAccountNumber() : ""));
             }

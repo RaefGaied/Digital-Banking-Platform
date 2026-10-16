@@ -103,6 +103,9 @@ jwt:
   refresh-expiration: 604800000
 
 app:
+  withdrawal:
+    code-validity-minutes: ${WITHDRAWAL_CODE_VALIDITY_MINUTES:30}
+    expiration-scan-ms: ${WITHDRAWAL_EXPIRATION_SCAN_MS:60000}
   cache:
     accounts-ttl: ${ACCOUNTS_CACHE_TTL:5m}
   email:
@@ -146,4 +149,7 @@ flowable:
   async-executor-activate: true
   history-level: full
   process-definition-location-prefix: classpath:/processes/
-  process-definition-location-suffix: '**.bpmn'
+  process-definition-location-suffixes:
+    - '**.bpmn'
+    - '**.bpmn20.xml'
+  check-process-definitions: true 

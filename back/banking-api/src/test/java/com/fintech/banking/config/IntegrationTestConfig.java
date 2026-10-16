@@ -8,12 +8,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(IntegrationTestCacheConfiguration.class)
 public abstract class IntegrationTestConfig {
 
     @MockBean
@@ -58,12 +60,13 @@ public abstract class IntegrationTestConfig {
             registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
             registry.add("spring.flyway.enabled", () -> "false");
         } else {
-            registry.add("spring.datasource.url", () -> "jdbc:h2:mem:banking_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_UPPER=false");
+            registry.add("spring.datasource.url", () -> "jdbc:h2:mem:banking_db;DB_CLOSE_DELAY=-1;MODE=LEGACY;DATABASE_TO_UPPER=false");
             registry.add("spring.datasource.username", () -> "sa");
             registry.add("spring.datasource.password", () -> "");
             registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
             registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
             registry.add("spring.flyway.enabled", () -> "false");
+            registry.add("spring.datasource.hikari.connection-init-sql", () -> "CREATE DOMAIN IF NOT EXISTS JSONB AS JSON");
         }
         registry.add("spring.kafka.bootstrap-servers", () -> "localhost:9092");
         registry.add("spring.data.redis.host", () -> "localhost");

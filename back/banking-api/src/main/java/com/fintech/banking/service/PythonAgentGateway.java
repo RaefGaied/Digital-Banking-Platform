@@ -52,7 +52,7 @@ public class PythonAgentGateway {
                     conversationContext == null ? 0 : conversationContext.length());
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl.replaceAll("/$", "") + "/chat"))
-                    .timeout(Duration.ofSeconds(3))
+                    .timeout(Duration.ofSeconds(10))
                     .header("Authorization", bearerToken.startsWith("Bearer ") ? bearerToken : "Bearer " + bearerToken)
                     .header("Content-Type", "application/json")
                     .header("X-Agent-Query", query)

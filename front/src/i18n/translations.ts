@@ -36,6 +36,7 @@ export const translations = {
       security: 'Security',
       audit: 'Audit',
       helpSupport: 'Help & Support',
+      atmCashDesk: 'ATM Cash Desk',
       viewProfile: 'View profile',
       logout: 'Logout',
       digitalBanking: 'Digital Banking',
@@ -76,6 +77,7 @@ export const translations = {
       security: 'Securite',
       audit: 'Audit',
       helpSupport: 'Aide et support',
+      atmCashDesk: 'Guichet retrait',
       viewProfile: 'Voir le profil',
       logout: 'Se deconnecter',
       digitalBanking: 'Banque numerique',
@@ -111,6 +113,7 @@ export type TranslationKey =
   | 'sidebar.security'
   | 'sidebar.audit'
   | 'sidebar.helpSupport'
+  | 'sidebar.atmCashDesk'
   | 'sidebar.viewProfile'
   | 'sidebar.logout'
   | 'sidebar.digitalBanking';

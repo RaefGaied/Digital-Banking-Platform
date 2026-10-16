@@ -319,6 +319,28 @@ public class NotificationService {
         );
     }
 
+    public Notification notifyWithdrawalPending(UUID userId, String amount) {
+        return createNotification(
+                userId,
+                NotificationType.WITHDRAWAL_PENDING,
+                NotificationChannel.IN_APP,
+                "Cash withdrawal requested",
+                "Your withdrawal of " + amount + " is waiting for code verification. The amount is reserved.",
+                "Transaction",
+                null);
+    }
+
+    public Notification notifyWithdrawalRefunded(UUID userId, String amount) {
+        return createNotification(
+                userId,
+                NotificationType.WITHDRAWAL_REFUNDED,
+                NotificationChannel.IN_APP,
+                "Cash withdrawal refunded",
+                "Your uncollected withdrawal of " + amount + " was refunded to your account.",
+                "Transaction",
+                null);
+    }
+
     public Notification notifyInfoRequested(UUID userId, Long ticketId, String infoNeeded) {
         return createNotification(
                 userId,

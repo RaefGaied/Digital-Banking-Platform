@@ -3,10 +3,12 @@ package com.fintech.banking.controller;
 import com.fintech.banking.config.IntegrationTestConfig;
 import com.fintech.banking.dto.request.RegisterRequest;
 import com.fintech.banking.dto.request.TransactionRequest;
+import com.fintech.banking.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -23,6 +25,9 @@ class TransactionControllerTest extends IntegrationTestConfig {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private EmailService emailService;
 
     private String token;
 
@@ -82,7 +87,9 @@ class TransactionControllerTest extends IntegrationTestConfig {
                 .content(objectMapper.writeValueAsString(withdraw)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.type").value("WITHDRAWAL"))
-                .andExpect(jsonPath("$.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.reference").isNotEmpty())
+                .andExpect(jsonPath("$.expiresAt").isNotEmpty());
     }
 
     @Test
